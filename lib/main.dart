@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'add_shop_page.dart';
+import 'dart:io';
 
 void main() => runApp(BobadexApp());
 
@@ -19,8 +20,9 @@ class BobadexApp extends StatelessWidget {
 class Shop {
   final String name;
   final double rating;
+  final String imagePath;
 
-  Shop({required this.name, required this.rating});
+  Shop({required this.name, required this.rating, required this.imagePath});
 }
 
 class HomePage extends StatefulWidget {
@@ -68,14 +70,31 @@ class _HomePageState extends State<HomePage> {
           final shop = _shops[index];
           return Card(
             elevation: 2,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircleAvatar(child: Text(shop.name[0])),
-                const SizedBox(height: 8),
-                Text(shop.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text('Rating: ${shop.rating.toStringAsFixed(1)}'),
-              ],
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(
+                        File(shop.imagePath),
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${shop.name} - ⭐ ${shop.rating.toStringAsFixed(1)}',
+                    style: const TextStyle(fontSize: 12),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
           );
         },
