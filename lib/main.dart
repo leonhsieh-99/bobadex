@@ -1,18 +1,32 @@
 import 'package:flutter/material.dart';
 import 'add_shop_page.dart';
+import 'auth_page.dart';
 import 'dart:io';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() => runApp(BobadexApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load();
+
+  await Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!, 
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+  );
+  runApp(BobadexApp());
+}
 
 class BobadexApp extends StatelessWidget {
   const BobadexApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final session = Supabase.instance.client.auth.currentSession;
+
     return MaterialApp(
       title: 'Bobadex',
       theme: ThemeData(primarySwatch: Colors.brown),
-      home: HomePage(),
+      home: session == null ? const AuthPage() : HomePage(),
     );
   }
 }
@@ -56,6 +70,37 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Your Bobadex')),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Colors.brown),
+              child: Text('Bobadex Menu', style: TextStyle(color: Colors.white)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
+              onTap: () {
+                // TODO: settings page
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Sign out'),
+              onTap: () async {
+                await Supabase.instance.client.auth.signOut();
+                if (!context.mounted) return;
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AuthPage()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
       body: _shops.isEmpty
       ? const Center(child: Text('No shops yet. Tap + to add!'))
       : GridView.builder(
