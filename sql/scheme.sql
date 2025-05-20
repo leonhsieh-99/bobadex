@@ -1,28 +1,28 @@
--- Create users table
-create table users (
-  id uuid primary key references auth.users(id),
-  username text unique not null,
-  created_at timestamptz default now()
-);
-
--- Create shops table
+-- SHOPS table
 create table shops (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references users(id),
+  user_id uuid references users(id) on delete cascade,
   name text not null,
-  rating float,
-  favorite boolean default false,
-  image_path text,
-  location text,
+  image_url text,
+  rating float4 check (rating >= 0 and rating <= 5),
+  is_favorite boolean default false,
   created_at timestamptz default now()
 );
 
--- Create drinks table
+-- DRINKS table
 create table drinks (
   id uuid primary key default gen_random_uuid(),
-  shop_id uuid references shops(id),
+  shop_id uuid references shops(id) on delete cascade,
   name text not null,
-  rating float,
-  favorite boolean default false,
+  rating float4 check (rating >= 0 and rating <= 5),
+  is_favorite boolean default false,
   created_at timestamptz default now()
+);
+
+-- FRIENDS table
+create table friends (
+  user_id uuid references users(id) on delete cascade,
+  friend_id uuid references users(id) on delete cascade,
+  created_at timestamptz default now(),
+  primary key (user_id, friend_id)
 );

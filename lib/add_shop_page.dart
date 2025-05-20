@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'main.dart';
+import 'models/shop.dart';
 
 class AddShopPage extends StatefulWidget {
   const AddShopPage({super.key});
@@ -61,7 +61,7 @@ class _AddShopPageState extends State<AddShopPage> {
       final shop = Shop(
         name: _nameComtroller.text.trim(),
         rating: double.parse(_ratingController.text),
-        imagePath: _selectedImage!.path,
+        imageUrl: _selectedImage!.path,
       );
       Navigator.pop(context, shop);
     }

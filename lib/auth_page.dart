@@ -11,34 +11,71 @@ class AuthPage extends StatefulWidget {
 
 class _AuthPageState extends State<AuthPage> {
   final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isSigningUp = false;
 
   Future<void> _submit() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
+    final username = _usernameController.text.trim();
+    final supabase = Supabase.instance.client;
 
     try {
+      print('📦 Starting auth process...');
+      
       if (_isSigningUp) {
-        await Supabase.instance.client.auth.signUp(
-          email: email,
-          password: password
-        );
+        print('📦 Signing up...');
+        final response = await supabase.auth.signUp(email: email, password: password);
+        print('📦 Sign up response: ${response.session}');
       } else {
-        await Supabase.instance.client.auth.signInWithPassword(
-          email: email,
-          password: password
-        );
+        print('📦 Signing in...');
+        final response = await supabase.auth.signInWithPassword(email: email, password: password);
+        print('📦 Sign in response: ${response.session}');
+      }
+
+      // Wait a bit for the session to be properly set
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      final session = supabase.auth.currentSession;
+      print('📦 Current session after auth: $session');
+      
+      if (session == null) {
+        throw Exception('No session available after authentication');
+      }
+
+      final userId = session.user.id;
+      print('📦 User ID: $userId');
+
+      if (_isSigningUp && userId != null && username.isNotEmpty) {
+        final existing = await supabase
+            .from('users')
+            .select()
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (existing == null) {
+          await supabase.from('users').insert({
+            'id': userId,
+            'username': username,
+          });
+        }
       }
 
       if (!mounted) return;
       Navigator.pushReplacement(
         context, 
-        MaterialPageRoute(builder: (_) => const HomePage()),
+        MaterialPageRoute(builder: (_) => HomePage(session: session)),
       );
     } on AuthException catch(e) {
+      print('📦 Auth error: ${e.message}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message))
+      );
+    } catch (e) {
+      print('📦 Unexpected error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An unexpected error occurred'))
       );
     }
   }
@@ -47,6 +84,7 @@ class _AuthPageState extends State<AuthPage> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _usernameController.dispose();
     super.dispose();
   }
 
@@ -62,6 +100,11 @@ class _AuthPageState extends State<AuthPage> {
               controller: _emailController,
               decoration: const InputDecoration(labelText: 'Email'),
             ),
+            if (_isSigningUp)
+              TextField(
+                controller: _usernameController,
+                decoration: const InputDecoration(labelText: 'Username'),
+              ),
             TextField(
               controller: _passwordController,
               decoration: InputDecoration(labelText: 'Password'),

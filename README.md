@@ -10,8 +10,8 @@ pass
 
 ### TODO
 [] scaffold MVP
-[] login auth
-[] set up database
+[X] login auth
+[X] set up database
 [] set up yelp API and maybe Google
 [] add friends and visit their bobadex
 [] maybe a central feed on what you and your friends 'caught'
