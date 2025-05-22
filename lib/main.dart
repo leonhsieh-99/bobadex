@@ -1,3 +1,4 @@
+import 'package:bobadex/shop_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'add_shop_page.dart';
 import 'auth_page.dart';
@@ -123,7 +124,7 @@ class _HomePageState extends State<HomePage> {
         .from('shops')
         .select()
         .eq('user_id', userId)
-        .order('created_at');
+        .order('rating');
       try {
         final data = response as List;
         final shops = await Future.wait(data.map((json) => Shop.fromJsonWithSignedUrl(json)));
@@ -149,15 +150,27 @@ class _HomePageState extends State<HomePage> {
 
   void _addShop(Shop shop) async {
     final userId = widget.session.user.id;
-    final String filename = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final String imagePath = 'public/$filename';
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final String tempId = 'temp-$timestamp'; 
+
+    String? uploadedImagePath;
+    final localPath = shop.imagePath;
+    if (localPath != null &&
+        localPath.isNotEmpty &&
+        File(localPath).existsSync()) {
+      uploadedImagePath = 'public/shop-gallery/$timestamp.jpg';
+    }
+
 
     // Create a temporary shop with local image for immediate UI feedback
     final tempShop = Shop(
+      id: tempId,
       name: shop.name,
       rating: shop.rating,
-      imageUrl: shop.imageUrl, // Use local file path initially
+      imagePath: shop.imagePath, // Use local file path initially
+      imageUrl: shop.imageUrl,
       isFavorite: shop.isFavorite,
+      drinks: shop.drinks,
     );
 
     // Optimistically update UI
@@ -167,40 +180,55 @@ class _HomePageState extends State<HomePage> {
 
     try {
       // Start both operations in parallel
-      final bytes = await File(shop.imageUrl).readAsBytes();
+      if (uploadedImagePath != null) {
+        final bytes = await File(shop.imagePath!).readAsBytes();
       
-      // Upload image and insert shop record concurrently
-      final uploadFuture = supabase.storage
-        .from('shop-images')
-        .uploadBinary(
-          imagePath,
-          bytes,
-          fileOptions: const FileOptions(contentType: 'image/jpeg'),
-        );
+        // Upload image and insert shop record concurrently
+        await supabase.storage
+          .from('media-uploads')
+          .uploadBinary(
+            uploadedImagePath,
+            bytes,
+            fileOptions: const FileOptions(contentType: 'image/jpeg'),
+          );
+      }
 
-      final insertFuture = supabase.from('shops')
+      final insertResponse = await supabase.from('shops')
         .insert({
           'user_id': userId,
           'name': shop.name,
-          'image_url': imagePath,
+          'image_path': uploadedImagePath,
           'rating': shop.rating,
           'is_favorite': shop.isFavorite,
         })
         .select().then((res) => res);
 
-      final results = await Future.wait([uploadFuture, insertFuture]);
-
-
       // Get the shop data from the insert response
-      final response = results[1] as List;
-      final newShop = await Shop.fromJsonWithSignedUrl(response.first);
+
+      final insertedShop = await Shop.fromJsonWithSignedUrl(insertResponse.first);
+      final shopId = insertedShop.id;
+
+      if (shop.drinks.isNotEmpty) {
+        final drinkInserts = shop.drinks.map((drink) => {
+          'shop_id': shopId,
+          'user_id': userId,
+          'name': drink.name,
+          'rating': drink.rating,
+        }).toList();
+
+        await supabase.from('drinks').insert(drinkInserts);
+      }
       
       // Update UI with the real shop data
       setState(() {
         _shops = _shops.map((s) => 
-          s == tempShop ? newShop : s
+          s.id == tempId ? insertedShop : s
         ).toList();
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Success'))
+      );
 
       // Silently refresh in background
       _loadShops(isBackgroundRefresh: true).then((_) {
@@ -289,48 +317,72 @@ class _HomePageState extends State<HomePage> {
                     ),
                     itemBuilder: (context, index) {
                       final shop = _shops[index];
-                      return Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: FutureBuilder<String>(
-                                    future: shop.getImageUrl(),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState == ConnectionState.waiting) {
-                                        return const Center(
-                                          child: CircularProgressIndicator(),
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => ShopDetailPage(shop: shop)),
+                          );
+                        },
+                        child: Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: shop.imagePath == null || shop.imagePath!.isEmpty
+                                    ? const Center(child: Icon(Icons.store, size: 40, color: Colors.grey))
+                                    : FutureBuilder<String>(
+                                      future: shop.getImageUrl(),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.connectionState == ConnectionState.waiting) {
+                                          // show optimistic image if its a local path
+                                          if (shop.imagePath != null && shop.imagePath!.startsWith('/')) {
+                                            return Image.file(
+                                              File(shop.imagePath!),
+                                              width: double.infinity,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) {
+                                                return const Center(child: Icon(Icons.broken_image));
+                                              },
+                                            );
+                                          }
+                                          // default loading state
+                                          return const Center(child: CircularProgressIndicator());
+                                        }
+                                        final imageUrl = snapshot.data;
+
+                                        if (imageUrl == null || imageUrl.isEmpty) {
+                                          return const Center(child: Icon(Icons.store, size: 40, color: Colors.grey,));
+                                        }
+                                        return Image.network(
+                                          imageUrl,
+                                          width: double.infinity,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return const Center(
+                                              child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+                                            );
+                                          },
                                         );
-                                      }
-                                      return Image.network(
-                                        snapshot.data ?? shop.imageUrl,
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          print('❌ Image load error: $error');
-                                          return const Center(
-                                            child: Icon(Icons.error_outline),
-                                          );
-                                        },
-                                      );
-                                    },
+                                      },
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                '${shop.name} - ⭐ ${shop.rating.toStringAsFixed(1)}',
-                                style: const TextStyle(fontSize: 12),
-                                textAlign: TextAlign.center,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                                const SizedBox(height: 6),
+                                Text(
+                                  '${shop.name} - ⭐ ${shop.rating.toStringAsFixed(1)}',
+                                  style: const TextStyle(fontSize: 12),
+                                  textAlign: TextAlign.center,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );

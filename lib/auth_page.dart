@@ -47,7 +47,7 @@ class _AuthPageState extends State<AuthPage> {
       final userId = session.user.id;
       print('📦 User ID: $userId');
 
-      if (_isSigningUp && userId != null && username.isNotEmpty) {
+      if (_isSigningUp && username.isNotEmpty) {
         final existing = await supabase
             .from('users')
             .select()

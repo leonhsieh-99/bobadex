@@ -14,10 +14,11 @@ pass
 [X] set up database
 [] set up yelp API and maybe Google
 [] add friends and visit their bobadex
-[] maybe a central feed on what you and your friends 'caught'
+    - [] add an aggregate bobadex (squadadex .... ? ok thats a tentative nanme) that shows statistices like averages, photos etc
+    - [] maybe a central feed on what you and your friends 'caught'
 [] polish UI
     - [] switch rating numpad with a UI or validation check for nums outside of 0 and 5
     - [] fix up the text in the grid a little so stars always show
 [] add filters and sorters for the bobadex add favorites
-[] within every shop you should be able to add a drink and have ratings for each drink (not sure if i should make it so that the overall shop rating is just the average of all the drinks within each shop though)
+[] within every shop you should be able to add a drink and have ratings for each drink
     - [] add favorites for the drinks as well ? Not sure this one might be a little overkill (ask chat gpt)
