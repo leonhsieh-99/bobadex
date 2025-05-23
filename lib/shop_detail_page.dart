@@ -17,6 +17,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   final supabase = Supabase.instance.client;
   List<Drink> _drinks = [];
   bool _isLoading = false;
+  String? _expandedDrinkId;
 
   @override
   void initState() {
@@ -31,7 +32,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
     final nameController = TextEditingController(text: initalData?.name ?? '');
     double rating = initalData?.rating ?? 0;
     final formkey = GlobalKey<FormState>();
-    print(initalData);
 
     await showDialog(
       context: context,
@@ -91,9 +91,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
 
   Future<void> _loadDrinks() async {
     print('loading drinks');
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
     try {
       print(widget.shop.id);
       final response = await supabase
@@ -103,15 +101,11 @@ class _ShopDetailPage extends State<ShopDetailPage> {
 
         final data = response as List;
         print(data);
-        setState(() {
-          _drinks = data.map((json) => Drink.fromJson(json)).toList();
-        });
+        setState(() => _drinks = data.map((json) => Drink.fromJson(json)).toList());
     } catch (e) {
       print('Failed to load drinks: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
@@ -194,42 +188,112 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                   final drink = _drinks[index];
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    child: Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      child: ExpansionTile(
-                        title: Text(
-                          drink.name,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                        ),
-                        subtitle: Text('⭐ ${drink.rating}'),
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.all(12),
-                            child: Text('No notes yet...'), // replace later
-                          ),
-                          const SizedBox(height: 12),
-                          TextButton(
-                            onPressed: () {
-                              _openDrinkDialog(
-                                initalData: 
-                                  DrinkFormData(
-                                    name: drink.name,
-                                    rating: drink.rating
-                                  ),
-                                onSubmit: (updatedDrink) async {
-                                  await supabase.from('drinks').update({
-                                    'name': updatedDrink.name,
-                                    'rating': updatedDrink.rating,
-                                  })
-                                  .eq('id', drink.id);
-                                  _loadDrinks();
-                                }
-                              );
+                    child: Stack(
+                      children: [
+                        Card(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: ExpansionTile(
+                            initiallyExpanded: _expandedDrinkId == drink.id,
+                            onExpansionChanged: (expanded) { 
+                              setState(() {
+                                _expandedDrinkId = expanded ? drink.id : null;
+                              });
                             },
-                            child: Text('Edit'),
+                            trailing: SizedBox.shrink(),
+                            title: Row(
+                              children: [
+                                AnimatedRotation(
+                                  turns: _expandedDrinkId == drink.id ? 0.25 : 0.0, 
+                                  duration: const Duration(milliseconds: 200),
+                                  child: const Icon(Icons.chevron_right, size: 20, color: Colors.brown),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    drink.name,
+                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            subtitle: Text('⭐ ${drink.rating}'),
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: Text('No notes yet...'), // replace later
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              InkWell(
+                                onTap: () {
+                                  _openDrinkDialog(
+                                    initalData: DrinkFormData(
+                                      name: drink.name,
+                                      rating: drink.rating,
+                                    ),
+                                    onSubmit: (updatedDrink) async {
+                                      final response = await supabase
+                                        .from('drinks')
+                                        .update({
+                                          'name': updatedDrink.name,
+                                          'rating': updatedDrink.rating,
+                                        })
+                                        .eq('id', drink.id)
+                                        .select()
+                                        .single();
+                                      
+                                      if (response != null && context.mounted) {
+                                        final updated = Drink.fromJson(response);
+                                        setState(() => _drinks = _drinks.map((d) => d.id == updated.id ? updated : d).toList());
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Failed to update drink.')),
+                                        );
+                                      }
+                                    },
+                                  );
+                                },
+                                child: Padding(
+                                  padding: EdgeInsets.all(2),
+                                  child: Icon(Icons.edit, size: 16),
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () async {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Delete Drink'),
+                                      content: const Text('Are you sure you want to remove this drink ?'),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                        TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+                                      ],
+                                    )
+                                  );
+                                  if (confirm == true) {
+                                    await supabase.from('drinks').delete().eq('id', drink.id);
+                                    setState(() {
+                                      _drinks.removeWhere((d) => d.id == drink.id);
+                                    });
+                                  }
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(2),
+                                  child: Icon(Icons.close, size: 16),
+                                ),
+                              ),
+                            ],
+                          )
+                        ),
+                      ],
                     ),
                   );
                 })
@@ -240,15 +304,24 @@ class _ShopDetailPage extends State<ShopDetailPage> {
         onPressed: () {
           _openDrinkDialog(
             onSubmit: (drink) async {
-              await supabase.from('drinks').insert({
+              final response = await supabase.from('drinks').insert({
                 'shop_id': widget.shop.id,
                 'user_id': supabase.auth.currentUser!.id,
                 'name': drink.name,
                 'rating': drink.rating
-              });
+              })
+              .select()
+              .single();
+
+              if (response != null && context.mounted) {
+                setState(() => _drinks.add(Drink(name: drink.name, rating: drink.rating)));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to add drink.'))
+                );
+              }
             },
           );
-          _loadDrinks();
         },
         child: const Icon(Icons.add),
       ),
