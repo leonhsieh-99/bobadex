@@ -12,13 +12,18 @@ pass
 [] scaffold MVP
 [X] login auth
 [X] set up database
-[] set up yelp API and maybe Google
+[] maybe set up Google API or OSM export to get unique shop IDs for statistics
 [] add friends and visit their bobadex
-    - [] add an aggregate bobadex (squadadex .... ? ok thats a tentative nanme) that shows statistices like averages, photos etc
-    - [] maybe a central feed on what you and your friends 'caught'
+    - [] add an aggregate bobadex (squadadex .... ? ok thats a tentative nanme) that shows statistices like averages, photos etc (requires the above check)
+    - [-] maybe a central feed on what you and your friends 'caught'
+    - [] Allow users to make a customizable banner for each shop with their favorite drink/drinks
+    - [] allow users to make comments on shops of friends
 [] polish UI
-    - [] switch rating numpad with a UI or validation check for nums outside of 0 and 5
+    - [X] switch rating numpad with a UI or validation check for nums outside of 0 and 5
     - [] fix up the text in the grid a little so stars always show
 [] add filters and sorters for the bobadex add favorites
-[] within every shop you should be able to add a drink and have ratings for each drink
-    - [] add favorites for the drinks as well ? Not sure this one might be a little overkill (ask chat gpt)
+[X] within every shop you should be able to add a drink and have ratings for each drink
+[] Optimize app
+    - [] fix RLS
+    - [] Make index in supabase
+    - [] Cache image urls for better performance

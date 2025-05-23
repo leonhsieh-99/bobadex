@@ -17,7 +17,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   final supabase = Supabase.instance.client;
   List<Drink> _drinks = [];
   bool _isLoading = false;
-  String? _expandedDrinkId;
+  Set<String?> _expandedDrinkIds = {};
 
   @override
   void initState() {
@@ -193,17 +193,21 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                         Card(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           child: ExpansionTile(
-                            initiallyExpanded: _expandedDrinkId == drink.id,
-                            onExpansionChanged: (expanded) { 
+                            initiallyExpanded: _expandedDrinkIds.contains(drink.id),
+                            onExpansionChanged: (isExpanded) { 
                               setState(() {
-                                _expandedDrinkId = expanded ? drink.id : null;
+                                if (isExpanded) {
+                                  _expandedDrinkIds.add(drink.id);
+                                } else {
+                                  _expandedDrinkIds.remove(drink.id);
+                                }
                               });
                             },
                             trailing: SizedBox.shrink(),
                             title: Row(
                               children: [
                                 AnimatedRotation(
-                                  turns: _expandedDrinkId == drink.id ? 0.25 : 0.0, 
+                                  turns: _expandedDrinkIds.contains(drink.id) ? 0.25 : 0.00,
                                   duration: const Duration(milliseconds: 200),
                                   child: const Icon(Icons.chevron_right, size: 20, color: Colors.brown),
                                 ),
