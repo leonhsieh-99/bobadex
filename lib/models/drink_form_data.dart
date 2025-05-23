@@ -3,10 +3,12 @@ import 'drink.dart';
 class DrinkFormData {
   final String name;
   final double rating;
+  final String? notes;
 
   DrinkFormData({
     required this.name,
     required this.rating,
+    this.notes,
   });
 
   Map<String, dynamic> toInsertJson({
@@ -16,6 +18,7 @@ class DrinkFormData {
       'shop_id': shopId,
       'name': name,
       'rating': rating,
+      'notes': notes,
     };
   }
 
@@ -25,6 +28,7 @@ class DrinkFormData {
       shopId: shopId,
       name: name,
       rating: rating,
+      notes: notes,
     );
   }
 }

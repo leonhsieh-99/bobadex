@@ -17,7 +17,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   final supabase = Supabase.instance.client;
   List<Drink> _drinks = [];
   bool _isLoading = false;
-  Set<String?> _expandedDrinkIds = {};
+  final Set<String> _expandedDrinkIds = {};
 
   @override
   void initState() {
@@ -32,6 +32,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
     final nameController = TextEditingController(text: initalData?.name ?? '');
     double rating = initalData?.rating ?? 0;
     final formkey = GlobalKey<FormState>();
+    final notesController = TextEditingController(text: initalData?.notes ?? '');
 
     await showDialog(
       context: context,
@@ -60,6 +61,18 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                 },
               ),
               const SizedBox(height: 24),
+              TextFormField(
+                controller: notesController,
+                decoration: InputDecoration(
+                  labelText: 'Notes',
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+                keyboardType: TextInputType.multiline,
+                maxLines: null,
+                minLines: 2,
+              ),
+              const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -74,6 +87,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                         onSubmit(DrinkFormData(
                           name: nameController.text.trim(),
                           rating: rating,
+                          notes: notesController.text.trim(),
                         ));
                         Navigator.pop(context);
                       }
@@ -81,7 +95,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                     child: Text(initalData == null ? 'Add' : 'Update'),
                   ),
                 ],
-              )
+              ),
             ],
           ),
         )
@@ -197,7 +211,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                             onExpansionChanged: (isExpanded) { 
                               setState(() {
                                 if (isExpanded) {
-                                  _expandedDrinkIds.add(drink.id);
+                                  _expandedDrinkIds.add(drink.id!);
                                 } else {
                                   _expandedDrinkIds.remove(drink.id);
                                 }
@@ -222,9 +236,15 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                             ),
                             subtitle: Text('⭐ ${drink.rating}'),
                             children: [
-                              const Padding(
+                              Padding(
                                 padding: EdgeInsets.all(12),
-                                child: Text('No notes yet...'), // replace later
+                                child: Padding(
+                                  padding: EdgeInsets.fromLTRB(12, 12, 12, 16),
+                                  child: Text(
+                                    drink.notes ?? 'No notes yet...',
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                )
                               ),
                             ],
                           ),
@@ -241,6 +261,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                     initalData: DrinkFormData(
                                       name: drink.name,
                                       rating: drink.rating,
+                                      notes: drink.notes,
                                     ),
                                     onSubmit: (updatedDrink) async {
                                       final response = await supabase
@@ -248,6 +269,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                         .update({
                                           'name': updatedDrink.name,
                                           'rating': updatedDrink.rating,
+                                          'notes': updatedDrink.notes,
                                         })
                                         .eq('id', drink.id)
                                         .select()
@@ -312,13 +334,20 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                 'shop_id': widget.shop.id,
                 'user_id': supabase.auth.currentUser!.id,
                 'name': drink.name,
-                'rating': drink.rating
+                'rating': drink.rating,
+                'notes': drink.notes,
               })
               .select()
               .single();
 
               if (response != null && context.mounted) {
-                setState(() => _drinks.add(Drink(name: drink.name, rating: drink.rating)));
+                setState(() {
+                  _drinks.add(Drink(
+                    name: drink.name,
+                    rating: drink.rating,
+                    notes: drink.notes
+                  ));
+                });
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Failed to add drink.'))

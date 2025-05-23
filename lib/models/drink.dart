@@ -3,12 +3,14 @@ class Drink {
   final String? shopId;
   final String name;
   final double rating;
+  final String? notes;
 
   Drink({
     this.id,
     this.shopId,
     required this.name,
     required this.rating,
+    this.notes,
   });
 
   factory Drink.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class Drink {
       shopId: json['shop_id'],
       name: json['name'],
       rating: (json['rating'] ?? 0).toDouble(),
+      notes: json['notes'],
     );
   }
 
@@ -26,6 +29,7 @@ class Drink {
       'shop_id': shopId,
       'name': name,
       'rating': rating,
+      'notes': notes,
     };
   }
 }
