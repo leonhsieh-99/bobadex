@@ -1,9 +1,9 @@
+import 'package:bobadex/models/drink_form_data.dart';
 import 'package:bobadex/models/shop.dart';
+import 'package:bobadex/rating_picker.dart';
 import 'package:flutter/material.dart';
 import 'models/drink.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'drink_form_widget.dart';
-import 'models/drink_form_data.dart';
 
 class ShopDetailPage extends StatefulWidget{
   final Shop shop;
@@ -23,60 +23,69 @@ class _ShopDetailPage extends State<ShopDetailPage> {
     super.initState();
     _loadDrinks();
   }
-
-  void _showAddDrinkDialog() {
+  
+  Future<void> _openDrinkDialog({
+    DrinkFormData? initalData,
+    required void Function(DrinkFormData) onSubmit,
+  }) async {
+    final nameController = TextEditingController(text: initalData?.name ?? '');
+    double rating = initalData?.rating ?? 0;
     final formkey = GlobalKey<FormState>();
-    final drinkKey = GlobalKey<DrinkFormWidgetState>();
-    DrinkFormData newDrink = DrinkFormData(name: '', rating: 0);
+    print(initalData);
 
-    showDialog(
+    await showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Add Drink'),
-          content: Form(
-            key: formkey,
-            child: DrinkFormWidget(
-              key: drinkKey,
-              onChanged: (data) => newDrink = data
-            ),
+      builder: (context) => AlertDialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        contentPadding: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Form(
+          key: formkey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                decoration: InputDecoration(labelText: 'Drink Name'),
+                validator: (val) => val == null || val.isEmpty ? 'Enter a name' : null,
+              ),
+              SizedBox(height: 12),
+              const Text('Rating', style: TextStyle(fontWeight: FontWeight.bold)),
+              StatefulBuilder(
+                builder: (context, setState) {
+                  return RatingPicker(
+                    rating: rating,
+                    onChanged: (val) => setState(() => rating = val),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (formkey.currentState!.validate()) {
+                        onSubmit(DrinkFormData(
+                          name: nameController.text.trim(),
+                          rating: rating,
+                        ));
+                        Navigator.pop(context);
+                      }
+                    },
+                    child: Text(initalData == null ? 'Add' : 'Update'),
+                  ),
+                ],
+              )
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel')
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (drinkKey.currentState?.validate() ?? false) {
-                  final userId = Supabase.instance.client.auth.currentUser?.id;
-                  if (userId == null) return;
-
-                  try{
-                    await Supabase.instance.client
-                      .from('drinks')
-                      .insert({
-                        'shop_id': widget.shop.id,
-                        'user_id': userId,
-                        'name': newDrink.name,
-                        'rating': newDrink.rating,
-                      });
-
-                    Navigator.of(context).pop();
-                    _loadDrinks();
-                  } catch (e) {
-                    print('Failed to add drink $e');
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to add drink')),
-                    );
-                  }
-                }
-              },
-              child: const Text('Add')
-            ),
-          ],
-        );
-      }
+        )
+      )
     );
   }
 
@@ -197,7 +206,28 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                           const Padding(
                             padding: EdgeInsets.all(12),
                             child: Text('No notes yet...'), // replace later
-                          )
+                          ),
+                          const SizedBox(height: 12),
+                          TextButton(
+                            onPressed: () {
+                              _openDrinkDialog(
+                                initalData: 
+                                  DrinkFormData(
+                                    name: drink.name,
+                                    rating: drink.rating
+                                  ),
+                                onSubmit: (updatedDrink) async {
+                                  await supabase.from('drinks').update({
+                                    'name': updatedDrink.name,
+                                    'rating': updatedDrink.rating,
+                                  })
+                                  .eq('id', drink.id);
+                                  _loadDrinks();
+                                }
+                              );
+                            },
+                            child: Text('Edit'),
+                          ),
                         ],
                       ),
                     ),
@@ -207,8 +237,20 @@ class _ShopDetailPage extends State<ShopDetailPage> {
           ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddDrinkDialog,
-        child: Icon(Icons.add),
+        onPressed: () {
+          _openDrinkDialog(
+            onSubmit: (drink) async {
+              await supabase.from('drinks').insert({
+                'shop_id': widget.shop.id,
+                'user_id': supabase.auth.currentUser!.id,
+                'name': drink.name,
+                'rating': drink.rating
+              });
+            },
+          );
+          _loadDrinks();
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }

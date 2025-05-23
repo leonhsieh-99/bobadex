@@ -1,8 +1,6 @@
-import 'package:bobadex/models/drink_form_data.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'models/shop.dart';
-import 'drink_form_widget.dart';
 import 'helpers/image_picker_helper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'rating_picker.dart';
@@ -17,29 +15,20 @@ class AddShopPage extends StatefulWidget {
 class _AddShopPageState extends State<AddShopPage> {
   final _formkey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  double _selectedRating = 0;
-  final List<DrinkFormData> _drinks = [];
-  final List<GlobalKey<DrinkFormWidgetState>> _drinkKeys = [];
+  double _rating = 0;
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
 
   void _submit() {
     print ('Starting submit');
-    if (_formkey.currentState!.validate()) {
-      if(_drinks.isNotEmpty) {
-        final allValid = _drinkKeys.every((key) => key.currentState?.validate() ?? false);
-        if (!allValid) return;
-      }
-      print('Drinks valid');
-      final shop = Shop(
-        name: _nameController.text.trim(),
-        rating: _selectedRating,
-        imagePath: _selectedImage?.path ?? '',
-        imageUrl: '',
-        drinks: _drinks.map((d) => d.toDrink()).toList(),
-      );
-      Navigator.pop(context, shop);
-    }
+    final shop = Shop(
+      name: _nameController.text.trim(),
+      rating: _rating,
+      imagePath: _selectedImage?.path ?? '',
+      imageUrl: '',
+      drinks: [],
+    );
+    Navigator.pop(context, shop);
   }
 
   @override
@@ -107,33 +96,13 @@ class _AddShopPageState extends State<AddShopPage> {
                       child: Text('Rating', style: Theme.of(context).textTheme.labelLarge),
                     ),
                   ),
-                  RatingPicker(
-                    rating: _selectedRating,
-                    onChanged: (val) => setState(() => _selectedRating = val),
-                    filledIcon: Icons.circle,
-                    halfIcon: Icons.adjust,
-                    emptyIcon: Icons.circle_outlined,
-                  ),
-                  const SizedBox(height: 12),
-                  for (int i = 0; i < _drinks.length; i++)
-                    DrinkFormWidget(
-                      key: _drinkKeys[i],
-                      onChanged: (data) => setState(()=> _drinks[i] = data),
-                      onRemove: () => setState(() {
-                        _drinks.removeAt(i);
-                        _drinkKeys.removeAt(i);
-                      }),
-                      initalData: _drinks[i],
-                    ),
-                  TextButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _drinks.add(DrinkFormData(name: '', rating: 0));
-                        _drinkKeys.add(GlobalKey<DrinkFormWidgetState>());
-                      });
+                  StatefulBuilder(
+                    builder: (context, setState) {
+                      return RatingPicker(
+                        rating: _rating,
+                        onChanged: (val) => setState(() => _rating = val),
+                      );
                     },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add drink'),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
