@@ -1,6 +1,6 @@
+import 'package:bobadex/add_edit_drink_dialog.dart';
 import 'package:bobadex/models/drink_form_data.dart';
 import 'package:bobadex/models/shop.dart';
-import 'package:bobadex/rating_picker.dart';
 import 'package:flutter/material.dart';
 import 'models/drink.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -23,84 +23,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   void initState() {
     super.initState();
     _loadDrinks();
-  }
-  
-  Future<void> _openDrinkDialog({
-    DrinkFormData? initalData,
-    required void Function(DrinkFormData) onSubmit,
-  }) async {
-    final nameController = TextEditingController(text: initalData?.name ?? '');
-    double rating = initalData?.rating ?? 0;
-    final formkey = GlobalKey<FormState>();
-    final notesController = TextEditingController(text: initalData?.notes ?? '');
-
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        contentPadding: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Form(
-          key: formkey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: nameController,
-                decoration: InputDecoration(labelText: 'Drink Name'),
-                validator: (val) => val == null || val.isEmpty ? 'Enter a name' : null,
-              ),
-              SizedBox(height: 12),
-              const Text('Rating', style: TextStyle(fontWeight: FontWeight.bold)),
-              StatefulBuilder(
-                builder: (context, setState) {
-                  return RatingPicker(
-                    rating: rating,
-                    onChanged: (val) => setState(() => rating = val),
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-              TextFormField(
-                controller: notesController,
-                decoration: InputDecoration(
-                  labelText: 'Notes',
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
-                keyboardType: TextInputType.multiline,
-                maxLines: null,
-                minLines: 2,
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Cancel'),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (formkey.currentState!.validate()) {
-                        onSubmit(DrinkFormData(
-                          name: nameController.text.trim(),
-                          rating: rating,
-                          notes: notesController.text.trim(),
-                        ));
-                        Navigator.pop(context);
-                      }
-                    },
-                    child: Text(initalData == null ? 'Add' : 'Update'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        )
-      )
-    );
   }
 
   Future<void> _loadDrinks() async {
@@ -237,9 +159,9 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                             subtitle: Text('⭐ ${drink.rating}'),
                             children: [
                               Padding(
-                                padding: EdgeInsets.all(12),
+                                padding: EdgeInsets.symmetric(horizontal: 12),
                                 child: Padding(
-                                  padding: EdgeInsets.fromLTRB(12, 12, 12, 16),
+                                  padding: EdgeInsets.fromLTRB(12, 4, 12, 12),
                                   child: Text(
                                     drink.notes ?? 'No notes yet...',
                                     style: const TextStyle(fontSize: 14),
@@ -257,33 +179,36 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                             children: [
                               InkWell(
                                 onTap: () {
-                                  _openDrinkDialog(
-                                    initalData: DrinkFormData(
-                                      name: drink.name,
-                                      rating: drink.rating,
-                                      notes: drink.notes,
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => AddOrEditDrinkDialog(
+                                      initialData: DrinkFormData(
+                                        name: drink.name,
+                                        rating: drink.rating,
+                                        notes: drink.notes,
+                                      ),
+                                      onSubmit: (updatedDrink) async {
+                                        final response = await supabase
+                                          .from('drinks')
+                                          .update({
+                                            'name': updatedDrink.name,
+                                            'rating': updatedDrink.rating,
+                                            'notes': updatedDrink.notes,
+                                          })
+                                          .eq('id', drink.id)
+                                          .select()
+                                          .single();
+                                        
+                                        if (response != null && context.mounted) {
+                                          final updated = Drink.fromJson(response);
+                                          setState(() => _drinks = _drinks.map((d) => d.id == updated.id ? updated : d).toList());
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Failed to update drink.')),
+                                          );
+                                        }
+                                      },
                                     ),
-                                    onSubmit: (updatedDrink) async {
-                                      final response = await supabase
-                                        .from('drinks')
-                                        .update({
-                                          'name': updatedDrink.name,
-                                          'rating': updatedDrink.rating,
-                                          'notes': updatedDrink.notes,
-                                        })
-                                        .eq('id', drink.id)
-                                        .select()
-                                        .single();
-                                      
-                                      if (response != null && context.mounted) {
-                                        final updated = Drink.fromJson(response);
-                                        setState(() => _drinks = _drinks.map((d) => d.id == updated.id ? updated : d).toList());
-                                      } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Failed to update drink.')),
-                                        );
-                                      }
-                                    },
                                   );
                                 },
                                 child: Padding(
@@ -327,36 +252,34 @@ class _ShopDetailPage extends State<ShopDetailPage> {
           ],
       ),
       floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
         onPressed: () {
-          _openDrinkDialog(
-            onSubmit: (drink) async {
-              final response = await supabase.from('drinks').insert({
-                'shop_id': widget.shop.id,
-                'user_id': supabase.auth.currentUser!.id,
-                'name': drink.name,
-                'rating': drink.rating,
-                'notes': drink.notes,
-              })
-              .select()
-              .single();
+          showDialog(
+            context: context,
+            builder: (_) => AddOrEditDrinkDialog(
+              onSubmit: (drink) async {
+                final response = await supabase.from('drinks').insert({
+                  'shop_id': widget.shop.id,
+                  'user_id': supabase.auth.currentUser!.id,
+                  'name': drink.name,
+                  'rating': drink.rating,
+                  'notes': drink.notes,
+                })
+                .select()
+                .single();
 
-              if (response != null && context.mounted) {
-                setState(() {
-                  _drinks.add(Drink(
-                    name: drink.name,
-                    rating: drink.rating,
-                    notes: drink.notes
-                  ));
-                });
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to add drink.'))
-                );
-              }
-            },
+                if (response != null && context.mounted) {
+                  final newDrink = Drink.fromJson(response);
+                  setState(() => _drinks.add(newDrink));
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to add drink.'))
+                  );
+                }
+              },
+            )
           );
         },
-        child: const Icon(Icons.add),
       ),
     );
   }

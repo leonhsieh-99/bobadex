@@ -9,7 +9,7 @@ Allows users to add boba shops into their personal index, hence bobadex. Every e
 pass
 
 ### TODO
-[] scaffold MVP
+[x] scaffold MVP
 [X] login auth
 [X] set up database
 [] maybe set up Google API or OSM export to get unique shop IDs for statistics
@@ -25,5 +25,5 @@ pass
 [X] within every shop you should be able to add a drink and have ratings for each drink
 [] Optimize app
     - [] fix RLS
-    - [] Make index in supabase
+    - [] Make index in supabase for faster queries
     - [] Cache image urls for better performance
