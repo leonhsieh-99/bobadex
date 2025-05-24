@@ -1,28 +1,44 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'drink.dart';
+import '../helpers/sortable_entry.dart';
 
-class Shop {
+class Shop extends SortableEntry {
   final String? id;
-  final String name;
-  final double rating;
+  final String _name;
+  final double _rating;
   final String? imagePath;  // raw Supabase path
   final String? imageUrl;     // signed display URL
-  final bool isFavorite;
+  final bool _isFavorite;
   final DateTime? _urlExpiryTime;
   final List<Drink> drinks;
-
+  final String? placeId; // future use maybe
+  final String? brandSlug; // future use maybe
   static final Map<String, _CachedUrl> _urlCache = {};
+
+  @override
+  String get name => _name;
+
+  @override
+  double get rating => _rating;
+
+  @override
+  bool get isFavorite => _isFavorite;
 
   Shop({
     this.id,
-    required this.name,
-    required this.rating,
+    required String name,
+    required double rating,
     this.imagePath,
     this.imageUrl,
-    this.isFavorite = false,
+    bool isFavorite = false,
     DateTime? urlExpiryTime,
     required this.drinks,
-  }) : _urlExpiryTime = urlExpiryTime;
+    this.placeId,
+    this.brandSlug,
+  }) : _urlExpiryTime = urlExpiryTime,
+        _name = name,
+        _rating = rating,
+        _isFavorite = isFavorite;
 
   factory Shop.fromJson(Map<String, dynamic> json) {
     return Shop(
@@ -33,6 +49,8 @@ class Shop {
       imageUrl: '', // placeholder, use fromJsonWithSignedUrl instead
       isFavorite: json['is_favorite'] ?? false,
       drinks: [],
+      placeId: json['place_id'],
+      brandSlug: json['brand_slug'],
     );
   }
 
@@ -101,6 +119,8 @@ class Shop {
       'image_path': imagePath,
       'rating': rating,
       'is_favorite': isFavorite,
+      'place_id': placeId,
+      'brand_slug': brandSlug,
     };
   }
 }

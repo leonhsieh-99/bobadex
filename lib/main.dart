@@ -7,6 +7,7 @@ import 'splash_page.dart';
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'helpers/sortable_entry.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -108,6 +109,7 @@ class _HomePageState extends State<HomePage> {
   bool _isInitialLoading = false;
   bool _isRefreshing = false;
   List<Shop> _shops = [];
+  
 
   Future<void> _loadShops({bool isBackgroundRefresh = false}) async {
     final userId = widget.session.user.id;
@@ -269,7 +271,30 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Your Bobadex')),
+      appBar: AppBar(
+        title: const Text('Your Bobadex'),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              setState(() {
+                List sortOptions = value.split('-');
+                sortEntries<Shop>(
+                  _shops,
+                  by: sortOptions[0],
+                  ascending: sortOptions[1] == 'asc' ? true : false
+                );
+              });
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'rating-desc', child: Text('Rating ↓')),
+              const PopupMenuItem(value: 'rating-asc', child: Text('Rating ↑')),
+              const PopupMenuItem(value: 'name-asc', child: Text('Name A–Z')),
+              const PopupMenuItem(value: 'name-desc', child: Text('Name Z–A')),
+              const PopupMenuItem(value: 'favorite-desc', child: Text('Favorites First')),
+            ],
+          ),
+        ],
+      ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,

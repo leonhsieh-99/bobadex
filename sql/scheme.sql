@@ -6,6 +6,8 @@ create table shops (
   image_path text,
   rating float4 check (rating >= 0 and rating <= 5),
   is_favorite boolean default false,
+  place_id text -- FUTURE USE (MAYBE)
+  brand_slug text -- FUTURE USE (MAYBE)
   created_at timestamptz default now()
 );
 
@@ -16,18 +18,8 @@ create table drinks (
   user_id uuid not null references users(id) on delete cascade,
   name text not null,
   rating int check (rating >= 1 and rating <= 5),
-  favorite boolean default false,
-  visibility text default 'private' check (visibility in ('private', 'friends', 'public')),
-  created_at timestamptz default now()
-);
-
-
--- Drink notes table (optional image + text)
-create table drink_notes (
-  id uuid primary key default gen_random_uuid(),
-  drink_id uuid not null references drinks(id) on delete cascade,
-  user_id uuid not null references users(id) on delete cascade,
-  note text not null,
+  notes text,
+  is_favorite boolean default false,
   visibility text default 'private' check (visibility in ('private', 'friends', 'public')),
   created_at timestamptz default now()
 );

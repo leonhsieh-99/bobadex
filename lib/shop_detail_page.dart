@@ -1,4 +1,5 @@
 import 'package:bobadex/add_edit_drink_dialog.dart';
+import 'package:bobadex/helpers/sortable_entry.dart';
 import 'package:bobadex/models/drink_form_data.dart';
 import 'package:bobadex/models/shop.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   List<Drink> _drinks = [];
   bool _isLoading = false;
   final Set<String> _expandedDrinkIds = {};
+  String _selectedSort = 'favorite-desc';
 
   @override
   void initState() {
@@ -113,6 +115,35 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                       ],
                     ),
                   )
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  DropdownButton(
+                    value: _selectedSort,
+                    items: const [
+                      DropdownMenuItem(value: 'rating-desc', child: Text('Rating ↓')),
+                      DropdownMenuItem(value: 'rating-asc', child: Text('Rating ↑')),
+                      DropdownMenuItem(value: 'name-asc', child: Text('Name A–Z')),
+                      DropdownMenuItem(value: 'name-desc', child: Text('Name Z–A')),
+                      DropdownMenuItem(value: 'favorite-desc', child: Text('Favorites First')),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedSort = value!;
+                        List sortOptions = _selectedSort.split('-');
+                        sortEntries<Drink>(
+                          _drinks,
+                          by: sortOptions[0],
+                          ascending: sortOptions[1] == 'asc' ? true : false
+                        );
+                      });
+                    },
+                  ),
                 ],
               ),
             ),
