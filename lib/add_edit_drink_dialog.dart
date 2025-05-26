@@ -95,7 +95,7 @@ class _AddOrEditDrinkDialogState extends State<AddOrEditDrinkDialog> {
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: _handleSubmit,
-                  child: Text(widget.initialData == null ? 'Add' : 'Update'),
+                  child: Text(widget.initialData == null ? 'Add Drink' : 'Save'),
                 ),
               ],
             ),

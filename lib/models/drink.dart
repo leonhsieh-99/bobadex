@@ -49,4 +49,20 @@ class Drink extends SortableEntry {
       'is_favorite': isFavorite,
     };
   }
+
+  Drink copyWith({
+    String? name,
+    double? rating,
+    String? notes,
+    bool? isFavorite,
+  }) {
+    return Drink(
+      id: id,
+      shopId: shopId,
+      name: name ?? this.name,
+      rating: rating ?? this.rating,
+      notes: notes ?? this.notes,
+      isFavorite: isFavorite ?? this.isFavorite,
+    );
+  }
 }

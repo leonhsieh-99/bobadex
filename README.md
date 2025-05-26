@@ -21,7 +21,8 @@ pass
 [] polish UI
     - [X] switch rating numpad with a UI or validation check for nums outside of 0 and 5
     - [] fix up the text in the grid a little so stars always show
-[] add filters and sorters for the bobadex add favorites
+[X] add filters and sorters for the bobadex add favorites
+    - [] timestamp filter (default for shops)
 [X] within every shop you should be able to add a drink and have ratings for each drink
 [] Optimize app
     - [] fix RLS

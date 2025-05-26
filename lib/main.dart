@@ -1,6 +1,7 @@
+import 'dart:async';
 import 'package:bobadex/shop_detail_page.dart';
 import 'package:flutter/material.dart';
-import 'add_shop_page.dart';
+import 'add_edit_shop_dialog.dart';
 import 'auth_page.dart';
 import 'models/shop.dart';
 import 'splash_page.dart';
@@ -8,6 +9,9 @@ import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'helpers/sortable_entry.dart';
+import 'package:collection/collection.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -120,24 +124,30 @@ class _HomePageState extends State<HomePage> {
       setState(() => _isRefreshing = true);
     }
 
-    print('loading shops...');
     try {
       final response = await supabase
         .from('shops')
         .select()
         .eq('user_id', userId)
         .order('rating');
-      try {
-        final data = response as List;
-        final shops = await Future.wait(data.map((json) => Shop.fromJsonWithSignedUrl(json)));
-        setState(() {
-          _shops = shops;
-        });
-        print('shops loaded');
-      } catch (e) {
-        print ('failed to parse data $e');
-      }
-    } on Exception catch(e) {
+      final data = response as List;
+      final updatedShops = await Future.wait(data.map((json) async {
+        final newPath = json['image_path'];
+        final existing = _shops.firstWhereOrNull((s) => s.id == json['id']);
+
+        if (existing != null &&
+            existing.imagePath == newPath &&
+            existing.imageUrl.isNotEmpty) {
+          return existing;
+        } else {
+          return Shop.fromJson(json);
+        }
+      }));
+
+      setState(() {
+        _shops = updatedShops;
+      });
+    } catch(e) {
       print('Error loading shops: $e');
     } finally {
       setState(() {
@@ -155,22 +165,12 @@ class _HomePageState extends State<HomePage> {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final String tempId = 'temp-$timestamp'; 
 
-    String? uploadedImagePath;
-    final localPath = shop.imagePath;
-    if (localPath != null &&
-        localPath.isNotEmpty &&
-        File(localPath).existsSync()) {
-      uploadedImagePath = 'public/shop-gallery/$timestamp.jpg';
-    }
-
-
     // Create a temporary shop with local image for immediate UI feedback
     final tempShop = Shop(
       id: tempId,
       name: shop.name,
       rating: shop.rating,
-      imagePath: shop.imagePath, // Use local file path initially
-      imageUrl: shop.imageUrl,
+      imagePath: shop.imagePath,// Use local file path initially
       isFavorite: shop.isFavorite,
       drinks: shop.drinks,
     );
@@ -180,85 +180,55 @@ class _HomePageState extends State<HomePage> {
       _shops = [..._shops, tempShop];
     });
 
+    // then insert shop into db
     try {
-      // Start both operations in parallel
-      if (uploadedImagePath != null) {
-        final bytes = await File(shop.imagePath!).readAsBytes();
-      
-        // Upload image and insert shop record concurrently
-        await supabase.storage
-          .from('media-uploads')
-          .uploadBinary(
-            uploadedImagePath,
-            bytes,
-            fileOptions: const FileOptions(contentType: 'image/jpeg'),
-          );
-      }
-
       final insertResponse = await supabase.from('shops')
         .insert({
           'user_id': userId,
           'name': shop.name,
-          'image_path': uploadedImagePath,
+          'image_path': shop.imagePath,
           'rating': shop.rating,
           'is_favorite': shop.isFavorite,
-        })
-        .select().then((res) => res);
+        }).select();
 
-      // Get the shop data from the insert response
+      final insertedShop = Shop.fromJson(insertResponse.first);
 
-      final insertedShop = await Shop.fromJsonWithSignedUrl(insertResponse.first);
-      final shopId = insertedShop.id;
-
-      if (shop.drinks.isNotEmpty) {
-        final drinkInserts = shop.drinks.map((drink) => {
-          'shop_id': shopId,
-          'user_id': userId,
-          'name': drink.name,
-          'rating': drink.rating,
-        }).toList();
-
-        await supabase.from('drinks').insert(drinkInserts);
-      }
-      
-      // Update UI with the real shop data
       setState(() {
-        _shops = _shops.map((s) => 
-          s.id == tempId ? insertedShop : s
-        ).toList();
+        _shops = _shops.map((s) => s.id == tempId ? insertedShop : s).toList();
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Success'))
       );
-
-      // Silently refresh in background
-      _loadShops(isBackgroundRefresh: true).then((_) {
-        print('📦 Background refresh completed');
-      }).catchError((e) {
-        print('❌ Background refresh failed: $e');
-      });
-
-    } on Exception catch(e) {
+      _loadShops(isBackgroundRefresh: true);
+    } catch (e) {
       print('❌ Insert failed: $e');
-      // Remove the temporary shop on error
-      setState(() {
-        _shops = _shops.where((s) => s != tempShop).toList();
-      });
+      setState(() => _shops = _shops.where((s) => s.id != tempId).toList());
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to add shop: ${e.toString()}'))
       );
     }
   }
 
-  void _navigateToAddShop() async {
-    final result = await Navigator.push(
+  Future<void> _navigateToShop(Shop shop) async {
+    final completer = Completer<Shop?>();
+    await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const AddShopPage()),
+      MaterialPageRoute(
+        builder: (_) => ShopDetailPage(
+          shop: shop,
+          resultCompleter: completer,
+        )
+      ),
     );
 
-    if (result != null && result is Shop) {
-      _addShop(result);
+    final result = await completer.future;
+    if (result == null) return;
+
+    if (result.id == shop.id) {
+      setState(() {
+        _shops = _shops.map((s) => s.id == result.id ? result : s).toList();
+      });
     }
   }
 
@@ -290,7 +260,7 @@ class _HomePageState extends State<HomePage> {
               const PopupMenuItem(value: 'rating-asc', child: Text('Rating ↑')),
               const PopupMenuItem(value: 'name-asc', child: Text('Name A–Z')),
               const PopupMenuItem(value: 'name-desc', child: Text('Name Z–A')),
-              const PopupMenuItem(value: 'favorite-desc', child: Text('Favorites First')),
+              const PopupMenuItem(value: 'favorite-desc', child: Text('Favorites')),
             ],
           ),
         ],
@@ -343,12 +313,7 @@ class _HomePageState extends State<HomePage> {
                     itemBuilder: (context, index) {
                       final shop = _shops[index];
                       return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => ShopDetailPage(shop: shop)),
-                          );
-                        },
+                        onTap: () async => _navigateToShop(shop),
                         child: Card(
                           elevation: 2,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -362,41 +327,21 @@ class _HomePageState extends State<HomePage> {
                                     borderRadius: BorderRadius.circular(8),
                                     child: shop.imagePath == null || shop.imagePath!.isEmpty
                                     ? const Center(child: Icon(Icons.store, size: 40, color: Colors.grey))
-                                    : FutureBuilder<String>(
-                                      future: shop.getImageUrl(),
-                                      builder: (context, snapshot) {
-                                        if (snapshot.connectionState == ConnectionState.waiting) {
-                                          // show optimistic image if its a local path
-                                          if (shop.imagePath != null && shop.imagePath!.startsWith('/')) {
-                                            return Image.file(
-                                              File(shop.imagePath!),
-                                              width: double.infinity,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) {
-                                                return const Center(child: Icon(Icons.broken_image));
-                                              },
-                                            );
-                                          }
-                                          // default loading state
-                                          return const Center(child: CircularProgressIndicator());
-                                        }
-                                        final imageUrl = snapshot.data;
-
-                                        if (imageUrl == null || imageUrl.isEmpty) {
-                                          return const Center(child: Icon(Icons.store, size: 40, color: Colors.grey,));
-                                        }
-                                        return Image.network(
-                                          imageUrl,
+                                    : (shop.imagePath != null && shop.imagePath!.startsWith('/')) 
+                                      ? Image.file(
+                                          File(shop.imagePath!),
                                           width: double.infinity,
                                           fit: BoxFit.cover,
                                           errorBuilder: (context, error, stackTrace) {
-                                            return const Center(
-                                              child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-                                            );
+                                            return const Center(child: Icon(Icons.broken_image));
                                           },
-                                        );
-                                      },
-                                    ),
+                                        )
+                                      : CachedNetworkImage(
+                                          imageUrl: shop.thumbUrl,
+                                          placeholder: (context, url) => CircularProgressIndicator(),
+                                          fit: BoxFit.cover,
+                                          errorWidget: (context, url, error) => Icon(Icons.broken_image)
+                                        )
                                   ),
                                 ),
                                 const SizedBox(height: 6),
@@ -436,7 +381,20 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToAddShop,
+        onPressed: () async {
+          await showDialog(
+            context: context,
+            builder: (_) => AddOrEditShopDialog(
+              onSubmit: (shop) async {
+                _addShop(Shop(
+                  name: shop.name,
+                  rating: shop.rating,
+                  imagePath: shop.imagePath,
+                ));
+              }
+            ),
+          );
+        },
         child: const Icon(Icons.add),
       ),
     );
