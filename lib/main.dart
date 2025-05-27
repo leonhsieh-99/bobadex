@@ -223,8 +223,16 @@ class _HomePageState extends State<HomePage> {
     );
 
     final result = await completer.future;
-    if (result == null) return;
 
+    // deleted shop
+    if (result == null) {
+      setState(() {
+        _shops.removeWhere((s) => s.id == shop.id);
+      });
+      return;
+    }
+
+    // edited shop
     if (result.id == shop.id) {
       setState(() {
         _shops = _shops.map((s) => s.id == result.id ? result : s).toList();
@@ -390,6 +398,7 @@ class _HomePageState extends State<HomePage> {
                   name: shop.name,
                   rating: shop.rating,
                   imagePath: shop.imagePath,
+                  notes: shop.notes,
                 ));
               }
             ),

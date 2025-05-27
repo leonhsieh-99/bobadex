@@ -50,19 +50,19 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   }
 
   Future<void> _loadDrinks() async {
-    print('loading drinks');
     setState(() => _isLoading = true);
     try {
-      print(_shop.id);
       final response = await supabase
         .from('drinks')
         .select()
         .eq('shop_id', _shop.id);
 
-        final data = response as List;
-        print(data);
-        setState(() => _drinks = data.map((json) => Drink.fromJson(json)).toList());
-        _sortDrinks();
+      final data = response as List;
+      setState(() {
+        _drinks = data.map((json) => Drink.fromJson(json)).toList();
+        _shop = _shop.copyWith(drinks: _drinks);
+      });
+      _sortDrinks();
     } catch (e) {
       print('Failed to load drinks: $e');
     } finally {
@@ -104,6 +104,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                             'name': updatedshop.name,
                             'rating': updatedshop.rating,
                             'image_path': updatedshop.imagePath,
+                            'notes': updatedshop.notes,
                           };
                           final response = await supabase
                             .from('shops')
@@ -170,63 +171,83 @@ class _ShopDetailPage extends State<ShopDetailPage> {
           : Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              GestureDetector(
-                onTap: () {
-                  //TODO: Navigate to gallery
-                },
-                child: Stack(
-                  alignment: Alignment.bottomLeft,
+              Container(
+                alignment: Alignment.bottomLeft,
+                height: 200,
+                padding: const EdgeInsets.all(16),
+                color: (Colors.deepPurpleAccent.withOpacity(0.6)),
+                child: Row( // Banner
                   children: [
-                    (_shop.imagePath == null || _shop.imagePath!.isEmpty)
-                      ? Container(
-                        width: double.infinity,
-                        height: 200,
-                        color: Colors.grey.shade300,
-                        child: const Center(
-                          child: Icon(Icons.store, size: 64, color: Colors.white70)
-                        ),
-                      )
-                      : CachedNetworkImage(
-                        imageUrl: _shop.imageUrl,
-                        width: double.infinity,
-                        height: 200,
-                        fit: BoxFit.cover,
-                        errorWidget: (context, url, error) => Container(
-                          color: Colors.grey.shade300,
-                          child: const Center(child: Icon(Icons.broken_image)),
-                        ),
-                        placeholder: (context, url) => Container(
-                          color: Colors.grey.shade300,
-                          child: const Center(child: CircularProgressIndicator()),
-                        ),
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _shop.name,
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '⭐ ${_shop.rating.toStringAsFixed(1)}',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '📌 ${_shop.pinnedDrink != null
+                              ? _shop.pinnedDrink?.name
+                              : 'No pinned drink'}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(height: 6),
+                          if (_shop.notes != null && _shop.notes!.isNotEmpty)
+                            Text(
+                              '📝 "${_shop.notes!}"',
+                              style: const TextStyle(
+                                fontSize: 14, color: Colors.black,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            )
+                        ]
                       ),
-                    Container(
-                      width: double.infinity,
-                      height: 200,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.black.withOpacity(0.6), Colors.transparent],
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 1,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: (_shop.imagePath == null ||  _shop.imagePath!.isEmpty)
+                            ? Container(
+                              width: double.infinity,
+                              height: 200,
+                              color: Colors.grey.shade300,
+                              child: const Center(
+                                child: Icon(Icons.store, size: 64, color: Colors.white70)
+                              ),
+                            )
+                            : CachedNetworkImage(
+                              imageUrl: _shop.imageUrl,
+                              width: double.infinity,
+                              height: 200,
+                              fit: BoxFit.cover,
+                              errorWidget: (context, url, error) => Container(
+                                color: Colors.grey.shade300,
+                                child: const Center(child: Icon(Icons.broken_image)),
+                              ),
+                              placeholder: (context, url) => Container(
+                                color: Colors.grey.shade300,
+                                child: const Center(child: CircularProgressIndicator()),
+                              ),
+                            ),
                         ),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(_shop.name,
-                            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 4),
-                          Text('⭐ ${_shop.rating.toStringAsFixed(1)}',
-                            style: const TextStyle(color: Colors.white, fontSize: 16),
-                          ),
-                        ],
-                      ),
-                    )
                   ],
                 ),
               ),
@@ -265,144 +286,163 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                           Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
-                              boxShadow: drink.isFavorite
-                                ? [
-                                  BoxShadow(
-                                    color: Colors.redAccent.withOpacity(0.6),
-                                    blurRadius: 5,
-                                    spreadRadius: 0.5,
-                                  ),
-                                ]
-                              : [],
                             ),
                             child: Card(
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              child: ExpansionTile(
-                                initiallyExpanded: _expandedDrinkIds.contains(drink.id),
-                                onExpansionChanged: (isExpanded) { 
-                                  setState(() {
-                                    if (isExpanded) {
-                                      _expandedDrinkIds.add(drink.id ?? '');
-                                    } else {
-                                      _expandedDrinkIds.remove(drink.id);
-                                    }
-                                  });
-                                },
-                                trailing: SizedBox.shrink(),
-                                title: Row(
-                                  children: [
-                                    AnimatedRotation(
-                                      turns: _expandedDrinkIds.contains(drink.id) ? 0.25 : 0.00,
-                                      duration: const Duration(milliseconds: 200),
-                                      child: const Icon(Icons.chevron_right, size: 20, color: Colors.brown),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        drink.name,
-                                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                              child: Theme(
+                                data: Theme.of(context).copyWith(
+                                  listTileTheme: const ListTileThemeData(
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                                  ),
+                                ), 
+                                child: ExpansionTile(
+                                  initiallyExpanded: _expandedDrinkIds.contains(drink.id),
+                                  onExpansionChanged: (isExpanded) { 
+                                    setState(() {
+                                      if (isExpanded) {
+                                        _expandedDrinkIds.add(drink.id ?? '');
+                                      } else {
+                                        _expandedDrinkIds.remove(drink.id);
+                                      }
+                                    });
+                                  },
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (drink.isFavorite) Icon(
+                                        Icons.favorite,
+                                        size: 20,
+                                        color: Colors.redAccent,
                                       ),
+                                      PopupMenuButton<String>(
+                                        icon: const Icon(Icons.more_horiz, size: 20),
+                                        onSelected: (value) async {
+                                          switch(value) {
+                                            case 'pin':
+                                              final isPinned = _shop.pinnedDrinkId == drink.id;
+                                              await supabase.from('shops')
+                                                .update({'pinned_drink_id': isPinned ? null : drink.id})
+                                                .eq('id', _shop.id);
+                                              setState(() {
+                                                _shop.pinnedDrinkId = isPinned ? null : drink.id;
+                                              });
+                                              break;
+                                            case 'favorite':
+                                              await supabase.from('drinks').update({'is_favorite': !drink.isFavorite}).eq('id', drink.id);
+                                              setState(() {
+                                                _drinks = _drinks.map((d) => d.id == drink.id ? d.copyWith(isFavorite: !drink.isFavorite) : d).toList();
+                                              });
+                                              _sortDrinks();
+                                              break;
+                                            case 'edit':
+                                              await showDialog(
+                                                context: context,
+                                                builder: (_) => AddOrEditDrinkDialog(
+                                                  initialData: DrinkFormData(
+                                                    name: drink.name,
+                                                    rating: drink.rating,
+                                                    notes: drink.notes,
+                                                  ),
+                                                  onSubmit: (updatedDrink) async {
+                                                    final response = await supabase
+                                                      .from('drinks')
+                                                      .update({
+                                                        'name': updatedDrink.name,
+                                                        'rating': updatedDrink.rating,
+                                                        'notes': updatedDrink.notes,
+                                                      })
+                                                      .eq('id', drink.id)
+                                                      .select()
+                                                      .single();
+                                                    
+                                                    if (response != null && context.mounted) {
+                                                      final updated = Drink.fromJson(response);
+                                                      setState(() => _drinks = _drinks.map((d) => d.id == updated.id ? updated : d).toList());
+                                                    } else {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        SnackBar(content: Text('Failed to update drink.')),
+                                                      );
+                                                    }
+                                                  },
+                                                ),
+                                              );
+                                              break;
+                                            case 'delete':
+                                              final confirm = await showDialog<bool>(
+                                                context: context,
+                                                builder: (context) => AlertDialog(
+                                                  title: const Text('Delete Drink'),
+                                                  content: const Text('Are you sure you want to remove this drink ?'),
+                                                  actions: [
+                                                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                                    TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+                                                  ],
+                                                )
+                                              );
+                                              if (confirm == true) {
+                                                await supabase.from('drinks').delete().eq('id', drink.id);
+                                                setState(() {
+                                                  _drinks.removeWhere((d) => d.id == drink.id);
+                                                });
+                                              }
+                                              break;
+                                          }
+                                        },
+                                        itemBuilder: (_) => [
+                                          PopupMenuItem(
+                                            value: 'pin',
+                                            child: Text(drink.id != _shop.pinnedDrinkId
+                                              ? 'Pin'
+                                              : 'Unpin'
+                                            )
+                                          ),
+                                          PopupMenuItem(
+                                            value: 'favorite',
+                                            child: Text(drink.isFavorite ? 'Unfavorite' : 'Favorite'),
+                                          ),
+                                          PopupMenuItem(
+                                            value: 'edit',
+                                            child: Text('Edit'),
+                                          ),
+                                          PopupMenuItem(
+                                            value: 'remove',
+                                            child: Text('Remove'),
+                                          ),
+                                        ]
+                                      ),
+                                    ],
+                                  ),
+                                  title: Row(
+                                    children: [
+                                      AnimatedRotation(
+                                        turns: _expandedDrinkIds.contains(drink.id) ? 0.25 : 0.00,
+                                        duration: const Duration(milliseconds: 200),
+                                        child: const Icon(Icons.chevron_right, size: 20, color: Colors.brown),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          drink.name,
+                                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  subtitle: Text('⭐ ${drink.rating}'),
+                                  children: [
+                                    Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: 12),
+                                      child: Padding(
+                                        padding: EdgeInsets.fromLTRB(12, 4, 12, 12),
+                                        child: Text(
+                                          drink.notes ?? 'No notes yet...',
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                      )
                                     ),
                                   ],
                                 ),
-                                subtitle: Text('⭐ ${drink.rating}'),
-                                children: [
-                                  Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 12),
-                                    child: Padding(
-                                      padding: EdgeInsets.fromLTRB(12, 4, 12, 12),
-                                      child: Text(
-                                        drink.notes ?? 'No notes yet...',
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                    )
-                                  ),
-                                ],
                               ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_vert, size: 20),
-                              onSelected: (value) async {
-                                switch(value) {
-                                  case 'favorite':
-                                    await supabase.from('drinks').update({'is_favorite': !drink.isFavorite}).eq('id', drink.id);
-                                    setState(() {
-                                      _drinks = _drinks.map((d) => d.id == drink.id ? d.copyWith(isFavorite: !drink.isFavorite) : d).toList();
-                                    });
-                                    _sortDrinks();
-                                    break;
-                                  case 'edit':
-                                    await showDialog(
-                                      context: context,
-                                      builder: (_) => AddOrEditDrinkDialog(
-                                        initialData: DrinkFormData(
-                                          name: drink.name,
-                                          rating: drink.rating,
-                                          notes: drink.notes,
-                                        ),
-                                        onSubmit: (updatedDrink) async {
-                                          final response = await supabase
-                                            .from('drinks')
-                                            .update({
-                                              'name': updatedDrink.name,
-                                              'rating': updatedDrink.rating,
-                                              'notes': updatedDrink.notes,
-                                            })
-                                            .eq('id', drink.id)
-                                            .select()
-                                            .single();
-                                          
-                                          if (response != null && context.mounted) {
-                                            final updated = Drink.fromJson(response);
-                                            setState(() => _drinks = _drinks.map((d) => d.id == updated.id ? updated : d).toList());
-                                          } else {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('Failed to update drink.')),
-                                            );
-                                          }
-                                        },
-                                      ),
-                                    );
-                                    break;
-                                  case 'delete':
-                                    final confirm = await showDialog<bool>(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        title: const Text('Delete Drink'),
-                                        content: const Text('Are you sure you want to remove this drink ?'),
-                                        actions: [
-                                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                                          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
-                                        ],
-                                      )
-                                    );
-                                    if (confirm == true) {
-                                      await supabase.from('drinks').delete().eq('id', drink.id);
-                                      setState(() {
-                                        _drinks.removeWhere((d) => d.id == drink.id);
-                                      });
-                                    }
-                                    break;
-                                }
-                              },
-                              itemBuilder: (_) => [
-                                PopupMenuItem(
-                                  value: 'favorite',
-                                  child: Text(drink.isFavorite ? 'Unfavorite' : 'Favorite'),
-                                ),
-                                PopupMenuItem(
-                                  value: 'edit',
-                                  child: Text('Edit'),
-                                ),
-                                PopupMenuItem(
-                                  value: 'remove',
-                                  child: Text('Remove'),
-                                ),
-                              ]
                             ),
                           ),
                         ],

@@ -6,6 +6,8 @@ create table shops (
   image_path text,
   rating float4 check (rating >= 0 and rating <= 5),
   is_favorite boolean default false,
+  notes text,
+  pinned_drink_id uuid,
   place_id text -- FUTURE USE (MAYBE)
   brand_slug text -- FUTURE USE (MAYBE)
   created_at timestamptz default now()

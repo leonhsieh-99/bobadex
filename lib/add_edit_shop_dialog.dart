@@ -24,6 +24,7 @@ class AddOrEditShopDialog extends StatefulWidget {
 class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
   final _formkey = GlobalKey<FormState>();
   late TextEditingController _nameController;
+  late TextEditingController _notesController;
   double _rating = 0;
   bool _isSubmitting = false;
   final ImagePicker _picker = ImagePicker();
@@ -34,12 +35,14 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.initialData?.name ?? '');
+    _notesController = TextEditingController(text: widget.initialData?.notes ?? '');
     _rating = widget.initialData?.rating ?? 0;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -147,11 +150,13 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
               name: _nameController.text.trim(),
               rating: _rating,
               imagePath: supabasePath,
+              notes: _notesController.text.trim(),
             ) ??
             Shop(
               name: _nameController.text.trim(),
               rating: _rating,
               imagePath: supabasePath,
+              notes: _notesController.text.trim(),
             ),
       );
 
@@ -167,126 +172,144 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_isSubmitting) const LinearProgressIndicator(minHeight: 2),
-            Text(
-              'Add Shop',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 12),
-            Form(
-              key: _formkey,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: 450,
-                  maxHeight: MediaQuery.of(context).size.height * 0.75,
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.opaque,
+      child: Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isSubmitting) const LinearProgressIndicator(minHeight: 2),
+                Text(
+                  'Add Shop',
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                const SizedBox(height: 12),
+                Form(
+                  key: _formkey,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: 450,
+                      maxHeight: MediaQuery.of(context).size.height * 0.75,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GestureDetector(
+                          onTap: () async {
+                            final pickedFile = await pickImageWithDialog(context, _picker);
+                            if (pickedFile != null) {
+                              setState(() {
+                                _selectedImage = pickedFile;
+                                _removeExistingImage = false;
+                              });
+                            }
+                          },
+                          child: (_selectedImage != null ||
+                            (widget.initialData?.imagePath != null &&
+                            widget.initialData!.imagePath!.isNotEmpty &&
+                            !_removeExistingImage))
+                              ? Stack (
+                                alignment: Alignment.topRight,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: _selectedImage != null
+                                      ? Image.file(_selectedImage!, height: 150, width: double.infinity, fit: BoxFit.cover)
+                                      : Image.network(
+                                        Supabase.instance.client.storage
+                                          .from('media-uploads')
+                                          .getPublicUrl(widget.initialData!.imagePath!),
+                                        height: 150,
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                      )
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.close, color: Colors.red),
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedImage = null;
+                                        _removeExistingImage = true;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              )
+                              : Container(
+                                  height: 150,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Center(child: Text('Tap to select an optional image')),
+                                )
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: const InputDecoration(labelText: 'Shop Name'),
+                          validator: (value) => 
+                            value == null || value.isEmpty ? 'Enter a name' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 12, bottom: 4),
+                            child: Text('Rating', style: Theme.of(context).textTheme.labelLarge),
+                          ),
+                        ),
+                        StatefulBuilder(
+                          builder: (context, setState) {
+                            return RatingPicker(
+                              rating: _rating,
+                              onChanged: (val) => setState(() => _rating = val),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        TextFormField(
+                          controller: _notesController,
+                          decoration: const InputDecoration(
+                            labelText: 'Notes',
+                            border: OutlineInputBorder(),
+                            alignLabelWithHint: true,
+                          ),
+                          keyboardType: TextInputType.multiline,
+                          maxLines: null,
+                          minLines: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    GestureDetector(
-                      onTap: () async {
-                        final pickedFile = await pickImageWithDialog(context, _picker);
-                        if (pickedFile != null) {
-                          setState(() {
-                            _selectedImage = pickedFile;
-                            _removeExistingImage = false;
-                          });
-                        }
-                      },
-                      child: (_selectedImage != null ||
-                        (widget.initialData?.imagePath != null &&
-                        widget.initialData!.imagePath!.isNotEmpty &&
-                        !_removeExistingImage))
-                          ? Stack (
-                            alignment: Alignment.topRight,
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: _selectedImage != null
-                                  ? Image.file(_selectedImage!, height: 150, width: double.infinity, fit: BoxFit.cover)
-                                  : Image.network(
-                                    Supabase.instance.client.storage
-                                      .from('media-uploads')
-                                      .getPublicUrl(widget.initialData!.imagePath!),
-                                    height: 150,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                  )
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.close, color: Colors.red),
-                                onPressed: () {
-                                  setState(() {
-                                    _selectedImage = null;
-                                    _removeExistingImage = true;
-                                  });
-                                },
-                              ),
-                            ],
-                          )
-                          : Container(
-                              height: 150,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Center(child: Text('Tap to select an optional image')),
-                            )
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(labelText: 'Shop Name'),
-                      validator: (value) => 
-                        value == null || value.isEmpty ? 'Enter a name' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 12, bottom: 4),
-                        child: Text('Rating', style: Theme.of(context).textTheme.labelLarge),
-                      ),
-                    ),
-                    StatefulBuilder(
-                      builder: (context, setState) {
-                        return RatingPicker(
-                          rating: _rating,
-                          onChanged: (val) => setState(() => _rating = val),
-                        );
-                      },
+                    TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: _isSubmitting ? null : _handleSubmit,
+                      child: _isSubmitting
+                        ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                        : (widget.initialData == null ? Text('Add Shop'): Text('Save'))
                     ),
                   ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: _isSubmitting ? null : _handleSubmit,
-                  child: _isSubmitting
-                    ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                    : (widget.initialData == null ? Text('Add Shop'): Text('Save'))
-                ),
+                )
               ],
-            )
-          ],
+            ),
+          ),
         ),
       ),
     );
