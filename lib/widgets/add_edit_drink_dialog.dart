@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/drink_form_data.dart';
-import '../rating_picker.dart';
+import '../../models/drink_form_data.dart';
+import 'rating_picker.dart';
 
 class AddOrEditDrinkDialog extends StatefulWidget {
   final DrinkFormData? initialData;

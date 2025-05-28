@@ -1,14 +1,14 @@
-import 'package:bobadex/add_edit_drink_dialog.dart';
+import 'package:bobadex/widgets/add_edit_drink_dialog.dart';
 import 'package:bobadex/helpers/sortable_entry.dart';
 import 'package:bobadex/models/drink_form_data.dart';
 import 'package:bobadex/models/shop.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'models/drink.dart';
+import '../models/drink.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'add_edit_shop_dialog.dart';
+import '../widgets/add_edit_shop_dialog.dart';
 import 'dart:async';
-import 'models/drink_cache.dart';
+import '../models/drink_cache.dart';
 import 'package:shimmer/shimmer.dart';
 
 class ShopDetailPage extends StatefulWidget{

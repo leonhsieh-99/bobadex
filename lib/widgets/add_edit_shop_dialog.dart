@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'models/shop.dart';
-import 'helpers/image_picker_helper.dart';
+import '../models/shop.dart';
+import '../helpers/image_picker_helper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'rating_picker.dart';

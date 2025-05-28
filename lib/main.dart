@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'package:bobadex/shop_detail_page.dart';
+import 'package:bobadex/pages/shop_detail_page.dart';
 import 'package:flutter/material.dart';
-import 'add_edit_shop_dialog.dart';
-import 'auth_page.dart';
+import 'widgets/add_edit_shop_dialog.dart';
+import 'pages/auth_page.dart';
 import 'models/shop.dart';
-import 'splash_page.dart';
+import 'pages/splash_page.dart';
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
