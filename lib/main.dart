@@ -11,6 +11,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'helpers/sortable_entry.dart';
 import 'package:collection/collection.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'models/drink.dart';
+import 'models/drink_cache.dart';
 
 
 void main() async {
@@ -67,6 +69,15 @@ class _BobadexAppState extends State<BobadexApp> {
       // Double check session after a short delay
       await Future.delayed(const Duration(milliseconds: 500));
       final refreshedSession = Supabase.instance.client.auth.currentSession;
+
+      // initialize drink cache
+      try {
+        final response = await Supabase.instance.client.from('drinks').select();
+        final allDrinks = (response as List).map((json) => Drink.fromJson(json)).toList();
+        DrinkCache.set(allDrinks);
+      } catch (e) {
+        print('Error loading drinks: $e');
+      }
       
       if (!_isReady && refreshedSession != null) {
         setState(() {
