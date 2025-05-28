@@ -10,6 +10,7 @@ import '../widgets/add_edit_shop_dialog.dart';
 import 'dart:async';
 import '../models/drink_cache.dart';
 import 'package:shimmer/shimmer.dart';
+import '../widgets/filter_sort_bar.dart';
 
 class ShopDetailPage extends StatefulWidget{
   final Shop shop;
@@ -31,6 +32,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   List<Drink> _drinks = [];
   final Set<String> _expandedDrinkIds = {};
   String _selectedSort = 'favorite-desc';
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -39,15 +41,23 @@ class _ShopDetailPage extends State<ShopDetailPage> {
     _loadDrinks();
   }
 
-  void _sortDrinks() {
-    setState(() {
-      List sortOptions = _selectedSort.split('-');
-      sortEntries<Drink>(
-        _drinks,
-        by: sortOptions[0],
-        ascending: sortOptions[1] == 'asc' ? true : false
-      );
-    });
+  List<Drink> get visibleDrinks {
+    List<Drink> filtered = [..._drinks];
+
+    if (_searchQuery.isNotEmpty) {
+      filtered = filtered.where((d) =>
+        d.name.toLowerCase().contains(_searchQuery.toLowerCase())
+      ).toList();
+    }
+
+    List options = _selectedSort.split('-');
+    sortEntries(
+      filtered,
+      by: options[0],
+      ascending: options[1] == 'asc',
+    );
+
+    return filtered;
   }
 
   void _loadDrinks() async {
@@ -55,7 +65,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
       _drinks = DrinkCache.all.where((d) => d.shopId == _shop.id).toList();
       _shop = _shop.copyWith(drinks: _drinks);
     });
-    _sortDrinks();
   }
 
   @override
@@ -76,10 +85,9 @@ class _ShopDetailPage extends State<ShopDetailPage> {
               onSelected: (value) async {
                 switch(value) {
                   case 'favorite':
-                    final updated = _shop.copyWith(isFavorite: !_shop.isFavorite);
-                    await supabase.from('shops').update({'is_favorite': !updated.isFavorite}).eq('id', updated.id);
+                    await supabase.from('shops').update({'is_favorite': !_shop.isFavorite}).eq('id', _shop.id);
                     setState(() {
-                      _shop.isFavorite = updated.isFavorite;
+                      _shop.isFavorite = !_shop.isFavorite;
                     });
                     break;
                   case 'edit':
@@ -245,33 +253,28 @@ class _ShopDetailPage extends State<ShopDetailPage> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  DropdownButton(
-                    value: _selectedSort,
-                    items: const [
-                      DropdownMenuItem(value: 'rating-desc', child: Text('Rating ↓')),
-                      DropdownMenuItem(value: 'rating-asc', child: Text('Rating ↑')),
-                      DropdownMenuItem(value: 'name-asc', child: Text('Name A–Z')),
-                      DropdownMenuItem(value: 'name-desc', child: Text('Name Z–A')),
-                      DropdownMenuItem(value: 'favorite-desc', child: Text('Favorites')),
-                    ],
-                    onChanged: (value) {
-                      setState(() => _selectedSort = value!);
-                      _sortDrinks();
-                    },
-                  ),
+              padding: const EdgeInsets.all(8),
+              child: FilterSortBar(
+                sortOptions: [
+                  SortOption('favorite', Icons.favorite),
+                  SortOption('rating', Icons.star),
+                  SortOption('name', Icons.sort_by_alpha),
+                  SortOption('createdAt', Icons.access_time),
                 ],
+                onSearchChanged: (query) {
+                  setState(() => _searchQuery = query);
+                },
+                onSortSelected: (sortKey) {
+                  setState(() => _selectedSort = sortKey);
+                }
               ),
             ),
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.only(bottom: 24),
-                itemCount: _drinks.length,
+                itemCount: visibleDrinks.length,
                 itemBuilder: (context, index) {
-                  final drink = _drinks[index];
+                  final drink = visibleDrinks[index];
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     child: Stack(
@@ -325,7 +328,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                             setState(() {
                                               _drinks = _drinks.map((d) => d.id == drink.id ? d.copyWith(isFavorite: !drink.isFavorite) : d).toList();
                                             });
-                                            _sortDrinks();
                                             break;
                                           case 'edit':
                                             await showDialog(
@@ -360,7 +362,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                               ),
                                             );
                                             break;
-                                          case 'delete':
+                                          case 'remove':
                                             final confirm = await showDialog<bool>(
                                               context: context,
                                               builder: (context) => AlertDialog(
@@ -376,6 +378,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                               await supabase.from('drinks').delete().eq('id', drink.id);
                                               setState(() {
                                                 _drinks.removeWhere((d) => d.id == drink.id);
+                                                DrinkCache.remove(drink.id!);
                                               });
                                             }
                                             break;
@@ -464,8 +467,10 @@ class _ShopDetailPage extends State<ShopDetailPage> {
 
                 if (response != null && context.mounted) {
                   final newDrink = Drink.fromJson(response);
-                  setState(() => _drinks.add(newDrink));
-                  _sortDrinks();
+                  setState(() {
+                     _drinks.add(newDrink);
+                     DrinkCache.add(newDrink);
+                  });
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Failed to add drink.'))

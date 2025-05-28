@@ -12,6 +12,7 @@ class Shop extends SortableEntry {
   String? notes;
   final List<Drink>? drinks;
   String? pinnedDrinkId;
+  final DateTime? _createdAt;
   final String? placeId; // future use maybe
   final String? brandSlug; // future use maybe
 
@@ -27,6 +28,9 @@ class Shop extends SortableEntry {
 
   @override
   bool get isFavorite => _isFavorite;
+
+  @override
+  DateTime get createdAt => _createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
 
   set isFavorite(bool val) => _isFavorite = val;
 
@@ -52,11 +56,13 @@ class Shop extends SortableEntry {
     this.notes,
     this.drinks = const [],
     this.pinnedDrinkId,
+    DateTime? createdAt,
     this.placeId,
     this.brandSlug,
   }) :  _name = name,
         _rating = rating,
-        _isFavorite = isFavorite;
+        _isFavorite = isFavorite,
+        _createdAt = createdAt;
 
   Shop copyWith({
     String? name,
@@ -66,6 +72,7 @@ class Shop extends SortableEntry {
     String? notes,
     List<Drink>? drinks,
     String? pinnedDrinkId,
+    DateTime? createdAt,
     String? placeId,
     String? brandSlug,
   }) {
@@ -78,6 +85,7 @@ class Shop extends SortableEntry {
       notes: notes ?? this.notes,
       drinks: drinks ?? this.drinks,
       pinnedDrinkId: pinnedDrinkId ?? this.pinnedDrinkId,
+      createdAt: createdAt,
       placeId: placeId ?? this.placeId,
       brandSlug: brandSlug ?? this.brandSlug,
     );
@@ -92,6 +100,9 @@ class Shop extends SortableEntry {
       notes: json['notes'] as String?,
       isFavorite: json['is_favorite'] ?? false,
       pinnedDrinkId: json['pinned_drink_id'] as String?,
+      createdAt: json['created_at'] != null
+        ? DateTime.parse(json['created_at'])
+        : null,
       placeId: json['place_id'],
       brandSlug: json['brand_slug'],
     );

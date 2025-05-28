@@ -7,6 +7,7 @@ class Drink extends SortableEntry {
   final double _rating;
   final String? notes;
   final bool _isFavorite;
+  final DateTime? _createdAt;
 
   @override
   String get name => _name;
@@ -17,16 +18,21 @@ class Drink extends SortableEntry {
   @override
   bool get isFavorite => _isFavorite;
 
+  @override
+  DateTime get createdAt => _createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+
   Drink({
     this.id,
     this.shopId,
     required String name,
-    required rating,
+    required double rating,
     this.notes,
-    required bool isFavorite,
+    bool isFavorite = false,
+    DateTime? createdAt,
   }) : _name = name,
        _rating = rating,
-       _isFavorite = isFavorite;
+       _isFavorite = isFavorite,
+       _createdAt = createdAt;
 
   factory Drink.fromJson(Map<String, dynamic> json) {
     return Drink(
@@ -36,6 +42,7 @@ class Drink extends SortableEntry {
       rating: (json['rating'] ?? 0).toDouble(),
       isFavorite: json['is_favorite'],
       notes: json['notes'],
+      createdAt: DateTime.parse(json['created_at'] ?? ''),
     );
   }
 
@@ -63,6 +70,7 @@ class Drink extends SortableEntry {
       rating: rating ?? this.rating,
       notes: notes ?? this.notes,
       isFavorite: isFavorite ?? this.isFavorite,
+      createdAt: createdAt,
     );
   }
 }

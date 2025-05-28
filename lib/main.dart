@@ -13,6 +13,7 @@ import 'package:collection/collection.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'models/drink.dart';
 import 'models/drink_cache.dart';
+import 'widgets/filter_sort_bar.dart';
 
 
 void main() async {
@@ -123,9 +124,27 @@ class _HomePageState extends State<HomePage> {
   final supabase = Supabase.instance.client;
   bool _isInitialLoading = false;
   bool _isRefreshing = false;
+  String _searchQuery = '';
+  String _selectedSort = 'favorite-asc';
   List<Shop> _shops = [];
-  
 
+  List<Shop> get visibleShops {
+    List<Shop> filtered = [..._shops];
+
+    if (_searchQuery.isNotEmpty) {
+      filtered = filterEntries(filtered, searchQuery: _searchQuery);
+    }
+
+    List<String> options = _selectedSort.split('-');
+    sortEntries(
+      filtered,
+      by: options.first,
+      ascending: options[1] == 'asc',
+    );
+
+    return filtered;
+  }
+  
   Future<void> _loadShops({bool isBackgroundRefresh = false}) async {
     final userId = widget.session.user.id;
 
@@ -155,9 +174,7 @@ class _HomePageState extends State<HomePage> {
         }
       }));
 
-      setState(() {
-        _shops = updatedShops;
-      });
+      setState(() => _shops = updatedShops);
     } catch(e) {
       print('Error loading shops: $e');
     } finally {
@@ -262,27 +279,6 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Your Bobadex'),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              setState(() {
-                List sortOptions = value.split('-');
-                sortEntries<Shop>(
-                  _shops,
-                  by: sortOptions[0],
-                  ascending: sortOptions[1] == 'asc' ? true : false
-                );
-              });
-            },
-            itemBuilder: (_) => [
-              const PopupMenuItem(value: 'rating-desc', child: Text('Rating ↓')),
-              const PopupMenuItem(value: 'rating-asc', child: Text('Rating ↑')),
-              const PopupMenuItem(value: 'name-asc', child: Text('Name A–Z')),
-              const PopupMenuItem(value: 'name-desc', child: Text('Name Z–A')),
-              const PopupMenuItem(value: 'favorite-desc', child: Text('Favorites')),
-            ],
-          ),
-        ],
       ),
       drawer: Drawer(
         child: ListView(
@@ -317,66 +313,85 @@ class _HomePageState extends State<HomePage> {
       ),
       body: _isInitialLoading
         ? const Center(child: CircularProgressIndicator())
-        : Stack(
+        : Column(
             children: [
-              _shops.isEmpty
-                ? const Center(child: Text('No shops yet. Tap + to add!'))
-                : GridView.builder(
-                    itemCount: _shops.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 1,
-                    ),
-                    itemBuilder: (context, index) {
-                      final shop = _shops[index];
-                      return GestureDetector(
-                        onTap: () async => _navigateToShop(shop),
-                        child: Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: shop.imagePath == null || shop.imagePath!.isEmpty
-                                    ? const Center(child: Icon(Icons.store, size: 40, color: Colors.grey))
-                                    : (shop.imagePath != null && shop.imagePath!.startsWith('/')) 
-                                      ? Image.file(
-                                          File(shop.imagePath!),
-                                          width: double.infinity,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return const Center(child: Icon(Icons.broken_image));
-                                          },
-                                        )
-                                      : CachedNetworkImage(
-                                          imageUrl: shop.thumbUrl,
-                                          placeholder: (context, url) => CircularProgressIndicator(),
-                                          fit: BoxFit.cover,
-                                          errorWidget: (context, url, error) => Icon(Icons.broken_image)
-                                        )
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: FilterSortBar(
+                  sortOptions: [
+                    SortOption('favorite', Icons.favorite),
+                    SortOption('rating', Icons.star),
+                    SortOption('name', Icons.sort_by_alpha),
+                    SortOption('createdAt', Icons.access_time),
+                  ],
+                  onSearchChanged: (query) {
+                    setState(() => _searchQuery = query);
+                  },
+                  onSortSelected: (sortKey) {
+                    setState(() => _selectedSort = sortKey);
+                  }
+                ),
+              ),
+              Expanded(
+                child: _shops.isEmpty
+                  ? const Center(child: Text('No shops yet. Tap + to add!'))
+                  : GridView.builder(
+                      itemCount: visibleShops.length,
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 1,
+                      ),
+                      itemBuilder: (context, index) {
+                        final shop = visibleShops[index];
+                        return GestureDetector(
+                          onTap: () async => _navigateToShop(shop),
+                          child: Card(
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: shop.imagePath == null || shop.imagePath!.isEmpty
+                                      ? const Center(child: Icon(Icons.store, size: 40, color: Colors.grey))
+                                      : (shop.imagePath != null && shop.imagePath!.startsWith('/')) 
+                                        ? Image.file(
+                                            File(shop.imagePath!),
+                                            width: double.infinity,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return const Center(child: Icon(Icons.broken_image));
+                                            },
+                                          )
+                                        : CachedNetworkImage(
+                                            imageUrl: shop.thumbUrl,
+                                            placeholder: (context, url) => CircularProgressIndicator(),
+                                            fit: BoxFit.cover,
+                                            errorWidget: (context, url, error) => Icon(Icons.broken_image)
+                                          )
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  '${shop.name} - ⭐ ${shop.rating.toStringAsFixed(1)}',
-                                  style: const TextStyle(fontSize: 12),
-                                  textAlign: TextAlign.center,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '${shop.name} - ⭐ ${shop.rating.toStringAsFixed(1)}',
+                                    style: const TextStyle(fontSize: 12),
+                                    textAlign: TextAlign.center,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    ),
+              ),
               if (_isRefreshing)
                 Positioned(
                   top: 8,

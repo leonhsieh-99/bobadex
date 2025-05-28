@@ -2,6 +2,7 @@ abstract class SortableEntry {
   String get name;
   double get rating;
   bool get isFavorite;
+  DateTime get createdAt;
 }
 
 void sortEntries<T extends SortableEntry>(
@@ -23,8 +24,21 @@ void sortEntries<T extends SortableEntry>(
         if (a.isFavorite && !b.isFavorite) return -1;
         if (!a.isFavorite && b.isFavorite) return 1;
         return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      case 'createdAt':
+        return ascending
+          ? a.createdAt.compareTo(b.createdAt)
+          : b.createdAt.compareTo(a.createdAt);
       default:
         return 0;
     }
   });
+}
+
+List<T> filterEntries<T extends SortableEntry>(
+List<T> entries, {
+  required String searchQuery,
+}) {
+  return entries = entries.where((entry) => 
+    entry.name.toLowerCase().contains(searchQuery.toLowerCase())
+  ).toList();
 }
