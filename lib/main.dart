@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:bobadex/pages/settings_page.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'widgets/add_edit_shop_dialog.dart';
@@ -14,6 +15,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'models/drink.dart';
 import 'models/drink_cache.dart';
 import 'widgets/filter_sort_bar.dart';
+import 'models/user_cache.dart';
 
 
 void main() async {
@@ -79,6 +81,13 @@ class _BobadexAppState extends State<BobadexApp> {
       } catch (e) {
         print('Error loading drinks: $e');
       }
+
+      // load user info
+      try {
+        UserCache.loadFromSupbase();
+      } catch (e) {
+        print('Error loading user settings: $e');
+      }
       
       if (!_isReady && refreshedSession != null) {
         setState(() {
@@ -104,10 +113,16 @@ class _BobadexAppState extends State<BobadexApp> {
       title: 'Bobadex',
       theme: ThemeData(
         appBarTheme: AppBarTheme(
-          backgroundColor: Colors.grey.shade50,
+          backgroundColor: UserCache.themMaterial.shade50,
           foregroundColor: Colors.black,
         ),
-        scaffoldBackgroundColor: Colors.grey.shade50,
+        scaffoldBackgroundColor: UserCache.themMaterial.shade50,
+        cardTheme: CardThemeData(
+          color: UserCache.themMaterial.shade100,
+        ),
+        dialogTheme: DialogThemeData(
+          backgroundColor: UserCache.themMaterial.shade50,
+        ),
       ),
       home: !_isReady
         ? const SplashPage()
@@ -284,22 +299,24 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Your Bobadex'),
+        title: Text('${UserCache.displayName}\'s Bobadex'),
       ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.brown),
+              decoration: BoxDecoration(color: Color.fromARGB(255, 45, 42, 42)),
               child: Text('Bobadex Menu', style: TextStyle(color: Colors.grey)),
             ),
             ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('Settings'),
               onTap: () {
-                // TODO: settings page
-                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsPage())
+                );
               },
             ),
             ListTile(
@@ -356,7 +373,6 @@ class _HomePageState extends State<HomePage> {
                           return GestureDetector(
                             onTap: () async => _navigateToShop(shop),
                             child: Card(
-                              color: Colors.grey.shade100,
                               elevation: 2,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               child: Padding(
