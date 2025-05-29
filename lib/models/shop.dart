@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'drink.dart';
 import '../helpers/sortable_entry.dart';
@@ -10,7 +9,6 @@ class Shop extends SortableEntry {
   String? imagePath;  // raw Supabase path
   bool _isFavorite;
   String? notes;
-  final List<Drink>? drinks;
   String? pinnedDrinkId;
   final DateTime? _createdAt;
   final String? placeId; // future use maybe
@@ -44,9 +42,6 @@ class Shop extends SortableEntry {
 
   bool get hasImage => imagePath != null && imagePath!.isNotEmpty;
 
-  Drink? get pinnedDrink =>
-    drinks?.firstWhereOrNull((d) => d.id == pinnedDrinkId);
-
   Shop({
     this.id,
     required String name,
@@ -54,7 +49,6 @@ class Shop extends SortableEntry {
     this.imagePath,
     bool isFavorite = false,
     this.notes,
-    this.drinks = const [],
     this.pinnedDrinkId,
     DateTime? createdAt,
     this.placeId,
@@ -83,7 +77,6 @@ class Shop extends SortableEntry {
       imagePath: imagePath ?? this.imagePath,
       isFavorite: isFavorite ?? this.isFavorite,
       notes: notes ?? this.notes,
-      drinks: drinks ?? this.drinks,
       pinnedDrinkId: pinnedDrinkId ?? this.pinnedDrinkId,
       createdAt: createdAt,
       placeId: placeId ?? this.placeId,
