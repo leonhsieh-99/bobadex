@@ -104,10 +104,10 @@ class _BobadexAppState extends State<BobadexApp> {
       title: 'Bobadex',
       theme: ThemeData(
         appBarTheme: AppBarTheme(
-          backgroundColor: Colors.cyan.shade50,
+          backgroundColor: Colors.grey.shade50,
           foregroundColor: Colors.black,
         ),
-        scaffoldBackgroundColor: Colors.cyan.shade50,
+        scaffoldBackgroundColor: Colors.grey.shade50,
       ),
       home: !_isReady
         ? const SplashPage()
@@ -292,7 +292,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             const DrawerHeader(
               decoration: BoxDecoration(color: Colors.brown),
-              child: Text('Bobadex Menu', style: TextStyle(color: Colors.white)),
+              child: Text('Bobadex Menu', style: TextStyle(color: Colors.grey)),
             ),
             ListTile(
               leading: const Icon(Icons.settings),
@@ -356,7 +356,7 @@ class _HomePageState extends State<HomePage> {
                           return GestureDetector(
                             onTap: () async => _navigateToShop(shop),
                             child: Card(
-                              color: Colors.cyan.shade100,
+                              color: Colors.grey.shade100,
                               elevation: 2,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               child: Padding(
@@ -452,7 +452,7 @@ class _HomePageState extends State<HomePage> {
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
                       ),
                     ),
                   ),

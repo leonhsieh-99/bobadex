@@ -39,12 +39,21 @@ create table shop_media (
   created_at timestamptz default now()
 );
 
+-- Users table
 create table users (
   id uuid primary key references auth.users(id) on delete cascade,
-  username text unique not null,        -- shown in profile, search, friends
-  display_name text,                    -- optional: allows name separate from @username
-  profile_image_path text,              -- optional: custom profile photo
-  bio text,                             -- optional: for future social expansion
+  username text unique not null,
+  display_name text,
+  profile_image_path text,
+  bio text,
+  created_at timestamptz default now()
+);
+
+-- User settings table
+create table user_settings (
+  user_id uuid primary key references users(id) on delete cascade,
+  theme_slug text default 'grey',
+  grid_columns int default 3,
   created_at timestamptz default now()
 );
 
