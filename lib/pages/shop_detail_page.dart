@@ -97,9 +97,16 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                           children: [
                             Row(
                               children: [
-                                Text(
-                                  _shop.name,
-                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                Flexible(
+                                  child: Text(
+                                    _shop.name,
+                                    style: const TextStyle(
+                                      fontSize: 20, 
+                                      fontWeight: FontWeight.bold,
+                                      overflow: TextOverflow.clip,
+                                    ),
+                                    maxLines: 1,
+                                  ),
                                 ),
                                 PopupMenuButton<String>(
                                   icon: const Icon(Icons.more_vert, size: 20),
@@ -368,7 +375,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                     if (drink.isFavorite) Icon(
                                       Icons.favorite,
                                       size: 20,
-                                      color: Colors.redAccent,
+                                      color: Colors.deepPurpleAccent,
                                     ),
                                     PopupMenuButton<String>(
                                       icon: const Icon(Icons.more_horiz, size: 20),

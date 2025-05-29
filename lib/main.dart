@@ -102,7 +102,13 @@ class _BobadexAppState extends State<BobadexApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Bobadex',
-      theme: ThemeData(primarySwatch: Colors.brown),
+      theme: ThemeData(
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.cyan.shade50,
+          foregroundColor: Colors.black,
+        ),
+        scaffoldBackgroundColor: Colors.cyan.shade50,
+      ),
       home: !_isReady
         ? const SplashPage()
         : _session == null
@@ -335,61 +341,100 @@ class _HomePageState extends State<HomePage> {
               Expanded(
                 child: _shops.isEmpty
                   ? const Center(child: Text('No shops yet. Tap + to add!'))
-                  : GridView.builder(
-                      itemCount: visibleShops.length,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 1,
-                      ),
-                      itemBuilder: (context, index) {
-                        final shop = visibleShops[index];
-                        return GestureDetector(
-                          onTap: () async => _navigateToShop(shop),
-                          child: Card(
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            child: Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Expanded(
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: shop.imagePath == null || shop.imagePath!.isEmpty
-                                      ? const Center(child: Icon(Icons.store, size: 40, color: Colors.grey))
-                                      : (shop.imagePath != null && shop.imagePath!.startsWith('/')) 
-                                        ? Image.file(
-                                            File(shop.imagePath!),
-                                            width: double.infinity,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) {
-                                              return const Center(child: Icon(Icons.broken_image));
-                                            },
-                                          )
-                                        : CachedNetworkImage(
-                                            imageUrl: shop.thumbUrl,
-                                            placeholder: (context, url) => CircularProgressIndicator(),
-                                            fit: BoxFit.cover,
-                                            errorWidget: (context, url, error) => Icon(Icons.broken_image)
-                                          )
+                    : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: GridView.builder(
+                        itemCount: visibleShops.length,
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 4,
+                          mainAxisSpacing: 4,
+                          childAspectRatio: 1,
+                        ),
+                        itemBuilder: (context, index) {
+                          final shop = visibleShops[index];
+                          return GestureDetector(
+                            onTap: () async => _navigateToShop(shop),
+                            child: Card(
+                              color: Colors.cyan.shade100,
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Stack(
+                                  children: [
+                                    Positioned(
+                                      top: 4,
+                                      left: 4,
+                                      child: ConstrainedBox(
+                                        constraints: const BoxConstraints(maxWidth: 85),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              shop.name,
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              textAlign: TextAlign.left,
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
+                                            ),
+                                            Text(
+                                              '⭐ ${shop.rating.toStringAsFixed(1)}',
+                                              style: const TextStyle(fontSize: 11),
+                                              textAlign: TextAlign.left,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    '${shop.name} - ⭐ ${shop.rating.toStringAsFixed(1)}',
-                                    style: const TextStyle(fontSize: 12),
-                                    textAlign: TextAlign.center,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
+                                    Positioned(
+                                      bottom: 8,
+                                      right: 8,
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: shop.imagePath == null || shop.imagePath!.isEmpty
+                                          ? const Center(child: Icon(Icons.store, size: 40, color: Colors.grey))
+                                          : (shop.imagePath != null && shop.imagePath!.startsWith('/')) 
+                                            ? SizedBox(
+                                                width: 40,
+                                                height: 60,
+                                                child: Image.file(
+                                                  File(shop.imagePath!),
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error, stackTrace) {
+                                                    return const Center(child: Icon(Icons.broken_image));
+                                                  },
+                                                ),
+                                              )
+                                            : SizedBox(
+                                                width: 40,
+                                                height: 60,
+                                                child: CachedNetworkImage(
+                                                  imageUrl: shop.thumbUrl,
+                                                  fit: BoxFit.cover,
+                                                  placeholder: (context, url) => CircularProgressIndicator(),
+                                                  errorWidget: (context, url, error) => Icon(Icons.broken_image),
+                                                ),
+                                              )
+                                      ),
+                                    ),
+                                    if (shop.isFavorite)
+                                    const Positioned(
+                                      top: 0,
+                                      right: 0,
+                                      child: Icon(Icons.favorite, color: Colors.deepPurpleAccent, size: 20),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
               ),
               if (_isRefreshing)
