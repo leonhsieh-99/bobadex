@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../config/constants.dart';
+import '../state/user_state.dart';
 
 class SortOption {
   final String key;
@@ -36,33 +39,41 @@ class _FilterSortBarState extends State<FilterSortBar> {
 
   @override
   Widget build(BuildContext context) {
+    final userState = context.watch<UserState>();
     return Row(
       children: [
         // search bar
         Expanded(
-          flex: 3,
-          child: TextField(
-            onChanged: widget.onSearchChanged,
-            decoration: InputDecoration(
-              hintText: 'Search',
-              prefixIcon: const Icon(Icons.search),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          flex: 4,
+          child:SizedBox(
+            height: 36,
+            child: TextField(
+              onChanged: widget.onSearchChanged,
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: 'Search',
+                prefixIcon: const Icon(Icons.search, size: 18),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
             ),
           ),
         ),
 
         // Asc/desc icon
-        IconButton(
-          icon: Icon(
-            _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
-            color: Colors.deepPurpleAccent,
-          ),
-          tooltip: _isAscending ? 'Sort ascending' : 'Sort descending',
-          onPressed: () {
+        GestureDetector(
+          onTap: () {
             setState(() => _isAscending = !_isAscending);
             widget.onSortSelected(_selectedSortKey + (_isAscending ? '-asc' : '-desc'));
           },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10), // very tight spacing
+            child: Icon(
+              _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+              color: Constants.getThemeColor(userState.themeSlug!),
+              size: 20,
+            ),
+          ),
         ),
 
         // Vertical divider
@@ -76,14 +87,16 @@ class _FilterSortBarState extends State<FilterSortBar> {
             children: [
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.only(right: 20),
+                padding: const EdgeInsets.only(right: 12),
                 child: Row(
                   children: widget.sortOptions.map((opt) {
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: ChoiceChip(
-                        label: Icon(opt.icon, size: 20),
+                        label: Icon(opt.icon, size: 16),
                         selected: _selectedSortKey == opt.key,
+                        backgroundColor: Constants.getThemeColor(userState.themeSlug!).shade50,
+                        selectedColor: Constants.getThemeColor(userState.themeSlug!).shade100,
                         showCheckmark: false,
                         onSelected: (_) {
                           setState(() => _selectedSortKey = opt.key);
@@ -94,13 +107,6 @@ class _FilterSortBarState extends State<FilterSortBar> {
                   }).toList(),
                 ),
               ),
-              Positioned(
-                right: 4,
-                top: 0,
-                bottom: 0,
-                child: Icon(Icons.chevron_right, size: 16, color: Colors.grey),
-              )
-
             ],
           ),
         ),

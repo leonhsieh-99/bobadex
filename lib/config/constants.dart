@@ -20,4 +20,6 @@ class Constants {
 
   static const defaultGridColumns = 3;
   static const defaultTheme = 'grey';
+  static const heartColor = Color(0xFFE49B9B);
+  static const starColor = Color(0xFFF8EE9B);
 }

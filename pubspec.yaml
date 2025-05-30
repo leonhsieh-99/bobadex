@@ -38,6 +38,7 @@ dependencies:
   cached_network_image: ^3.3.0
   shimmer: ^3.0.0
   provider: ^6.1.5
+  flutter_svg: ^2.1.0
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -68,6 +69,9 @@ flutter:
 
   assets:
     - .env
+    - lib/assets/icons/star.svg
+    - lib/assets/icons/heart.svg
+    - lib/assets/icons/heart_outlined.svg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -13,6 +13,7 @@ import '../state/user_state.dart';
 import '../state/shop_state.dart';
 import '../widgets/add_edit_shop_dialog.dart';
 import 'auth_page.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class HomePage extends StatefulWidget {
   final Session session;
@@ -204,12 +205,22 @@ class _HomePageState extends State<HomePage> {
                                           overflow: TextOverflow.ellipsis,
                                           maxLines: 1,
                                         ),
-                                        Text(
-                                          '⭐ ${shop.rating.toStringAsFixed(1)}',
-                                          style: const TextStyle(fontSize: 11),
-                                          textAlign: TextAlign.left,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
+                                        Row(
+                                          children: [
+                                            SvgPicture.asset(
+                                              'lib/assets/icons/star.svg',
+                                              width: 12,
+                                              height: 12,
+                                            ),
+                                            SizedBox(width: 2),
+                                            Text(
+                                              shop.rating.toStringAsFixed(1),
+                                              style: const TextStyle(fontSize: 12),
+                                              textAlign: TextAlign.left,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ]
+                                        )
                                       ],
                                     ),
                                   ),
@@ -246,10 +257,14 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                 ),
                                 if (shop.isFavorite)
-                                const Positioned(
+                                Positioned(
                                   top: 0,
                                   right: 0,
-                                  child: Icon(Icons.favorite, color: Colors.deepPurpleAccent, size: 20),
+                                  child: SvgPicture.asset(
+                                    'lib/assets/icons/heart.svg',
+                                    width: 14,
+                                    height: 14,
+                                  ),
                                 ),
                               ],
                             ),
