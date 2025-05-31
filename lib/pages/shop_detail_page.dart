@@ -436,12 +436,14 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                             ),
                                             children: [
                                               Padding(
-                                                padding: EdgeInsets.symmetric(horizontal: 12),
-                                                child: Padding(
-                                                  padding: EdgeInsets.fromLTRB(12, 4, 12, 12),
+                                                padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                                child: Align(
+                                                  alignment: Alignment.centerLeft,
                                                   child: Text(
-                                                    drink.notes ?? 'No notes yet...',
-                                                    style: const TextStyle(fontSize: 14),
+                                                    (drink.notes == null || drink.notes!.isEmpty)
+                                                    ? 'No notes yet...'
+                                                    : drink.notes!,
+                                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w300),
                                                   ),
                                                 )
                                               ),
