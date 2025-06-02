@@ -12,6 +12,7 @@ import '../widgets/filter_sort_bar.dart';
 import '../state/user_state.dart';
 import '../state/shop_state.dart';
 import '../widgets/add_edit_shop_dialog.dart';
+import '../config/constants.dart';
 import 'auth_page.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -65,7 +66,7 @@ class _HomePageState extends State<HomePage> {
     );
 
     // Optimistically update UI
-    shopState.addShop(tempShop);
+    shopState.add(tempShop);
 
     // then insert shop into db
     try {
@@ -80,14 +81,14 @@ class _HomePageState extends State<HomePage> {
 
       final insertedShop = Shop.fromJson(insertResponse.first);
 
-      shopState.replaceShop(tempId, insertedShop);
+      shopState.replace(tempId, insertedShop);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Success'))
       );
     } catch (e) {
       print('❌ Insert failed: $e');
-      shopState.removeShop(tempId);
+      shopState.remove(tempId);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to add shop: ${e.toString()}'))
       );
@@ -107,17 +108,18 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final userState = context.watch<UserState>();
     return Scaffold(
       appBar: AppBar(
-        title: Text('${context.watch<UserState>().displayName}\'s Bobadex'),
+        title: Text('${userState.displayName}\'s Bobadex'),
       ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Color.fromARGB(255, 45, 42, 42)),
-              child: Text('Bobadex Menu', style: TextStyle(color: Colors.grey)),
+            DrawerHeader(
+              decoration: BoxDecoration(color: Constants.getThemeColor(userState.themeSlug ?? Constants.defaultTheme).shade100),
+              child: Text('Bobadex Menu', style: TextStyle(color: Colors.black)),
             ),
             ListTile(
               leading: const Icon(Icons.settings),

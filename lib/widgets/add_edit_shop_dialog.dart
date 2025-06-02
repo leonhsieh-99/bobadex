@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import '../models/shop.dart';
-import '../helpers/image_picker_helper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'rating_picker.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
+import '../helpers/image_picker_helper.dart';
+import '../helpers/image_uploader_helper.dart';
 
 class AddOrEditShopDialog extends StatefulWidget {
   final Shop? initialData;
@@ -59,57 +59,17 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
 
     try {
       bool uploadedNewImage = false;
-
       if (newImagePath != null && File(newImagePath).existsSync()) {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        supabasePath = 'shop-gallery/$timestamp.jpg';
-
-        final fullBytes = await FlutterImageCompress.compressWithFile(
-          minWidth: 800,
-          newImagePath,
-          quality: 80,
-        );
-
-        final thumbBytes = await FlutterImageCompress.compressWithFile(
-          newImagePath,
-          minWidth: 300,
-          quality: 70,
-        );
-
         try {
-          await Supabase.instance.client.storage
-              .from('media-uploads')
-              .uploadBinary(
-                supabasePath,
-                fullBytes!,
-                fileOptions: const FileOptions(
-                  contentType: 'image/jpeg',
-                  cacheControl: 'public, max-age=31536000',
-                ),
-              );
+          supabasePath = await ImageUploaderHelper.uploadImage(
+            file: File(newImagePath),
+            folder: 'shop-gallery',
+            generateThumbnail: true,
+          );
         } catch (e) {
           print('❌ Full image upload failed: $e');
           throw e;
         }
-
-        await Future.delayed(const Duration(milliseconds: 200)); // mitigate overload
-
-        try {
-          await Supabase.instance.client.storage
-              .from('media-uploads')
-              .uploadBinary(
-                'thumbs/$supabasePath',
-                thumbBytes!,
-                fileOptions: const FileOptions(
-                  contentType: 'image/jpeg',
-                  cacheControl: 'public, max-age=31536000',
-                ),
-              );
-        } catch (e) {
-          print('❌ Thumbnail upload failed: $e');
-          throw e;
-        }
-
         uploadedNewImage = true;
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -123,10 +83,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
           oldImagePath.isNotEmpty &&
           !oldImagePath.startsWith('/')) {
         try {
-          await Supabase.instance.client.storage.from('media-uploads').remove([
-            oldImagePath,
-            'thumbs/$oldImagePath',
-          ]);
+          ImageUploaderHelper.deleteImage(oldImagePath);
           print('Deleted old image: $oldImagePath');
         } catch (e) {
           print('Failed to delete old image: $e');
@@ -147,17 +104,17 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
       // Submit to parent
       widget.onSubmit(
         widget.initialData?.copyWith(
-              name: _nameController.text.trim(),
-              rating: _rating,
-              imagePath: supabasePath,
-              notes: _notesController.text.trim(),
-            ) ??
-            Shop(
-              name: _nameController.text.trim(),
-              rating: _rating,
-              imagePath: supabasePath,
-              notes: _notesController.text.trim(),
-            ),
+          name: _nameController.text.trim(),
+          rating: _rating,
+          imagePath: supabasePath,
+          notes: _notesController.text.trim(),
+        ) ??
+        Shop(
+          name: _nameController.text.trim(),
+          rating: _rating,
+          imagePath: supabasePath,
+          notes: _notesController.text.trim(),
+        ),
       );
 
       if (context.mounted) Navigator.pop(context);

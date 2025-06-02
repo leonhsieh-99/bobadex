@@ -474,87 +474,126 @@ class _ShopDetailPage extends State<ShopDetailPage> {
               Positioned(
                 top: 40,
                 right: 4,
-                child: PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_horiz, size: 18),
-                  onSelected: (value) async {
-                    switch(value) {
-                      case 'favorite':
-                        final response = await supabase.from('shops').update({'is_favorite': !shop.isFavorite}).eq('id', shop.id);
-                        shop.isFavorite = !shop.isFavorite;
-                        if (response != null && context.mounted) {
-                          final updated = Shop.fromJson(response);
-                          _shopState?.updateShop(updated);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to favorite shop.')),
-                          );
+                child: Row(
+                  children: [ 
+                    GestureDetector(
+                      onTap: () async {
+                        final updated = shop.copyWith(isFavorite: !shop.isFavorite);
+                        _shopState?.update(updated); // optimistic update
+                        try {
+                          await supabase
+                            .from('shops')
+                            .update({'is_favorite': updated.isFavorite})
+                            .eq('id', shop.id);
+                        } catch (_) {
+                          _shopState?.update(shop); // rollback on error
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed to update favorite status.')),
+                            );
+                          }
                         }
-                        break;
-                      case 'edit':
-                        await showDialog(
-                          context: context,
-                          builder: (_) => AddOrEditShopDialog(
-                            initialData: shop,
-                            onSubmit: (updatedshop) async {
-                              final updatedPayload = {
-                                'name': updatedshop.name,
-                                'rating': updatedshop.rating,
-                                'image_path': updatedshop.imagePath,
-                                'notes': updatedshop.notes,
-                              };
-                              final response = await supabase
-                                .from('shops')
-                                .update(updatedPayload)
-                                .eq('id', updatedshop.id)
-                                .select()
-                                .single();
-                              
-                              if (response != null && context.mounted) {
-                                final updated = Shop.fromJson(response);
-                                _shopState?.updateShop(updated);
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Failed to update shop.')),
-                                );
-                              }
-                            },
+                      },
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          if (!shop.isFavorite)
+                            SvgPicture.asset(
+                              'lib/assets/icons/heart.svg',
+                              width: 16,
+                              height: 16,
+                              colorFilter: ColorFilter.mode(Colors.white.withOpacity(.3), BlendMode.srcIn),
+                            ),
+                          SvgPicture.asset(
+                            shop.isFavorite 
+                              ? 'lib/assets/icons/heart.svg'
+                              : 'lib/assets/icons/heart_outlined.svg',
+                            width: 16,
+                            height: 16,
                           ),
-                        );
-                        break;
-                      case 'delete':
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Delete shop'),
-                            content: const Text('Are you sure you want to remove this shop ?'),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
-                            ],
-                          )
-                        );
-                        if (confirm == true) {
-                          await supabase.from('shops').delete().eq('id', shop.id);
-                          _shopState?.removeShop(shop.id!);
-                          if (context.mounted) Navigator.pop(context);
+                        ],
+                      )
+                    ),
+                    PopupMenuButton<String>(
+                      icon: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Container(
+                            width: 20,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(.3),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          const Icon(Icons.more_horiz, size: 18, color: Colors.black),
+                        ]
+                      ),
+                      onSelected: (value) async {
+                        switch(value) {
+                          case 'edit':
+                            await showDialog(
+                              context: context,
+                              builder: (_) => AddOrEditShopDialog(
+                                initialData: shop,
+                                onSubmit: (updatedshop) async {
+                                  final updatedPayload = {
+                                    'name': updatedshop.name,
+                                    'rating': updatedshop.rating,
+                                    'image_path': updatedshop.imagePath,
+                                    'notes': updatedshop.notes,
+                                  };
+                                  final response = await supabase
+                                    .from('shops')
+                                    .update(updatedPayload)
+                                    .eq('id', updatedshop.id)
+                                    .select()
+                                    .single();
+                                  
+                                  if (response != null && context.mounted) {
+                                    final updated = Shop.fromJson(response);
+                                    _shopState?.update(updated);
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Failed to update shop.')),
+                                    );
+                                  }
+                                },
+                              ),
+                            );
+                            break;
+                          case 'delete':
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Delete shop'),
+                                content: const Text('Are you sure you want to remove this shop ?'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                  TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+                                ],
+                              )
+                            );
+                            if (confirm == true) {
+                              await supabase.from('shops').delete().eq('id', shop.id);
+                              _shopState?.remove(shop.id!);
+                              if (context.mounted) Navigator.pop(context);
+                            }
+                            break;
                         }
-                        break;
-                    }
-                  },
-                  itemBuilder: (_) => [
-                    PopupMenuItem(
-                      value: 'favorite',
-                      child: Text(shop.isFavorite ? 'Unfavorite' : 'Favorite'),
+                      },
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Text('Edit'),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text('Delete'),
+                        ),
+                      ]
                     ),
-                    PopupMenuItem(
-                      value: 'edit',
-                      child: Text('Edit'),
-                    ),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Text('Delete'),
-                    ),
-                  ]
+                  ],
                 ),
               ),
             ]

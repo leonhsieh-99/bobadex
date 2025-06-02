@@ -11,12 +11,12 @@ class ShopState extends ChangeNotifier {
     return _shops.firstWhere((s) => s.id == id);
   }
 
-  void addShop(Shop shop) {
+  void add(Shop shop) {
     _shops.add(shop);
     notifyListeners();
   }
 
-  void updateShop(Shop updated) {
+  void update(Shop updated) {
     final index = _shops.indexWhere((s) => s.id == updated.id);
     if (index != -1) {
       _shops[index] = updated;
@@ -24,12 +24,12 @@ class ShopState extends ChangeNotifier {
     }
   }
 
-  void removeShop(String id) {
+  void remove(String id) {
     _shops.removeWhere((s) => s.id == id);
     notifyListeners();
   }
 
-  void replaceShop(String oldId, Shop newShop) {
+  void replace(String oldId, Shop newShop) {
     final index = all.indexWhere((s) => s.id == oldId);
     if (index != -1) {
       all[index] = newShop;
