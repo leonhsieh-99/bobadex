@@ -39,7 +39,7 @@ class _FilterSortBarState extends State<FilterSortBar> {
 
   @override
   Widget build(BuildContext context) {
-    final userState = context.watch<UserState>();
+    final user = context.watch<UserState>().user;
     return Row(
       children: [
         // search bar
@@ -70,7 +70,7 @@ class _FilterSortBarState extends State<FilterSortBar> {
             padding: const EdgeInsets.symmetric(horizontal: 10), // very tight spacing
             child: Icon(
               _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
-              color: Constants.getThemeColor(userState.themeSlug!),
+              color: Constants.getThemeColor(user.themeSlug),
               size: 20,
             ),
           ),
@@ -95,8 +95,8 @@ class _FilterSortBarState extends State<FilterSortBar> {
                       child: ChoiceChip(
                         label: Icon(opt.icon, size: 16),
                         selected: _selectedSortKey == opt.key,
-                        backgroundColor: Constants.getThemeColor(userState.themeSlug!).shade50,
-                        selectedColor: Constants.getThemeColor(userState.themeSlug!).shade100,
+                        backgroundColor: Constants.getThemeColor(user.themeSlug).shade50,
+                        selectedColor: Constants.getThemeColor(user.themeSlug).shade100,
                         showCheckmark: false,
                         onSelected: (_) {
                           setState(() => _selectedSortKey = opt.key);

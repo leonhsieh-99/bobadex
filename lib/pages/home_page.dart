@@ -108,17 +108,17 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final userState = context.watch<UserState>();
+    final user = context.watch<UserState>().user;
     return Scaffold(
       appBar: AppBar(
-        title: Text('${userState.displayName}\'s Bobadex'),
+        title: Text('${user.firstName}\'s Bobadex'),
       ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(color: Constants.getThemeColor(userState.themeSlug ?? Constants.defaultTheme).shade100),
+              decoration: BoxDecoration(color: Constants.getThemeColor(user.themeSlug).shade100),
               child: Text('Bobadex Menu', style: TextStyle(color: Colors.black)),
             ),
             ListTile(

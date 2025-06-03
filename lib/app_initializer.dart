@@ -75,7 +75,8 @@ class _AppInitializerState extends State<AppInitializer> {
   @override
   Widget build(BuildContext context) {
     final userState = context.watch<UserState>();
-    final themeColor = Constants.getThemeColor(userState.themeSlug ?? Constants.defaultTheme);
+    final user = userState.user;
+    final themeColor = Constants.getThemeColor(user.themeSlug);
 
     return MaterialApp(
       title: 'Bobadex',

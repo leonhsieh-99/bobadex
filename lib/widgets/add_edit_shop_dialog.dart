@@ -1,4 +1,6 @@
+import 'package:bobadex/state/shop_state.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'dart:io';
 import '../models/shop.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,12 +10,12 @@ import '../helpers/image_picker_helper.dart';
 import '../helpers/image_uploader_helper.dart';
 
 class AddOrEditShopDialog extends StatefulWidget {
-  final Shop? initialData;
+  final Shop? shop;
   final void Function(Shop) onSubmit;
 
   const AddOrEditShopDialog ({
     super.key,
-    this.initialData,
+    this.shop,
     required this.onSubmit,
   });
 
@@ -34,9 +36,9 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.initialData?.name ?? '');
-    _notesController = TextEditingController(text: widget.initialData?.notes ?? '');
-    _rating = widget.initialData?.rating ?? 0;
+    _nameController = TextEditingController(text: widget.shop?.name ?? '');
+    _notesController = TextEditingController(text: widget.shop?.notes ?? '');
+    _rating = widget.shop?.rating ?? 0;
   }
 
   @override
@@ -53,7 +55,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
 
     setState(() => _isSubmitting = true);
     final newImagePath = _selectedImage?.path;
-    final oldImagePath = widget.initialData?.imagePath;
+    final oldImagePath = widget.shop?.imagePath;
 
     String supabasePath = '';
 
@@ -68,7 +70,6 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
           );
         } catch (e) {
           print('❌ Full image upload failed: $e');
-          throw e;
         }
         uploadedNewImage = true;
 
@@ -103,7 +104,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
 
       // Submit to parent
       widget.onSubmit(
-        widget.initialData?.copyWith(
+        widget.shop?.copyWith(
           name: _nameController.text.trim(),
           rating: _rating,
           imagePath: supabasePath,
@@ -129,6 +130,8 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final shop = context.watch<ShopState>().getShop(widget.shop?.id!);
+    final imageExists = shop?.imagePath != null && shop!.imagePath!.isNotEmpty;
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       behavior: HitTestBehavior.opaque,
@@ -158,45 +161,34 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                       children: [
                         GestureDetector(
                           onTap: () async {
-                            final pickedFile = await pickImageWithDialog(context, _picker);
+                            final pickedFile = await pickImageWithDialog(context, _picker, imageExists);
                             if (pickedFile != null) {
                               setState(() {
                                 _selectedImage = pickedFile;
-                                _removeExistingImage = false;
+                                if (pickedFile.path == '') {
+                                  _removeExistingImage = true;
+                                  _selectedImage = null;
+                                } else {
+                                  _removeExistingImage = false;
+                                }
                               });
                             }
                           },
                           child: (_selectedImage != null ||
-                            (widget.initialData?.imagePath != null &&
-                            widget.initialData!.imagePath!.isNotEmpty &&
-                            !_removeExistingImage))
-                              ? Stack (
-                                alignment: Alignment.topRight,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: _selectedImage != null
-                                      ? Image.file(_selectedImage!, height: 150, width: double.infinity, fit: BoxFit.cover)
-                                      : Image.network(
-                                        Supabase.instance.client.storage
-                                          .from('media-uploads')
-                                          .getPublicUrl(widget.initialData!.imagePath!),
-                                        height: 150,
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                      )
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.close, color: Colors.red),
-                                    onPressed: () {
-                                      setState(() {
-                                        _selectedImage = null;
-                                        _removeExistingImage = true;
-                                      });
-                                    },
-                                  ),
-                                ],
-                              )
+                            (imageExists && !_removeExistingImage))
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: _selectedImage != null
+                                    ? Image.file(_selectedImage!, height: 150, width: double.infinity, fit: BoxFit.cover)
+                                    : Image.network(
+                                      Supabase.instance.client.storage
+                                        .from('media-uploads')
+                                        .getPublicUrl(shop!.imagePath!),
+                                      height: 150,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    )
+                                )
                               : Container(
                                   height: 150,
                                   width: double.infinity,
@@ -260,7 +252,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         )
-                        : (widget.initialData == null ? Text('Add Shop'): Text('Save'))
+                        : (shop == null ? Text('Add Shop'): Text('Save'))
                     ),
                   ],
                 )

@@ -39,13 +39,13 @@ class _SettingsThemePageState extends State<SettingsThemePage> {
                         color: color.shade100,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: userState.themeSlug == slug ? Colors.black : Colors.transparent,
+                          color: userState.user.themeSlug == slug ? Colors.black : Colors.transparent,
                           width: 2,
                         ),
                       ),
                     ),
                     title: Text(slug),
-                    trailing: userState.themeSlug == slug ? const Icon(Icons.check) : null,
+                    trailing: userState.user.themeSlug == slug ? const Icon(Icons.check) : null,
                     onTap: () {
                       setState(() {
                         userState.setTheme(slug);

@@ -1,15 +1,18 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/shop.dart';
 import 'package:flutter/material.dart';
+import 'package:collection/collection.dart';
 
 class ShopState extends ChangeNotifier {
   List<Shop> _shops = [];
 
   List<Shop> get all => _shops;
 
-  Shop getShop(String id) {
-    return _shops.firstWhere((s) => s.id == id);
+  Shop? getShop(String? id) {
+    if (id == null) return null;
+    return _shops.firstWhereOrNull((s) => s.id == id);
   }
+
 
   void add(Shop shop) {
     _shops.add(shop);

@@ -79,8 +79,8 @@ class _ShopDetailPage extends State<ShopDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final shop = context.watch<ShopState>().getShop(widget.shop.id!);
-    final userState = context.watch<UserState>();
+    final shop = context.watch<ShopState>().getShop(widget.shop.id!)!;
+    final user = context.watch<UserState>().user;
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -131,7 +131,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                   return Container(
                     clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
-                      color: Constants.getThemeColor(userState.themeSlug!).shade50,
+                      color: Constants.getThemeColor(user.themeSlug).shade50,
                       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                     ),
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -157,7 +157,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                               ),
                               padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                               visualDensity: VisualDensity.compact,
-                              backgroundColor: Constants.getThemeColor(userState.themeSlug!).shade100,
+                              backgroundColor: Constants.getThemeColor(user.themeSlug).shade100,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               onPressed: () async {
                                 await showDialog(
@@ -535,7 +535,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                             await showDialog(
                               context: context,
                               builder: (_) => AddOrEditShopDialog(
-                                initialData: shop,
+                                shop: shop,
                                 onSubmit: (updatedshop) async {
                                   final updatedPayload = {
                                     'name': updatedshop.name,
