@@ -58,7 +58,7 @@ create table user_settings (
 );
 
 -- FRIENDS table
-create table user_friends (
+create table friends (
   user_id uuid not null references users(id) on delete cascade,
   friend_id uuid not null references users(id) on delete cascade,
   primary key (user_id, friend_id)
