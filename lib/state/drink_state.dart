@@ -23,6 +23,11 @@ class DrinkState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void reset() {
+    drinks.clear();
+    notifyListeners();
+  }
+
   Future<void> loadFromSupabase() async {
     final supabase = Supabase.instance.client;
     final response = await supabase.from('drinks').select();

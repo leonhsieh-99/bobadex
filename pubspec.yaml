@@ -31,7 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   image_picker: ^1.1.2
-  supabase_flutter: ^1.10.6
+  supabase_flutter: 1.10.6
   flutter_dotenv: ^5.0.2
   collection: ^1.17.1
   flutter_image_compress: ^2.4.0

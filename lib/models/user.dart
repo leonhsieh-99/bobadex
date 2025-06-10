@@ -50,6 +50,7 @@ class User {
     username: '',
     profileImagePath: '',
     themeSlug: 'grey',
+    displayName: '',
   );
 
   User copyWith({

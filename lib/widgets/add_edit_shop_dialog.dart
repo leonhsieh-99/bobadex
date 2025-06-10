@@ -1,8 +1,10 @@
+import 'package:bobadex/pages/add_shop_search_page.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import '../models/shop.dart';
+import '../models/brand.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'rating_picker.dart';
@@ -12,11 +14,13 @@ import '../helpers/image_uploader_helper.dart';
 class AddOrEditShopDialog extends StatefulWidget {
   final Shop? shop;
   final void Function(Shop) onSubmit;
+  final Brand? brand;
 
   const AddOrEditShopDialog ({
     super.key,
     this.shop,
     required this.onSubmit,
+    this.brand,
   });
 
   @override
@@ -27,6 +31,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
   final _formkey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _notesController;
+  String ? _brandSlug;
   double _rating = 0;
   bool _isSubmitting = false;
   final ImagePicker _picker = ImagePicker();
@@ -36,7 +41,12 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.shop?.name ?? '');
+    _brandSlug = widget.brand?.slug;
+    if (_brandSlug != null) {
+      _nameController = TextEditingController(text: widget.brand?.display);
+    } else {
+      _nameController = TextEditingController(text: widget.shop?.name ?? '');
+    }
     _notesController = TextEditingController(text: widget.shop?.notes ?? '');
     _rating = widget.shop?.rating ?? 0;
   }
@@ -109,12 +119,14 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
           rating: _rating,
           imagePath: supabasePath,
           notes: _notesController.text.trim(),
+          brandSlug: _brandSlug,
         ) ??
         Shop(
           name: _nameController.text.trim(),
           rating: _rating,
           imagePath: supabasePath,
           notes: _notesController.text.trim(),
+          brandSlug: _brandSlug,
         ),
       );
 
@@ -200,11 +212,44 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                                 )
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _nameController,
-                          decoration: const InputDecoration(labelText: 'Shop Name'),
-                          validator: (value) => 
-                            value == null || value.isEmpty ? 'Enter a name' : null,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _nameController,
+                                decoration: const InputDecoration(labelText: 'Shop Name'),
+                                enabled: _brandSlug == null,
+                                validator: (value) => 
+                                  value == null || value.isEmpty ? 'Enter a name' : null,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton.icon(
+                              icon: Icon(_brandSlug == null ? Icons.link : Icons.swap_horiz),
+                              label: Text(_brandSlug == null ? "Link" : "Change"),
+                              style: OutlinedButton.styleFrom(
+                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                minimumSize: Size(50 , 40),
+                              ),
+                              onPressed: () async {
+                                await Navigator.push<String>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => AddShopSearchPage(
+                                      onBrandSelected: (brand) {
+                                        setState(() {
+                                          _brandSlug = brand.slug;
+                                          _nameController = TextEditingController(text: brand.display);
+                                        });
+                                      },
+                                      existingShopId: shop!.id,
+                                    ),
+                                  )
+                                );
+                              }
+                            ),
+                          ]
                         ),
                         const SizedBox(height: 16),
                         Align(

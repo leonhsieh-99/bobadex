@@ -12,7 +12,7 @@ class Shop extends SortableEntry {
   String? pinnedDrinkId;
   final DateTime? _createdAt;
   final String? placeId; // future use maybe
-  final String? brandSlug; // future use maybe
+  final String? brandSlug;
 
   @override
   String get name => _name;

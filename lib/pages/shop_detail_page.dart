@@ -1,3 +1,4 @@
+import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/add_edit_drink_dialog.dart';
@@ -6,7 +7,7 @@ import 'package:bobadex/models/drink_form_data.dart';
 import 'package:bobadex/models/shop.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as p;
 import '../models/drink.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/add_edit_shop_dialog.dart';
@@ -33,18 +34,14 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   final Set<String> _expandedDrinkIds = {};
   String _selectedSort = 'favorite-desc';
   String _searchQuery = '';
-  ShopState? _shopState;
-  DrinkState? _drinkState;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final shopState = context.read<ShopState>();
-      final drinkState = context.read<DrinkState>();
-      _shopState = shopState;
-      _drinkState = drinkState;
-    });
+  }
+
+  Shop get _shop {
+    return context.watch<ShopState>().getShop(widget.shop.id) ?? widget.shop;
   }
 
 
@@ -79,7 +76,8 @@ class _ShopDetailPage extends State<ShopDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final shop = context.watch<ShopState>().getShop(widget.shop.id!)!;
+    final shopState = context.read<ShopState>();
+    final drinkState = context.read<DrinkState>();
     final user = context.watch<UserState>().user;
     return Scaffold(
       body: LayoutBuilder(
@@ -93,7 +91,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
               SizedBox(
                 height: bannerHeight,
                 width: double.infinity,
-                child: (shop.imagePath == null ||  shop.imagePath!.isEmpty)
+                child: (_shop.imagePath == null ||  _shop.imagePath!.isEmpty)
                   ? Container(
                     width: double.infinity,
                     height: 200,
@@ -103,7 +101,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                     ),
                   )
                   : CachedNetworkImage(
-                    imageUrl: shop.imageUrl,
+                    imageUrl: _shop.imageUrl,
                     fadeInDuration: Duration(milliseconds: 300),
                     width: double.infinity,
                     height: 200,
@@ -140,14 +138,23 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                       children: [
                         Row(
                           children: [
-                            Text(
-                              shop.name,
-                              style: const TextStyle(
-                                fontSize: 30, 
-                                fontWeight: FontWeight.bold,
-                                overflow: TextOverflow.ellipsis,
+                            Flexible(
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  return ConstrainedBox(
+                                    constraints: BoxConstraints(maxWidth: constraints.maxWidth * 95 / 100),
+                                    child: Text(
+                                      _shop.name,
+                                      style: const TextStyle(
+                                        fontSize: 28, 
+                                        fontWeight: FontWeight.bold,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      maxLines: 1,
+                                    ),
+                                  );
+                                },
                               ),
-                              maxLines: 1,
                             ),
                             SizedBox(width: 14),
                             ActionChip(
@@ -165,7 +172,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                   builder: (_) => AddOrEditDrinkDialog(
                                     onSubmit: (drink) async {
                                       final response = await supabase.from('drinks').insert({
-                                        'shop_id': shop.id,
+                                        'shop_id': _shop.id,
                                         'user_id': supabase.auth.currentUser!.id,
                                         'name': drink.name,
                                         'rating': drink.rating,
@@ -174,7 +181,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
 
                                       if (response != null && context.mounted) {
                                         final newDrink = Drink.fromJson(response);
-                                        _drinkState?.add(newDrink);
+                                        drinkState.add(newDrink);
                                       } else {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(content: Text('Failed to add drink.')),
@@ -215,7 +222,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      shop.rating.toStringAsFixed(1),
+                                      _shop.rating.toStringAsFixed(1),
                                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w400),
                                     ),
                                   ],
@@ -227,8 +234,8 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            shop.notes != null && shop.notes!.isNotEmpty
-                            ? shop.notes!
+                            _shop.notes != null && _shop.notes!.isNotEmpty
+                            ? _shop.notes!
                             : 'No notes yet',
                             style: const TextStyle(
                               fontSize: 14, color: Colors.black,
@@ -289,14 +296,14 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                 GestureDetector(
                                                   onTap: () async {
                                                     final updated = drink.copyWith(isFavorite: !drink.isFavorite);
-                                                    _drinkState?.update(updated); // optimistic update
+                                                    drinkState.update(updated); // optimistic update
                                                     try {
                                                       await supabase
                                                         .from('drinks')
                                                         .update({'is_favorite': updated.isFavorite})
                                                         .eq('id', drink.id);
                                                     } catch (_) {
-                                                      _drinkState?.update(drink); // rollback on error
+                                                      drinkState.update(drink); // rollback on error
                                                       if (context.mounted) {
                                                         ScaffoldMessenger.of(context).showSnackBar(
                                                           SnackBar(content: Text('Failed to update favorite status.')),
@@ -317,12 +324,12 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                   onSelected: (value) async {
                                                     switch(value) {
                                                       case 'pin':
-                                                        final isPinned = shop.pinnedDrinkId == drink.id;
+                                                        final isPinned = _shop.pinnedDrinkId == drink.id;
                                                         await supabase.from('shops')
                                                           .update({'pinned_drink_id': isPinned ? null : drink.id})
-                                                          .eq('id', shop.id);
+                                                          .eq('id', _shop.id);
                                                         setState(() {
-                                                          shop.pinnedDrinkId = isPinned ? null : drink.id;
+                                                          _shop.pinnedDrinkId = isPinned ? null : drink.id;
                                                         });
                                                         break;
                                                       case 'edit':
@@ -348,7 +355,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                               
                                                               if (response != null && context.mounted) {
                                                                 final updated = Drink.fromJson(response);
-                                                                _drinkState?.update(updated);
+                                                                drinkState.update(updated);
                                                               } else {
                                                                 ScaffoldMessenger.of(context).showSnackBar(
                                                                   SnackBar(content: Text('Failed to update drink.')),
@@ -372,7 +379,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                         );
                                                         if (confirm == true) {
                                                           await supabase.from('drinks').delete().eq('id', drink.id);
-                                                          _drinkState?.remove(drink.id!);
+                                                          drinkState.remove(drink.id!);
                                                         }
                                                         break;
                                                     }
@@ -380,7 +387,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                   itemBuilder: (_) => [
                                                     PopupMenuItem(
                                                       value: 'pin',
-                                                      child: Text(drink.id != shop.pinnedDrinkId
+                                                      child: Text(drink.id != _shop.pinnedDrinkId
                                                         ? 'Pin'
                                                         : 'Unpin'
                                                       )
@@ -478,15 +485,10 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                   children: [ 
                     GestureDetector(
                       onTap: () async {
-                        final updated = shop.copyWith(isFavorite: !shop.isFavorite);
-                        _shopState?.update(updated); // optimistic update
+                        final updated = _shop.copyWith(isFavorite: !_shop.isFavorite);
                         try {
-                          await supabase
-                            .from('shops')
-                            .update({'is_favorite': updated.isFavorite})
-                            .eq('id', shop.id);
+                          await shopState.update(updated);
                         } catch (_) {
-                          _shopState?.update(shop); // rollback on error
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('Failed to update favorite status.')),
@@ -497,7 +499,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          if (!shop.isFavorite)
+                          if (!_shop.isFavorite)
                             SvgPicture.asset(
                               'lib/assets/icons/heart.svg',
                               width: 16,
@@ -505,7 +507,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                               colorFilter: ColorFilter.mode(Colors.white.withOpacity(.3), BlendMode.srcIn),
                             ),
                           SvgPicture.asset(
-                            shop.isFavorite 
+                            _shop.isFavorite 
                               ? 'lib/assets/icons/heart.svg'
                               : 'lib/assets/icons/heart_outlined.svg',
                             width: 16,
@@ -535,34 +537,27 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                             await showDialog(
                               context: context,
                               builder: (_) => AddOrEditShopDialog(
-                                shop: shop,
+                                shop: _shop,
+                                brand: context.read<BrandState>().getBrand(_shop.brandSlug),
                                 onSubmit: (updatedshop) async {
-                                  final updatedPayload = {
-                                    'name': updatedshop.name,
-                                    'rating': updatedshop.rating,
-                                    'image_path': updatedshop.imagePath,
-                                    'notes': updatedshop.notes,
-                                  };
-                                  final response = await supabase
-                                    .from('shops')
-                                    .update(updatedPayload)
-                                    .eq('id', updatedshop.id)
-                                    .select()
-                                    .single();
-                                  
-                                  if (response != null && context.mounted) {
-                                    final updated = Shop.fromJson(response);
-                                    _shopState?.update(updated);
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Failed to update shop.')),
-                                    );
+                                  try {
+                                    await shopState.update(updatedshop);
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Failed to update _shop.')),
+                                      );
+                                    }
                                   }
                                 },
                               ),
                             );
                             break;
                           case 'delete':
+                            // Store all necessary data before any async operations
+                            final shopId = widget.shop.id!;
+                            final shopState = p.Provider.of<ShopState>(context, listen: false);
+                            
                             final confirm = await showDialog<bool>(
                               context: context,
                               builder: (context) => AlertDialog(
@@ -574,10 +569,19 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                 ],
                               )
                             );
-                            if (confirm == true) {
-                              await supabase.from('shops').delete().eq('id', shop.id);
-                              _shopState?.remove(shop.id!);
-                              if (context.mounted) Navigator.pop(context);
+                            
+                            if (confirm == true && context.mounted) {
+                              try {
+                                Navigator.pop(context);
+                                await shopState.remove(shopId);
+                              } catch (e) {
+                                debugPrint("Failed to remove shop: $e");
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Failed to remove shop'))
+                                  );
+                                }
+                              }
                             }
                             break;
                         }

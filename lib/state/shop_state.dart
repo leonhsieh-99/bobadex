@@ -5,6 +5,7 @@ import 'package:collection/collection.dart';
 
 class ShopState extends ChangeNotifier {
   List<Shop> _shops = [];
+  String userId = Supabase.instance.client.auth.currentUser!.id;
 
   List<Shop> get all => _shops;
 
@@ -13,23 +14,77 @@ class ShopState extends ChangeNotifier {
     return _shops.firstWhereOrNull((s) => s.id == id);
   }
 
-
-  void add(Shop shop) {
+  void add(Shop shop) async {
     _shops.add(shop);
     notifyListeners();
-  }
 
-  void update(Shop updated) {
-    final index = _shops.indexWhere((s) => s.id == updated.id);
-    if (index != -1) {
-      _shops[index] = updated;
+    // save to db
+    try {
+      final response = await Supabase.instance.client
+        .from('shops')
+        .insert({
+          'user_id': userId,
+          'name': shop.name,
+          'image_path': shop.imagePath,
+          'rating': shop.rating,
+          'is_favorite': shop.isFavorite,
+          'brand_slug': shop.brandSlug,
+        }).select().single();
+      
+      // Update the shop with the ID from the database
+      final index = _shops.indexWhere((s) => s.name == shop.name);
+      if (index != -1) {
+        _shops[index] = Shop.fromJson(response);
+        notifyListeners();
+      }
+    } catch (e) {
+      print('❌ Insert failed: $e');
+      _shops.remove(shop);
       notifyListeners();
+      rethrow;
     }
   }
 
-  void remove(String id) {
+  Future<void> update(Shop updated) async {
+    final index = _shops.indexWhere((s) => s.id == updated.id);
+    if (index != -1) {
+      final temp = _shops[index];
+      _shops[index] = updated;
+      notifyListeners();
+      try {
+        await Supabase.instance.client
+          .from('shops')
+          .update({
+            'name': updated.name,
+            'image_path': updated.imagePath,
+            'rating': updated.rating,
+            'is_favorite': updated.isFavorite,
+            'brand_slug': updated.brandSlug,
+          })
+          .eq('id', updated.id);
+      } catch (e) {
+        print("Update failed: $e");
+        _shops[index] = temp;
+        notifyListeners();
+        rethrow;
+      }
+    }
+  }
+
+  Future<void> remove(String id) async {
+    final temp = getShop(id);
     _shops.removeWhere((s) => s.id == id);
     notifyListeners();
+
+    try {
+      await Supabase.instance.client
+        .from('shops')
+        .delete().eq('id', id);
+    } catch (e) {
+      _shops.add(temp!);
+      notifyListeners();
+      rethrow;
+    }
   }
 
   void replace(String oldId, Shop newShop) {
@@ -39,6 +94,11 @@ class ShopState extends ChangeNotifier {
     } else {
       all.add(newShop);
     }
+    notifyListeners();
+  }
+
+  void reset() {
+    _shops.clear();
     notifyListeners();
   }
 

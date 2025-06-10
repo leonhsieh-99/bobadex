@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:bobadex/pages/settings_page.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
+import 'package:bobadex/state/brand_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider;
 import 'dart:io';
@@ -11,10 +12,10 @@ import '../models/shop.dart';
 import '../widgets/filter_sort_bar.dart';
 import '../state/user_state.dart';
 import '../state/shop_state.dart';
-import '../widgets/add_edit_shop_dialog.dart';
+import '../state/drink_state.dart';
 import '../config/constants.dart';
-import 'auth_page.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'add_shop_search_page.dart';
 
 class HomePage extends StatefulWidget {
   final Session session;
@@ -48,51 +49,6 @@ class _HomePageState extends State<HomePage> {
     );
 
     return filtered;
-  }
-
-  void _addShop(Shop shop) async {
-    final userId = widget.session.user.id;
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final String tempId = 'temp-$timestamp'; 
-    final shopState = context.read<ShopState>();
-
-    // Create a temporary shop with local image for immediate UI feedback
-    final tempShop = Shop(
-      id: tempId,
-      name: shop.name,
-      rating: shop.rating,
-      imagePath: shop.imagePath,// Use local file path initially
-      isFavorite: shop.isFavorite,
-    );
-
-    // Optimistically update UI
-    shopState.add(tempShop);
-
-    // then insert shop into db
-    try {
-      final insertResponse = await supabase.from('shops')
-        .insert({
-          'user_id': userId,
-          'name': shop.name,
-          'image_path': shop.imagePath,
-          'rating': shop.rating,
-          'is_favorite': shop.isFavorite,
-        }).select();
-
-      final insertedShop = Shop.fromJson(insertResponse.first);
-
-      shopState.replace(tempId, insertedShop);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Success'))
-      );
-    } catch (e) {
-      print('❌ Insert failed: $e');
-      shopState.remove(tempId);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to add shop: ${e.toString()}'))
-      );
-    }
   }
 
   Future<void> _navigateToShop(Shop shop) async {
@@ -136,11 +92,10 @@ class _HomePageState extends State<HomePage> {
               title: const Text('Sign out'),
               onTap: () async {
                 await Supabase.instance.client.auth.signOut();
-                if (!context.mounted) return;
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AuthPage()),
-                );
+                context.read<UserState>().reset();
+                context.read<ShopState>().reset();
+                context.read<DrinkState>().reset();
+                context.read<BrandState>().reset();
               },
             ),
           ],
@@ -281,17 +236,9 @@ class _HomePageState extends State<HomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          await showDialog(
-            context: context,
-            builder: (_) => AddOrEditShopDialog(
-              onSubmit: (shop) async {
-                _addShop(Shop(
-                  name: shop.name,
-                  rating: shop.rating,
-                  imagePath: shop.imagePath,
-                  notes: shop.notes,
-                ));
-              }
+          await Navigator.of(context).push<String>(
+            MaterialPageRoute(
+              builder: (_) => AddShopSearchPage(),
             ),
           );
         },

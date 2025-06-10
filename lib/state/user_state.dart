@@ -85,6 +85,11 @@ class UserState extends ChangeNotifier {
       .rpc('username_exists', params: {'input_username': username});
   }
 
+  void reset() {
+    _user = u.User.empty();
+    notifyListeners();
+  }
+
   Future<void> loadFromSupabase() async {
     final supabase = Supabase.instance.client;
     String? userId = supabase.auth.currentUser?.id;

@@ -9,7 +9,7 @@ create table shops (
   notes text,
   pinned_drink_id uuid,
   place_id text -- FUTURE USE (MAYBE)
-  brand_slug text -- FUTURE USE (MAYBE)
+  brand_slug text references ref.brands(slug)
   created_at timestamptz default now()
 );
 
@@ -74,3 +74,35 @@ create index on shop_media(user_id);
 -- Optional: for filtering by visibility
 create index on shop_media(visibility);
 create index on drinks(visibility);
+
+
+----------READ ONLY TABLES------------
+
+-- Brands Table
+create table ref.brands (
+  slug text primary key,                -- e.g. 'gong-cha'
+  display text,
+  wikidata text,                        -- Q-ID when known
+  aliases text[],                       -- lower-case spellings
+  logo_url text
+);
+
+-- Brand Locations Table
+create table ref.brand_locations (
+  brand_slug text references ref.brands(slug) on delete cascade,
+  osm_id bigint,                        -- null when scraped
+  geom geometry(Point, 4326),
+  last_seen timestamptz,
+  suspect boolean default false,
+  primary key (brand_slug, osm_id)
+);
+
+-- Boundaries Table (cities, counties, etc.)
+create table ref.boundaries (
+  id bigserial primary key,
+  name text,
+  level int,                            -- 6 = county, 8 = city
+  geom geometry(MultiPolygon, 4326)
+);
+
+CREATE INDEX boundary_gix ON ref.boundaries USING GIST (geom);
