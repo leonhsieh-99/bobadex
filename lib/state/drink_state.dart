@@ -28,6 +28,15 @@ class DrinkState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Map<String, List<Drink>> get drinksByShop {
+    final map = <String, List<Drink>>{};
+    for (final d in all) {
+      map.putIfAbsent(d.shopId!, () => []).add(d);
+    }
+    return map;
+  }
+
+
   Future<void> loadFromSupabase() async {
     final supabase = Supabase.instance.client;
     final response = await supabase.from('drinks').select();

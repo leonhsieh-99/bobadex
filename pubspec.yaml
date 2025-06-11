@@ -73,6 +73,7 @@ flutter:
     - lib/assets/icons/star.svg
     - lib/assets/icons/heart.svg
     - lib/assets/icons/heart_outlined.svg
+    - lib/assets/icons/boba1.svg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

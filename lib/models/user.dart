@@ -16,7 +16,7 @@ class User {
     this.themeSlug = 'grey',
     this.profileImagePath,
     this.bio,
-    this.gridColumns = 3,
+    this.gridColumns = 2,
   });
 
   String get firstName => displayName!.split(' ').first;
@@ -41,7 +41,7 @@ class User {
       profileImagePath: profile['profile_image_path'],
       bio: profile['bio'],
       themeSlug: settings?['theme_slug'] ?? 'grey',
-      gridColumns: settings?['grid_columns'] ?? 3,
+      gridColumns: settings?['grid_columns'] ?? 2,
     );
   }
 

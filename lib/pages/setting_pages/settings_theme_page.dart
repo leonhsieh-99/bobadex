@@ -26,7 +26,7 @@ class _SettingsThemePageState extends State<SettingsThemePage> {
           children: [
             Text('Color'),
             Expanded( 
-              child:ListView(
+              child: ListView(
                 children: themeMap.entries.map((entry) {
                   final slug = entry.key;
                   final color = entry.value;

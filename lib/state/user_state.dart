@@ -27,6 +27,25 @@ class UserState extends ChangeNotifier {
       print('Theme updated');
     } catch (e) {
       print('Failed to update theme: $e');
+      rethrow;
+    }
+  }
+
+  void setGridLayout(int numColumns) {
+    _user.gridColumns = numColumns;
+    notifyListeners();
+  }
+
+  Future<void> saveGridLayout() async {
+    try {
+      await Supabase.instance.client
+        .from('user_settings')
+        .update({'grid_columns': _user.gridColumns})
+        .eq('user_id', _user.id);
+      print('Grid layout updated');
+    } catch (e) {
+      print('Failed to update grid layout');
+      rethrow;
     }
   }
 

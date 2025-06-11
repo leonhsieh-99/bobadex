@@ -1,4 +1,5 @@
 import 'package:bobadex/pages/setting_pages/settings_account_page.dart';
+import 'package:bobadex/pages/setting_pages/settings_layout_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_notifications_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_theme_page.dart';
 import 'package:flutter/material.dart';
@@ -52,6 +53,16 @@ class _SettingsPageState extends State<SettingsPage> {
               MaterialPageRoute(builder: (_) => const SettingsThemePage())
             ),
           ),
+          ListTile(
+            leading: Icon(Icons.layers),
+            title: Text('Layout'),
+            subtitle: Text('Manage your home page grid layout'),
+            trailing: Icon(Icons.chevron_right),
+            onTap: () =>  Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => SettingsLayoutPage())
+            ),
+          )
         ],
       ),
     );

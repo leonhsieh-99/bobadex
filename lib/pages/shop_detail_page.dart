@@ -46,7 +46,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
 
 
   List<Drink> get _shopDrinks {
-    return context.watch<DrinkState>().all.where((d) => d.shopId == widget.shop.id).toList();
+    return context.watch<DrinkState>().drinksByShop[widget.shop.id] ?? [];
   }
 
   String get pinnedDrink {

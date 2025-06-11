@@ -43,7 +43,7 @@ create table shop_media (
 create table users (
   id uuid primary key references auth.users(id) on delete cascade,
   username text unique not null,
-  display_name text,
+  display_name text not null,
   profile_image_path text,
   bio text,
   created_at timestamptz default now()
@@ -53,16 +53,38 @@ create table users (
 create table user_settings (
   user_id uuid primary key references users(id) on delete cascade,
   theme_slug text default 'grey',
-  grid_columns int default 3,
+  grid_columns int default 2,
   created_at timestamptz default now()
 );
 
 -- FRIENDS table
-create table friends (
-  user_id uuid not null references users(id) on delete cascade,
-  friend_id uuid not null references users(id) on delete cascade,
-  primary key (user_id, friend_id)
+CREATE TABLE friendships (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  requester_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  addressee_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  status text CHECK (status IN ('pending', 'accepted', 'rejected')) NOT NULL DEFAULT 'pending',
+  created_at timestamptz DEFAULT now(),
+  accepted_at timestamptz;
+  UNIQUE (requester_id, addressee_id)
 );
+
+-- Tea Rooms
+CREATE TABLE tea_rooms (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  description text,
+  owner_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE tea_room_members (
+  room_id uuid REFERENCES tea_rooms(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
+  joined_at timestamptz DEFAULT now(),
+  PRIMARY KEY (room_id, user_id)
+);
+
+
 
 -- Common filter/join targets
 create index on drinks(shop_id);

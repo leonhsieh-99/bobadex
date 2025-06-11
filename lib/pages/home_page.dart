@@ -143,13 +143,23 @@ class _HomePageState extends State<HomePage> {
                       child: GridView.builder(
                         padding: const EdgeInsets.fromLTRB(4, 0, 4, 120),
                         itemCount: visibleShops.length,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: user.gridColumns,
                           crossAxisSpacing: 4,
                           mainAxisSpacing: 4,
                           childAspectRatio: 1,
                         ),
                         itemBuilder: (context, index) {
+                          final screenWidth = MediaQuery.of(context).size.width;
+                          final columns = user.gridColumns; // e.g., 2 or 3
+                          const spacing = 4.0;
+                          const baseTileWidth = 120.0;
+
+                          final itemWidth = (screenWidth - (spacing * (columns + 1))) / columns;
+                          final scaleFactor = itemWidth / baseTileWidth;
+                          final imageScale = columns == 2 ? scaleFactor * 1.2 : scaleFactor;
+                          final textScale = columns == 2 ? scaleFactor * 1 : scaleFactor;
+
                           final shop = visibleShops[index];
                           return GestureDetector(
                             onTap: () async => _navigateToShop(shop),
@@ -164,15 +174,15 @@ class _HomePageState extends State<HomePage> {
                                       top: 4,
                                       left: 4,
                                       child: ConstrainedBox(
-                                        constraints: const BoxConstraints(maxWidth: 85),
+                                        constraints: BoxConstraints(maxWidth: 85 * textScale),
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               shop.name,
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
+                                              style: TextStyle(
+                                                fontSize: 11 * textScale,
+                                                fontWeight: FontWeight.w600,
                                               ),
                                               textAlign: TextAlign.left,
                                               overflow: TextOverflow.ellipsis,
@@ -182,18 +192,35 @@ class _HomePageState extends State<HomePage> {
                                               children: [
                                                 SvgPicture.asset(
                                                   'lib/assets/icons/star.svg',
-                                                  width: 12,
-                                                  height: 12,
+                                                  width: 12 * textScale,
+                                                  height: 12 * textScale,
                                                 ),
                                                 SizedBox(width: 2),
                                                 Text(
                                                   shop.rating.toStringAsFixed(1),
-                                                  style: const TextStyle(fontSize: 12),
+                                                  style: TextStyle(fontSize: 12 * textScale),
                                                   textAlign: TextAlign.left,
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
                                               ]
-                                            )
+                                            ),
+                                            SizedBox(height: 2),
+                                            Row(
+                                              children: [
+                                                SvgPicture.asset(
+                                                  'lib/assets/icons/boba1.svg',
+                                                  width: 13 * textScale,
+                                                  height: 13 * textScale,
+                                                ),
+                                                SizedBox(width: 2),
+                                                Text(
+                                                  (context.watch<DrinkState>().drinksByShop[shop.id] ?? []).length.toString(),
+                                                  style: TextStyle(fontSize: 12 * textScale),
+                                                  textAlign: TextAlign.left,
+                                                  overflow: TextOverflow.ellipsis,
+                                                )
+                                              ],
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -204,27 +231,27 @@ class _HomePageState extends State<HomePage> {
                                       child: ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
                                         child: shop.imagePath == null || shop.imagePath!.isEmpty
-                                          ? const Center(child: Icon(Icons.store, size: 40, color: Colors.grey))
+                                          ? Center(child: Icon(Icons.store, size: 50 * imageScale, color: Colors.grey))
                                           : (shop.imagePath != null && shop.imagePath!.startsWith('/')) 
                                             ? SizedBox(
-                                                width: 40,
-                                                height: 60,
+                                                width: 40 * imageScale,
+                                                height: 60 * imageScale,
                                                 child: Image.file(
                                                   File(shop.imagePath!),
                                                   fit: BoxFit.cover,
                                                   errorBuilder: (context, error, stackTrace) {
-                                                    return const Center(child: Icon(Icons.broken_image));
+                                                    return Center(child: Icon(Icons.broken_image, size: 50 * imageScale));
                                                   },
                                                 ),
                                               )
                                             : SizedBox(
-                                                width: 40,
-                                                height: 60,
+                                                width: 40 * imageScale,
+                                                height: 60 * imageScale,
                                                 child: CachedNetworkImage(
                                                   imageUrl: shop.thumbUrl,
                                                   fit: BoxFit.cover,
                                                   placeholder: (context, url) => CircularProgressIndicator(),
-                                                  errorWidget: (context, url, error) => Icon(Icons.broken_image),
+                                                  errorWidget: (context, url, error) => Icon(Icons.broken_image, size: 50 * imageScale),
                                                 ),
                                               )
                                       ),
@@ -235,8 +262,8 @@ class _HomePageState extends State<HomePage> {
                                       right: 0,
                                       child: SvgPicture.asset(
                                         'lib/assets/icons/heart.svg',
-                                        width: 14,
-                                        height: 14,
+                                        width: 14 * textScale,
+                                        height: 14 * textScale,
                                       ),
                                     ),
                                   ],
@@ -255,7 +282,7 @@ class _HomePageState extends State<HomePage> {
             right: 16,
             bottom: 24,
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 20),
               decoration: BoxDecoration(
                 color: Constants.getThemeColor(user.themeSlug).shade50,
                 borderRadius: BorderRadius.circular(40),
@@ -288,7 +315,6 @@ class _HomePageState extends State<HomePage> {
                           child: const Icon(Icons.add, color: Colors.white, size: 28),
                         ),
                       ),
-                      const SizedBox(height: 4),
                     ],
                   ),
 
@@ -300,16 +326,6 @@ class _HomePageState extends State<HomePage> {
           )
         ]
       ),
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: () async {
-      //     await Navigator.of(context).push<String>(
-      //       MaterialPageRoute(
-      //         builder: (_) => AddShopSearchPage(),
-      //       ),
-      //     );
-      //   },
-      //   child: const Icon(Icons.add),
-      // ),
     );
   }
 }
