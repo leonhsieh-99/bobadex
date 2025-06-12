@@ -1,5 +1,7 @@
 import 'package:bobadex/pages/add_friends_page.dart';
+import 'package:bobadex/state/friend_state.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class FriendsPage extends StatefulWidget {
   const FriendsPage ({
@@ -13,6 +15,7 @@ class FriendsPage extends StatefulWidget {
 class _FriendsPageState extends State<FriendsPage> {
   @override
   Widget build(BuildContext context) {
+    final friends = context.read<FriendState>().friends;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Friends List'),
@@ -32,10 +35,24 @@ class _FriendsPageState extends State<FriendsPage> {
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddFriendsPage())),
             ),
           ),
-          Expanded(child: ListView(
-            children: [
-            ],
-          ))
+          Expanded(
+            child: ListView.builder(
+              itemCount: friends.length,
+              itemBuilder: (context, index) {
+                final friend = friends[index];
+                return ListTile(
+                  title: Text(friend.displayName),
+                  leading: CircleAvatar(
+                    backgroundImage: friend.profileImagePath != null
+                      ? NetworkImage(friend.profileImagePath!)
+                      : null,
+                    child: friend.profileImagePath == null ? Icon(Icons.person) : null,
+                  ),
+                  subtitle: Text('@${friend.username}'),
+                );
+              }
+            ),
+          )
         ],
       )
     );

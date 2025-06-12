@@ -1,6 +1,10 @@
+import 'package:bobadex/state/brand_state.dart';
+import 'package:bobadex/state/user_state.dart';
+import 'package:bobadex/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'home_page.dart';
+import 'package:provider/provider.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage ({super.key});
@@ -23,6 +27,9 @@ class _AuthPageState extends State<AuthPage> {
     final displayName = _displayNameController.text.trim();
     final supabase = Supabase.instance.client;
 
+    final userState = context.read<UserState>();
+    final brandState = context.read<BrandState>();
+
     try {
       print('📦 Starting auth process...');
       
@@ -34,17 +41,15 @@ class _AuthPageState extends State<AuthPage> {
           );
           return;
         }
-        final taken = await supabase
-          .from('users')
-          .select()
-          .eq('username', username)
-          .maybeSingle();
-        if (taken != null) {
+
+        final usernameExists = await supabase.rpc('username_exists', params: {'input_username': username});
+        if (usernameExists) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Username already taken'))
           );
           return;
         }
+
         final response = await supabase.auth.signUp(email: email, password: password);
         print('📦 Sign up response: ${response.session}');
       } else {
@@ -70,10 +75,10 @@ class _AuthPageState extends State<AuthPage> {
 
       if (_isSigningUp && username.isNotEmpty) {
         final existing = await supabase
-            .from('users')
-            .select()
-            .eq('id', userId)
-            .maybeSingle();
+          .from('users')
+          .select()
+          .eq('id', userId)
+          .maybeSingle();
 
         if (existing == null) {
           await supabase.from('users').insert({
@@ -89,17 +94,27 @@ class _AuthPageState extends State<AuthPage> {
         }
       }
 
+      await userState.loadFromSupabase();
+      await brandState.loadFromSupabase();
+
       if (!mounted) return;
       Navigator.pushReplacement(
         context, 
         MaterialPageRoute(builder: (_) => HomePage(session: session)),
       );
     } on AuthException catch(e) {
-      print('📦 Auth error: ${e.message}');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message))
-      );
+      if (e.message.contains('User already registered')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email already taken'))
+        );
+      } else {
+        print('📦 Auth error: ${e.message}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message))
+        );
+      }
     } catch (e) {
+      print('email: $email');
       print('📦 Unexpected error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('An unexpected error occurred'))
@@ -125,24 +140,28 @@ class _AuthPageState extends State<AuthPage> {
         child: Column(
           children: [
             if (_isSigningUp)
-              TextField(
+              TextFormField(
                 controller: _displayNameController,
-                decoration: const InputDecoration(labelText: 'First name'),
+                decoration: const InputDecoration(labelText: 'Name'),
+                validator: Validators.validateDisplayName,
               ),
-            TextField(
+            TextFormField(
               controller: _emailController,
               decoration: const InputDecoration(labelText: 'Email'),
               autofocus: true,
+              validator: Validators.validateEmail,
             ),
             if (_isSigningUp)
-              TextField(
+              TextFormField(
                 controller: _usernameController,
                 decoration: const InputDecoration(labelText: 'Username'),
+                validator: Validators.validateUsername,
               ),
-            TextField(
+            TextFormField(
               controller: _passwordController,
               decoration: const InputDecoration(labelText: 'Password'),
               obscureText: true,
+              validator: Validators.validatePassword,
             ),
             const SizedBox(height: 16),
             ElevatedButton(

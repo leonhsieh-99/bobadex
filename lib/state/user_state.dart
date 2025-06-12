@@ -121,6 +121,7 @@ class UserState extends ChangeNotifier {
     if (profile != null) {
       _user = u.User.fromMap(profile, settings);
       notifyListeners();
+      isLoaded = true;
     }
   }
 }

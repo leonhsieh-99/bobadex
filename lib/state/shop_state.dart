@@ -5,7 +5,6 @@ import 'package:collection/collection.dart';
 
 class ShopState extends ChangeNotifier {
   List<Shop> _shops = [];
-  String userId = Supabase.instance.client.auth.currentUser!.id;
 
   List<Shop> get all => _shops;
 
@@ -15,6 +14,7 @@ class ShopState extends ChangeNotifier {
   }
 
   void add(Shop shop) async {
+    String userId = Supabase.instance.client.auth.currentUser!.id;
     _shops.add(shop);
     notifyListeners();
 

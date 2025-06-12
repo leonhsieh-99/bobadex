@@ -1,4 +1,5 @@
 import 'package:bobadex/helpers/image_uploader_helper.dart';
+import 'package:bobadex/utils/validators.dart';
 import 'package:bobadex/widgets/change_password_dialong.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -138,7 +139,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                       )),
-                      trailing: Text(user.displayName ?? 'Add name',
+                      trailing: Text(user.displayName,
                         style: TextStyle(
                           fontWeight: FontWeight.w300,
                           fontSize: 18,
@@ -147,7 +148,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                     onTap: () => accountEditDialog(
                       context: context,
                       title: 'Edit Name',
-                      initalValue: user.displayName ?? '',
+                      initalValue: user.displayName,
                       maxLength: 20,
                       maxLines: 1,
                       onSave: (newName) async {
@@ -155,14 +156,11 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                           await userState.setDisplayName(newName);
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to update username.'))
+                            SnackBar(content: Text('Failed to update name.'))
                           );
                         }
                       },
-                      validator: (name) {
-                        if (name == null || name.isEmpty) return 'Name cannot be empty';
-                        return null;
-                      }
+                      validator: Validators.validateDisplayName,
                     ),
                   ),
                   ListTile(
@@ -192,11 +190,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                           );
                         }
                       },
-                      validator: (username) {
-                        if (username == null || username.isEmpty) return 'Username cannot be empty';
-                        if (username.contains(' ')) return 'Username cannot contain spaces';
-                        return null;
-                      },
+                      validator: Validators.validateUsername,
                       asyncValidator: (username) async {
                         final exists = await userState.usernameExists(username);
                         if (exists) {
@@ -212,7 +206,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                       )),
-                      trailing: Text(user.bio!.isNotEmpty ? '${user.bio!.length < 10 ? user.bio! : user.bio?.substring(0, 10)}...' : 'Add bio',
+                      trailing: Text(user.bio != null && user.bio!.isNotEmpty ? '${user.bio!.length < 10 ? user.bio! : user.bio?.substring(0, 10)}...' : 'Add bio',
                         style: TextStyle(
                           fontWeight: FontWeight.w300,
                           fontSize: 18,

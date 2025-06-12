@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class User {
   final String id;
   String username;
-  String? displayName;
+  String displayName;
   String themeSlug = 'grey';
   String? profileImagePath;
   String? bio;
@@ -12,14 +12,14 @@ class User {
   User ({
     required this.id,
     required this.username,
-    this.displayName,
+    required this.displayName,
     this.themeSlug = 'grey',
     this.profileImagePath,
     this.bio,
     this.gridColumns = 2,
   });
 
-  String get firstName => displayName!.split(' ').first;
+  String get firstName => displayName.split(' ').first;
 
   String get imageUrl => profileImagePath != null && profileImagePath!.isNotEmpty
     ? Supabase.instance.client.storage
@@ -45,12 +45,24 @@ class User {
     );
   }
 
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      id: json['id'],
+      username: json['username'],
+      displayName: json['display_name'],
+      profileImagePath: json['profile_image_path'] ?? '',
+      bio: json['bio'] ?? '',
+    );
+  }
+
   factory User.empty() => User(
     id: '',
     username: '',
     profileImagePath: '',
     themeSlug: 'grey',
     displayName: '',
+    bio: '',
+    gridColumns: 2,
   );
 
   User copyWith({

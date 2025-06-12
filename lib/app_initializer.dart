@@ -1,3 +1,4 @@
+import 'package:bobadex/state/friend_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -6,7 +7,6 @@ import 'pages/splash_page.dart';
 import 'state/drink_state.dart';
 import 'state/brand_state.dart';
 import 'state/shop_state.dart';
-import 'config/constants.dart';
 import 'pages/auth_page.dart';
 import 'pages/home_page.dart';
 
@@ -24,22 +24,23 @@ class _AppInitializerState extends State<AppInitializer> {
   @override
   void initState() {
     super.initState();
-    _initializeSession();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeSession();
+    });
   }
 
   Future<void> _initializeSession() async {
     try {
-      final currentSession = Supabase.instance.client.auth.currentSession;
-      _session = currentSession;
+      final supabase = Supabase.instance.client.auth;
 
-      Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
-        final session = data.session;
+      void handleSession(Session? session) async {
         final userState = context.read<UserState>();
         final drinkState = context.read<DrinkState>();
         final shopState = context.read<ShopState>();
         final brandState = context.read<BrandState>();
+        final friendState = context.read<FriendState>();
         if (session != null) {
-          _session = session; // update early
+          _session = session;
           try {
             await userState.loadFromSupabase();
             print('Loaded user state');
@@ -47,7 +48,6 @@ class _AppInitializerState extends State<AppInitializer> {
             print('Error loading user state: $e');
           }
 
-          // Guard: don't continue unless userState.user exists
           final user = context.read<UserState>().user;
           if (user.id.isEmpty) {
             print('No valid user loaded — skipping rest');
@@ -75,25 +75,25 @@ class _AppInitializerState extends State<AppInitializer> {
             print('Error loading shops: $e');
           }
 
-          if (mounted) {
-            setState(() {
-              _isReady = true;
-            });
+          try {
+            await friendState.loadFromSupabase();
+            print('Loaded ${friendState.allFriendships.length} friendships');
+          } catch (e) {
+            print('Error loading friend state: $e');
           }
-        } else {
-          userState.reset();
-          drinkState.reset();
-          shopState.reset();
-          brandState.reset();
           if (mounted) setState(() => _isReady = true);
+        } else {
+          userState.reset(); drinkState.reset(); shopState.reset(); brandState.reset(); friendState.reset();
+          if (mounted) setState(() { _session = null; _isReady = true; });
         }
-        if (mounted) {
-          setState(() {
-            _session = session;
-            _isReady = true;
-          });
-        }
+      }
+
+      supabase.onAuthStateChange.listen((data) {
+        handleSession(data.session);
       });
+
+      handleSession(supabase.currentSession);
+
     } catch (e) {
       print('Error during app initialization: $e');
     }
@@ -101,23 +101,9 @@ class _AppInitializerState extends State<AppInitializer> {
 
   @override
   Widget build(BuildContext context) {
-    final userState = context.watch<UserState>();
-    final user = userState.user;
-    final themeColor = Constants.getThemeColor(user.themeSlug);
-
-    return MaterialApp(
-      title: 'Bobadex',
-      theme: ThemeData(
-        scaffoldBackgroundColor: themeColor.shade50,
-        appBarTheme: AppBarTheme(
-          backgroundColor: themeColor.shade50,
-          foregroundColor: Colors.black,
-        ),
-        cardTheme: CardTheme(color: themeColor.shade100),
-      ),
-      home: !_isReady
-          ? const SplashPage()
-          : (_session == null ? const AuthPage() : HomePage(session: _session!)),
-    );
+    return
+      !_isReady
+        ? const SplashPage()
+        : (_session == null ? const AuthPage() : HomePage(session: _session!));
   }
 }

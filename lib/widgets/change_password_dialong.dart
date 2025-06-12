@@ -1,3 +1,4 @@
+import 'package:bobadex/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -35,7 +36,7 @@ Future<void> changePasswordDialog(BuildContext context) async {
                       controller: newController,
                       obscureText: true,
                       decoration: InputDecoration(hintText: 'New password'),
-                      validator: (val) => val == null || val.length < 6 ? 'Min 6 characters' : null,
+                      validator: Validators.validatePassword,
                     ),
                     TextFormField(
                       controller: confirmController,

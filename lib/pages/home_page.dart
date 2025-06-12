@@ -1,8 +1,9 @@
 import 'dart:async';
+import 'package:bobadex/pages/auth_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_account_page.dart';
 import 'package:bobadex/pages/settings_page.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
-import 'package:bobadex/state/brand_state.dart';
+import 'package:bobadex/pages/splash_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider;
 import 'dart:io';
@@ -76,7 +77,11 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<UserState>().user;
+    final userState = context.watch<UserState>();
+    final user = userState.user;
+    if (!userState.isLoaded) {
+      return const SplashPage();
+    }
     return Scaffold(
       extendBody: true,
       appBar: AppBar(
@@ -105,10 +110,10 @@ class _HomePageState extends State<HomePage> {
               title: const Text('Sign out'),
               onTap: () async {
                 await Supabase.instance.client.auth.signOut();
-                context.read<UserState>().reset();
-                context.read<ShopState>().reset();
-                context.read<DrinkState>().reset();
-                context.read<BrandState>().reset();
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const AuthPage()),
+                  (route) => false,
+                );
               },
             ),
           ],
