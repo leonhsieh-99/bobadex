@@ -1,15 +1,18 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:flutter/material.dart';
 
 class CommandIcon extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final int notificationCount;
 
   const CommandIcon({
     super.key,
     required this.icon,
     required this.label,
     required this.onTap,
+    this.notificationCount = 0,
   });
 
   @override
@@ -19,7 +22,14 @@ class CommandIcon extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 26),
+          Badge(
+            isLabelVisible: notificationCount != 0,
+            label: Text(
+              notificationCount.toString(),
+              style: Constants.badgeLabelStyle,
+            ),
+            child: Icon(icon, size: 26),
+          ),
           const SizedBox(height: 4),
           if (label.isNotEmpty)
             Text(label, style: const TextStyle(fontSize: 12)),

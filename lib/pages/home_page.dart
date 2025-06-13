@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'package:bobadex/pages/auth_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_account_page.dart';
 import 'package:bobadex/pages/settings_page.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
 import 'package:bobadex/pages/splash_page.dart';
+import 'package:bobadex/state/friend_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider;
 import 'dart:io';
@@ -78,6 +78,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final userState = context.watch<UserState>();
+    final friendState = context.watch<FriendState>();
     final user = userState.user;
     if (!userState.isLoaded) {
       return const SplashPage();
@@ -110,10 +111,6 @@ class _HomePageState extends State<HomePage> {
               title: const Text('Sign out'),
               onTap: () async {
                 await Supabase.instance.client.auth.signOut();
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const AuthPage()),
-                  (route) => false,
-                );
               },
             ),
           ],
@@ -302,7 +299,7 @@ class _HomePageState extends State<HomePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  CommandIcon(icon: Icons.group, label: "Friends", onTap: () => _navigateToPage(FriendsPage())),
+                  CommandIcon(icon: Icons.group, label: "Friends", notificationCount: friendState.incomingRequests.length, onTap: () => _navigateToPage(FriendsPage())),
                   CommandIcon(icon: Icons.room, label: "Tea Room", onTap: () => _navigateToPage(TeaRoomPage())),
 
                   // 🌟 Highlighted Add Shop Button

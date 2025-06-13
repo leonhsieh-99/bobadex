@@ -1,6 +1,6 @@
 import 'package:bobadex/state/friend_state.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'state/user_state.dart';
 import 'pages/splash_page.dart';
@@ -24,23 +24,39 @@ class _AppInitializerState extends State<AppInitializer> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeSession();
-    });
+    _initializeSession();
   }
+
+    void _resetAllStates() {
+      if (!mounted) return;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        p.Provider.of<UserState>(context, listen: false).reset();
+        p.Provider.of<DrinkState>(context, listen: false).reset();
+        p.Provider.of<ShopState>(context, listen: false).reset();
+        p.Provider.of<BrandState>(context, listen: false).reset();
+        p.Provider.of<FriendState>(context, listen: false).reset();
+      });
+    }
 
   Future<void> _initializeSession() async {
     try {
       final supabase = Supabase.instance.client.auth;
 
       void handleSession(Session? session) async {
-        final userState = context.read<UserState>();
-        final drinkState = context.read<DrinkState>();
-        final shopState = context.read<ShopState>();
-        final brandState = context.read<BrandState>();
-        final friendState = context.read<FriendState>();
         if (session != null) {
-          _session = session;
+          setState(() {
+            _isReady = false;
+            _session = session;
+          });
+          
+          // Only read providers when we have a valid session
+          final userState = context.read<UserState>();
+          final drinkState = context.read<DrinkState>();
+          final shopState = context.read<ShopState>();
+          final brandState = context.read<BrandState>();
+          final friendState = context.read<FriendState>();
+
           try {
             await userState.loadFromSupabase();
             print('Loaded user state');
@@ -81,10 +97,20 @@ class _AppInitializerState extends State<AppInitializer> {
           } catch (e) {
             print('Error loading friend state: $e');
           }
-          if (mounted) setState(() => _isReady = true);
+          if (mounted) {
+            setState(() {
+              _session = session;
+              _isReady = true;
+            });
+          }
         } else {
-          userState.reset(); drinkState.reset(); shopState.reset(); brandState.reset(); friendState.reset();
-          if (mounted) setState(() { _session = null; _isReady = true; });
+          _resetAllStates();
+          if (mounted) {
+            setState(() {
+              _session = null;
+              _isReady = true;
+            });
+          }
         }
       }
 
@@ -96,6 +122,7 @@ class _AppInitializerState extends State<AppInitializer> {
 
     } catch (e) {
       print('Error during app initialization: $e');
+      debugPrint('$e');
     }
   }
 

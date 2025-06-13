@@ -1,7 +1,8 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/user_state.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:bobadex/widgets/custom_search_bar.dart';
+import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user.dart' as u;
@@ -16,7 +17,7 @@ class AddFriendsPage extends StatefulWidget {
 }
 
 class _AddFriendsPageState extends State<AddFriendsPage> {
-  final _searchController = TextEditingController();
+  final _searchController = SearchController();
   final userId = Supabase.instance.client.auth.currentUser!.id;
   List<u.User> _searchResult = [];
   Timer? _debounce;
@@ -64,22 +65,16 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
   @override
   Widget build(BuildContext context) {
     final user = context.read<UserState>().user;
-    final friendState = context.read<FriendState>();
+    final friendState = context.watch<FriendState>();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Find Friends'),
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search users by username or name',
-                prefixIcon: Icon(Icons.search)
-              ),
-            ),
+          CustomSearchBar(
+            controller: _searchController,
+            hintText: 'Search user\'s name or username'
           ),
           Expanded(
             child: ListView.builder(
@@ -92,14 +87,7 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
                 return ListTile(
                   title: Text(addressee.username),
                   subtitle: Text(addressee.displayName),
-                  leading: CachedNetworkImage(
-                    imageUrl: addressee.thumbUrl,
-                    placeholder: (context, url) => CircleAvatar(child: Icon(Icons.person)),
-                    errorWidget: (context, url, error) => CircleAvatar(child: Icon(Icons.person)),
-                    imageBuilder: (context, imageProvider) => CircleAvatar(
-                      backgroundImage: imageProvider,
-                    ),
-                  ),
+                  leading: ThumbPic(url: addressee.imageUrl),
                   trailing: ElevatedButton(
                     onPressed: isDisabled
                       ? null 

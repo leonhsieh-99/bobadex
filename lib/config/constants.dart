@@ -18,8 +18,15 @@ class Constants {
   static MaterialColor getThemeColor(String slug) =>
       themeMap[slug] ?? Colors.grey;
 
-  static const defaultGridColumns = 3;
+  static const defaultGridColumns = 2;
   static const defaultTheme = 'grey';
   static const heartColor = Color(0xFFE49B9B);
   static const starColor = Color(0xFFF8EE9B);
+  static const TextStyle emptyListTextStyle = TextStyle(
+    fontSize: 16,
+    color: Colors.grey,
+    fontStyle: FontStyle.italic,
+    fontWeight: FontWeight.w400
+  );
+  static const TextStyle badgeLabelStyle = TextStyle(fontSize: 10, color: Colors.white);
 }

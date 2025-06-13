@@ -33,6 +33,55 @@ class FriendState extends ChangeNotifier {
   void removeByUsers(String requesterId, String addresseeId) {
     _friendships.removeWhere((f) =>
       f.requester.id == requesterId && f.addressee.id == addresseeId);
+    notifyListeners();
+  }
+
+  Future<void> acceptUser(String requesterId) async {
+    final index = _friendships.indexWhere(
+      (f) => f.requester.id == requesterId && f.addressee.id == userId
+    );
+    if (index != -1) {
+      final temp = _friendships[index];
+      _friendships[index].status = 'accepted';
+      notifyListeners();
+      try {
+        await supabase
+          .from('friendships')
+          .update({
+            'status': 'accepted',
+          })
+          .eq('requester_id', requesterId)
+          .eq('addressee_id', userId);
+      } catch (e) {
+        print('Update failed: $e');
+        _friendships[index] = temp;
+        notifyListeners();
+        rethrow;
+      }
+    }
+  }
+
+  Future<void> rejectUser(String requesterId) async {
+    final index = _friendships.indexWhere(
+      (f) => f.requester.id == requesterId && f.addressee.id == userId
+    );
+    if (index != -1) {
+      final temp = _friendships[index];
+      _friendships.removeAt(index);
+      notifyListeners();
+      try {
+        await supabase
+          .from('friendships')
+          .delete()
+          .eq('requester_id', requesterId)
+          .eq('addressee_id', userId);
+      } catch (e) {
+        print('Delete failed: $e');
+        _friendships.insert(index, temp);
+        notifyListeners();
+        rethrow;
+      }
+    }
   }
 
   Future<void> addUser(u.User addressee) async {

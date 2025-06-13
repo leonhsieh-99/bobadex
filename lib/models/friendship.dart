@@ -2,7 +2,7 @@ import 'package:bobadex/models/user.dart';
 
 class Friendship {
   final String id;
-  final String status;
+  String status;
   final User requester;
   final User addressee;
 
@@ -17,8 +17,8 @@ class Friendship {
     return Friendship(
       id: json['id'],
       status: json['status'],
-      requester: json['requester'],
-      addressee: json['addressee'],
+      requester: User.fromJson(json['requester']),
+      addressee: User.fromJson(json['addressee']),
     );
   }
 }

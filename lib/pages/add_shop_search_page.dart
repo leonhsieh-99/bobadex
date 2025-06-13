@@ -1,4 +1,5 @@
 import 'package:bobadex/state/shop_state.dart';
+import 'package:bobadex/widgets/custom_search_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/brand_state.dart';
@@ -16,7 +17,7 @@ class AddShopSearchPage extends StatefulWidget {
 }
 
 class _AddShopSearchPageState extends State<AddShopSearchPage> {
-  final TextEditingController _searchController = TextEditingController();
+  final _searchController = SearchController();
   List<Brand> _filteredBrands = [];
 
   List<Brand> get _brands {
@@ -75,14 +76,9 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
       appBar: AppBar(title: Text('Select Shop Brand')),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                  hintText: 'Search for a boba shop brand...',
-                  prefixIcon: Icon(Icons.search)),
-            ),
+          CustomSearchBar(
+            controller: _searchController,
+            hintText: 'Search for a boba shop or brand'
           ),
           Expanded(
             child: ListView.builder(

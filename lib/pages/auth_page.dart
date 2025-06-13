@@ -3,7 +3,6 @@ import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'home_page.dart';
 import 'package:provider/provider.dart';
 
 class AuthPage extends StatefulWidget {
@@ -97,11 +96,7 @@ class _AuthPageState extends State<AuthPage> {
       await userState.loadFromSupabase();
       await brandState.loadFromSupabase();
 
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context, 
-        MaterialPageRoute(builder: (_) => HomePage(session: session)),
-      );
+      if (!mounted) return; // back to app initializer
     } on AuthException catch(e) {
       if (e.message.contains('User already registered')) {
         ScaffoldMessenger.of(context).showSnackBar(
