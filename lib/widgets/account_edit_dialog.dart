@@ -39,7 +39,7 @@ Future<void> accountEditDialog ({
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(color: Colors.grey),
                       )
-                      : InputBorder.none,
+                      : UnderlineInputBorder()
                   ),
                   maxLength: maxLength,
                   maxLines: maxLines,

@@ -4,6 +4,7 @@ import '../models/user.dart' as u;
 
 class UserState extends ChangeNotifier {
   u.User _user = u.User.empty();
+  Map<String, dynamic> statistics = {};
   bool isLoaded = false;
 
   u.User get user => _user;
@@ -99,6 +100,15 @@ class UserState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<Map<String, dynamic>> getStats(String userId) async {
+    final response = await Supabase.instance.client
+        .rpc('get_user_stats', params: {'uid': userId})
+        .single();
+
+    return response ?? {};
+  }
+
+
   Future<bool> usernameExists(String username) async {
     return await Supabase.instance.client
       .rpc('username_exists', params: {'input_username': username});
@@ -117,6 +127,8 @@ class UserState extends ChangeNotifier {
 
     final profile = await supabase.from('users').select().eq('id', userId).maybeSingle();
     final settings = await supabase.from('user_settings').select().eq('user_id', userId).maybeSingle();
+
+    statistics = await getStats(userId);
 
     if (profile != null) {
       _user = u.User.fromMap(profile, settings);

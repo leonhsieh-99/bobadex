@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:bobadex/pages/setting_pages/settings_account_page.dart';
+import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/settings_page.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
 import 'package:bobadex/pages/splash_page.dart';
@@ -321,7 +321,7 @@ class _HomePageState extends State<HomePage> {
                   ),
 
                   CommandIcon(icon: Icons.leaderboard, label: "Rankings", onTap: () => _navigateToPage(BrandRankingsPage())),
-                  CommandIcon(icon: Icons.person, label: "Profile", onTap: () => _navigateToPage(SettingsAccountPage())),
+                  CommandIcon(icon: Icons.person, label: "Profile", onTap: () => _navigateToPage(AccountViewPage())),
                 ],
               ),
             ),

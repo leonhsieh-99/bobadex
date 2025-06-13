@@ -28,6 +28,9 @@ class BobadexApp extends StatelessWidget {
             title: 'Bobadex',
             theme: ThemeData(
               scaffoldBackgroundColor: themeColor.shade50,
+              dialogTheme: DialogTheme(
+                backgroundColor: themeColor.shade50,
+              ),
               appBarTheme: AppBarTheme(
                 backgroundColor: themeColor.shade50,
                 foregroundColor: Colors.black,

@@ -12,16 +12,17 @@ pass
 [x] scaffold MVP
 [X] login auth
 [X] set up database
-[] maybe set up Google API or OSM export to get unique shop IDs for statistics
+[X] maybe set up Google API or OSM export to get unique shop IDs for statistics
 [] add friends and visit their bobadex
     - [] add an aggregate bobadex (squadadex .... ? ok thats a tentative nanme) that shows statistices like averages, photos etc (requires the above check)
     - [-] maybe a central feed on what you and your friends 'caught'
     - [X] Allow users to make a customizable banner for each shop with their favorite drink/drinks
     - [] allow users to make comments on shops of friends
+    - [X] Ability to add friends
 [] polish UI
     - [X] switch rating numpad with a UI or validation check for nums outside of 0 and 5
     - [X] fix up the text in the grid a little so stars always show
-    - [] Add a floating bar on the bottom with things like add shop, view profile, view friends, etc.
+    - [X] Add a floating bar on the bottom with things like add shop, view profile, view friends, etc.
 [X] add filters and sorters for the bobadex add favorites
     - [X] timestamp filter (default for shops)
 [X] within every shop you should be able to add a drink and have ratings for each drink

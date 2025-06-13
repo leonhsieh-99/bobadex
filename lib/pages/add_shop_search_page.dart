@@ -64,7 +64,7 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
             context.read<ShopState>().add(shop);
             Navigator.of(context).pop();
           },
-          brand: brand!,
+          brand: brand,
         ),
       );
     }
