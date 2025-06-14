@@ -1,3 +1,4 @@
+import 'package:bobadex/models/user.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/stat_box.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
@@ -5,8 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class AccountViewPage extends StatefulWidget {
+  final User user;
+
   const AccountViewPage ({
     super.key,
+    required this.user,
   });
 
   @override
@@ -39,12 +43,16 @@ class _AccountViewPageState extends State<AccountViewPage> {
               ],
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                // Nav to bobadex
-              },
-              child: const Text('View Bobadex')
-            ),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    // Nav to bobadex
+                  },
+                  child: const Text('View Bobadex')
+                ),
+              ],
+            )
           ],
         ),
       )

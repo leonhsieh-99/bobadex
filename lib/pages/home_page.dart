@@ -321,7 +321,7 @@ class _HomePageState extends State<HomePage> {
                   ),
 
                   CommandIcon(icon: Icons.leaderboard, label: "Rankings", onTap: () => _navigateToPage(BrandRankingsPage())),
-                  CommandIcon(icon: Icons.person, label: "Profile", onTap: () => _navigateToPage(AccountViewPage())),
+                  CommandIcon(icon: Icons.person, label: "Profile", onTap: () => _navigateToPage(AccountViewPage(user: user))),
                 ],
               ),
             ),

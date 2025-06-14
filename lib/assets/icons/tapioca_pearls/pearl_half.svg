@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+
+  <defs>
+    <radialGradient id="g" cx="23%" cy="23%" r="50%">
+      <stop offset="0%"   stop-color="white" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="black" stop-opacity="1"/>
+    </radialGradient>
+  </defs>
+
+  <!-- 1) Full circle outline -->
+  <circle
+    cx="50" cy="50" r="45"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="6"/>
+
+  <!-- 2) Half-moon gradient fill -->
+  <path
+    d="M50,5 A45,45 0 1,0 50,95 L50,95 L50,5 Z"
+    fill="url(#g)"/>
+
+</svg>
