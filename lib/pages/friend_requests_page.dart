@@ -1,4 +1,5 @@
 import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
@@ -45,6 +46,9 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> {
                     subtitle: Text(requester.displayName),
                     leading: ThumbPic(url: requester.imageUrl, size: 60),
                     minLeadingWidth: 60,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => AccountViewPage(user: requester))
+                    ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
