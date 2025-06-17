@@ -6,12 +6,12 @@ import 'package:provider/provider.dart';
 
 class RatingPicker extends StatelessWidget{
   final double rating;
-  final void Function(double) onChanged;
+  final void Function(double)? onChanged;
 
   const RatingPicker({
     super.key,
     required this.rating,
-    required this.onChanged,
+    this.onChanged,
   });
 
   @override
@@ -31,24 +31,30 @@ class RatingPicker extends StatelessWidget{
           asset = 'lib/assets/icons/tapioca_pearls/pearl_outline.svg';
         }
 
-        return GestureDetector(
-          onPanDown: (details) {
-            final localX = details.localPosition.dx;
-            final width = iconSize; // icon size
-            final isHalf = localX < width / 2;
-
-            onChanged(isHalf ? current - 0.5 : current);
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: SvgPicture.asset(
-              asset,
-              width: iconSize,
-              height: iconSize,
-              colorFilter: ColorFilter.mode(Constants.getThemeColor(user.themeSlug).shade700, BlendMode.srcIn),
-            )
-          ),
+        Widget icon = Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: SvgPicture.asset(
+            asset,
+            width: iconSize,
+            height: iconSize,
+            colorFilter: ColorFilter.mode(Constants.getThemeColor(user.themeSlug).shade700, BlendMode.srcIn),
+          )
         );
+
+        if (onChanged != null) {
+          return GestureDetector(
+            onPanDown: (details) {
+              final localX = details.localPosition.dx;
+              final width = iconSize; // icon size
+              final isHalf = localX < width / 2;
+
+              onChanged!(isHalf ? current - 0.5 : current);
+            },
+            child: icon,
+          );
+        }
+
+        return icon;
       }),
     );
   }

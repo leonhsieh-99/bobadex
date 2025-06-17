@@ -1,7 +1,6 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 class UserStatsCache extends ChangeNotifier {
   final _cache = <String, Map<String, dynamic>> {};
 

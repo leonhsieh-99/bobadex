@@ -21,7 +21,7 @@ import 'add_shop_search_page.dart';
 import '../widgets/command_icon.dart';
 import 'tea_room_page.dart';
 import 'friends_page.dart';
-import 'brand_rankings_page.dart';
+import 'rankings_page.dart';
 import '../models/user.dart' as u;
 
 class HomePage extends StatefulWidget {
@@ -355,7 +355,7 @@ class _HomePageState extends State<HomePage> {
                       ],
                     ),
 
-                    CommandIcon(icon: Icons.leaderboard, label: "Rankings", onTap: () => _navigateToPage(BrandRankingsPage())),
+                    CommandIcon(icon: Icons.leaderboard, label: "Rankings", onTap: () => _navigateToPage(RankingsPage())),
                     CommandIcon(icon: Icons.person, label: "Profile", onTap: () => _navigateToPage(AccountViewPage(user: user))),
                   ],
                 ),

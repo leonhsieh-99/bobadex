@@ -106,7 +106,8 @@ create table ref.brands (
   display text,
   wikidata text,                        -- Q-ID when known
   aliases text[],                       -- lower-case spellings
-  logo_url text
+  logo_url text,
+  icon_path text,
 );
 
 -- Brand Locations Table
