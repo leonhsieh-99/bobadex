@@ -77,7 +77,7 @@ class Shop extends SortableEntry {
       imagePath: imagePath ?? this.imagePath,
       isFavorite: isFavorite ?? this.isFavorite,
       notes: notes ?? this.notes,
-      pinnedDrinkId: pinnedDrinkId ?? this.pinnedDrinkId,
+      pinnedDrinkId: pinnedDrinkId == '' ? null : pinnedDrinkId ?? this.pinnedDrinkId,
       createdAt: createdAt,
       placeId: placeId ?? this.placeId,
       brandSlug: brandSlug ?? this.brandSlug,

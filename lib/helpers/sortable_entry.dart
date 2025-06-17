@@ -23,7 +23,7 @@ void sortEntries<T extends SortableEntry>(
       case 'favorite':
         if (a.isFavorite && !b.isFavorite) return -1;
         if (!a.isFavorite && b.isFavorite) return 1;
-        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        return b.rating.compareTo(a.rating);
       case 'createdAt':
         return ascending
           ? a.createdAt.compareTo(b.createdAt)

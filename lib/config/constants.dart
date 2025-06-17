@@ -29,4 +29,5 @@ class Constants {
     fontWeight: FontWeight.w400
   );
   static const TextStyle badgeLabelStyle = TextStyle(fontSize: 10, color: Colors.white);
+  static const Map<String, dynamic> emptyStats = {'num_shops': 0, 'num_drinks': 0};
 }

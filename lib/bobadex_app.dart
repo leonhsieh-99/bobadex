@@ -3,6 +3,7 @@ import 'package:bobadex/state/drink_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
+import 'package:bobadex/state/user_stats_cache.dart';
 import 'package:flutter/material.dart';
 import 'app_initializer.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +21,7 @@ class BobadexApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ShopState()),
         ChangeNotifierProvider(create: (_) => BrandState()),
         ChangeNotifierProvider(create: (_) => FriendState()),
+        ChangeNotifierProvider(create: (_) => UserStatsCache()),
       ],
       child: Consumer<UserState>(
         builder: (context, userState, _) {

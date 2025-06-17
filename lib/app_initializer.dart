@@ -5,9 +5,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'state/user_state.dart';
 import 'pages/splash_page.dart';
 import 'state/drink_state.dart';
+import 'state/user_stats_cache.dart';
 import 'state/brand_state.dart';
 import 'state/shop_state.dart';
 import 'pages/auth_page.dart';
+import 'models/user.dart' as u;
 import 'pages/home_page.dart';
 
 class AppInitializer extends StatefulWidget {
@@ -20,6 +22,7 @@ class AppInitializer extends StatefulWidget {
 class _AppInitializerState extends State<AppInitializer> {
   bool _isReady = false;
   Session? _session;
+  late u.User user;
 
   @override
   void initState() {
@@ -36,6 +39,7 @@ class _AppInitializerState extends State<AppInitializer> {
         p.Provider.of<ShopState>(context, listen: false).reset();
         p.Provider.of<BrandState>(context, listen: false).reset();
         p.Provider.of<FriendState>(context, listen: false).reset();
+        p.Provider.of<UserStatsCache>(context, listen: false).clearCache();
       });
     }
 
@@ -99,6 +103,7 @@ class _AppInitializerState extends State<AppInitializer> {
           }
           if (mounted) {
             setState(() {
+              this.user = user;
               _session = session;
               _isReady = true;
             });
@@ -131,6 +136,6 @@ class _AppInitializerState extends State<AppInitializer> {
     return
       !_isReady
         ? const SplashPage()
-        : (_session == null ? const AuthPage() : HomePage(session: _session!));
+        : (_session == null ? const AuthPage() : HomePage(user: user));
   }
 }

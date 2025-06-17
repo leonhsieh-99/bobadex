@@ -60,6 +60,8 @@ class ShopState extends ChangeNotifier {
             'rating': updated.rating,
             'is_favorite': updated.isFavorite,
             'brand_slug': updated.brandSlug,
+            'pinned_drink_id': updated.pinnedDrinkId,
+            'notes': updated.notes,
           })
           .eq('id', updated.id);
       } catch (e) {

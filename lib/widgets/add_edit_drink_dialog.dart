@@ -44,6 +44,7 @@ class _AddOrEditDrinkDialogState extends State<AddOrEditDrinkDialog> {
           name: _nameController.text.trim(),
           rating: _rating,
           notes: _notesController.text.trim(),
+          isFavorite: widget.initialData?.isFavorite,
         ),
       );
       Navigator.pop(context);

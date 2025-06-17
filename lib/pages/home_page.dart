@@ -22,10 +22,11 @@ import '../widgets/command_icon.dart';
 import 'tea_room_page.dart';
 import 'friends_page.dart';
 import 'brand_rankings_page.dart';
+import '../models/user.dart' as u;
 
 class HomePage extends StatefulWidget {
-  final Session session;
-  const HomePage({super.key, required this.session});
+  final u.User user;
+  const HomePage({super.key, required this.user});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -36,12 +37,18 @@ class _HomePageState extends State<HomePage> {
   String _searchQuery = '';
   String _selectedSort = 'favorite-asc';
 
-  List<Shop> get _shops {
-    return context.watch<ShopState>().all;
+  bool get isCurrentUser => widget.user.id == Supabase.instance.client.auth.currentUser!.id;
+
+  Future<List<Shop>> fetchUserShops(String userId) async {
+    final response = await Supabase.instance.client
+        .from('shops')
+        .select()
+        .eq('user_id', userId);
+    return (response as List).map((json) => Shop.fromJson(json)).toList();
   }
 
-  List<Shop> get visibleShops {
-    List<Shop> filtered = [..._shops];
+  List<Shop> getVisibleShops(List<Shop> shops) {
+    List<Shop> filtered = shops;
 
     if (_searchQuery.isNotEmpty) {
       filtered = filterEntries(filtered, searchQuery: _searchQuery);
@@ -57,12 +64,14 @@ class _HomePageState extends State<HomePage> {
     return filtered;
   }
 
-  Future<void> _navigateToShop(Shop shop) async {
+  Future<void> _navigateToShop(Shop shop, user) async {
+    print('Shop id: ${shop.id}');
     await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ShopDetailPage(
           shop: shop,
+          user: user,
         )
       ),
     );
@@ -79,7 +88,153 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final userState = context.watch<UserState>();
     final friendState = context.watch<FriendState>();
-    final user = userState.user;
+    final user = isCurrentUser ? userState.user : widget.user;
+
+    Widget shopGrid(List<Shop> shops) {
+      final visibleShops = getVisibleShops(shops);
+      if (shops.isEmpty) {
+        return const Center(child: Text("No shops added."));
+      } else if (visibleShops.isEmpty) {
+        return const Center(child: Text('No shops found.'));
+      }
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
+        child: GridView.builder(
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 120),
+          itemCount: visibleShops.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: user.gridColumns,
+            crossAxisSpacing: 4,
+            mainAxisSpacing: 4,
+            childAspectRatio: 1,
+          ),
+          itemBuilder: (context, index) {
+            final screenWidth = MediaQuery.of(context).size.width;
+            final columns = user.gridColumns; // e.g., 2 or 3
+            const spacing = 4.0;
+            const baseTileWidth = 120.0;
+
+            final itemWidth = (screenWidth - (spacing * (columns + 1))) / columns;
+            final scaleFactor = itemWidth / baseTileWidth;
+            final imageScale = columns == 2 ? scaleFactor * 1.2 : scaleFactor;
+            final textScale = columns == 2 ? scaleFactor * 1 : scaleFactor;
+
+            final shop = visibleShops[index];
+            return GestureDetector(
+              onTap: () async => _navigateToShop(shop, user),
+              child: Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: 4,
+                        left: 4,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: 85 * textScale),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                shop.name,
+                                style: TextStyle(
+                                  fontSize: 11 * textScale,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: TextAlign.left,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                              Row(
+                                children: [
+                                  SvgPicture.asset(
+                                    'lib/assets/icons/star.svg',
+                                    width: 12 * textScale,
+                                    height: 12 * textScale,
+                                  ),
+                                  SizedBox(width: 2),
+                                  Text(
+                                    shop.rating.toStringAsFixed(1),
+                                    style: TextStyle(fontSize: 12 * textScale),
+                                    textAlign: TextAlign.left,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ]
+                              ),
+                              SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  SvgPicture.asset(
+                                    'lib/assets/icons/boba1.svg',
+                                    width: 13 * textScale,
+                                    height: 13 * textScale,
+                                  ),
+                                  SizedBox(width: 2),
+                                  Text(
+                                    (context.watch<DrinkState>().drinksByShop[shop.id] ?? []).length.toString(),
+                                    style: TextStyle(fontSize: 12 * textScale),
+                                    textAlign: TextAlign.left,
+                                    overflow: TextOverflow.ellipsis,
+                                  )
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: shop.imagePath == null || shop.imagePath!.isEmpty
+                            ? Center(child: Icon(Icons.store, size: 50 * imageScale, color: Colors.grey))
+                            : (shop.imagePath != null && shop.imagePath!.startsWith('/')) 
+                              ? SizedBox(
+                                  width: 40 * imageScale,
+                                  height: 60 * imageScale,
+                                  child: Image.file(
+                                    File(shop.imagePath!),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Center(child: Icon(Icons.broken_image, size: 50 * imageScale));
+                                    },
+                                  ),
+                                )
+                              : SizedBox(
+                                  width: 40 * imageScale,
+                                  height: 60 * imageScale,
+                                  child: CachedNetworkImage(
+                                    imageUrl: shop.thumbUrl,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => CircularProgressIndicator(),
+                                    errorWidget: (context, url, error) => Icon(Icons.broken_image, size: 50 * imageScale),
+                                  ),
+                                )
+                        ),
+                      ),
+                      if (shop.isFavorite)
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: SvgPicture.asset(
+                          'lib/assets/icons/heart.svg',
+                          width: 14 * textScale,
+                          height: 14 * textScale,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
     if (!userState.isLoaded) {
       return const SplashPage();
     }
@@ -88,7 +243,7 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: Text('${user.firstName}\'s Bobadex'),
       ),
-      drawer: Drawer(
+      drawer: isCurrentUser ? Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
@@ -115,7 +270,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
-      ),
+      ) : null,
       body: Stack(
         children: [
           Column(
@@ -138,196 +293,76 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               Expanded(
-                child: _shops.isEmpty
-                  ? const Center(child: Text('No shops yet. Tap + to add!'))
-                    : Padding(
-                      padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
-                      child: GridView.builder(
-                        padding: const EdgeInsets.fromLTRB(4, 0, 4, 120),
-                        itemCount: visibleShops.length,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: user.gridColumns,
-                          crossAxisSpacing: 4,
-                          mainAxisSpacing: 4,
-                          childAspectRatio: 1,
-                        ),
-                        itemBuilder: (context, index) {
-                          final screenWidth = MediaQuery.of(context).size.width;
-                          final columns = user.gridColumns; // e.g., 2 or 3
-                          const spacing = 4.0;
-                          const baseTileWidth = 120.0;
-
-                          final itemWidth = (screenWidth - (spacing * (columns + 1))) / columns;
-                          final scaleFactor = itemWidth / baseTileWidth;
-                          final imageScale = columns == 2 ? scaleFactor * 1.2 : scaleFactor;
-                          final textScale = columns == 2 ? scaleFactor * 1 : scaleFactor;
-
-                          final shop = visibleShops[index];
-                          return GestureDetector(
-                            onTap: () async => _navigateToShop(shop),
-                            child: Card(
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Stack(
-                                  children: [
-                                    Positioned(
-                                      top: 4,
-                                      left: 4,
-                                      child: ConstrainedBox(
-                                        constraints: BoxConstraints(maxWidth: 85 * textScale),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              shop.name,
-                                              style: TextStyle(
-                                                fontSize: 11 * textScale,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                              textAlign: TextAlign.left,
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 1,
-                                            ),
-                                            Row(
-                                              children: [
-                                                SvgPicture.asset(
-                                                  'lib/assets/icons/star.svg',
-                                                  width: 12 * textScale,
-                                                  height: 12 * textScale,
-                                                ),
-                                                SizedBox(width: 2),
-                                                Text(
-                                                  shop.rating.toStringAsFixed(1),
-                                                  style: TextStyle(fontSize: 12 * textScale),
-                                                  textAlign: TextAlign.left,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ]
-                                            ),
-                                            SizedBox(height: 2),
-                                            Row(
-                                              children: [
-                                                SvgPicture.asset(
-                                                  'lib/assets/icons/boba1.svg',
-                                                  width: 13 * textScale,
-                                                  height: 13 * textScale,
-                                                ),
-                                                SizedBox(width: 2),
-                                                Text(
-                                                  (context.watch<DrinkState>().drinksByShop[shop.id] ?? []).length.toString(),
-                                                  style: TextStyle(fontSize: 12 * textScale),
-                                                  textAlign: TextAlign.left,
-                                                  overflow: TextOverflow.ellipsis,
-                                                )
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      bottom: 8,
-                                      right: 8,
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: shop.imagePath == null || shop.imagePath!.isEmpty
-                                          ? Center(child: Icon(Icons.store, size: 50 * imageScale, color: Colors.grey))
-                                          : (shop.imagePath != null && shop.imagePath!.startsWith('/')) 
-                                            ? SizedBox(
-                                                width: 40 * imageScale,
-                                                height: 60 * imageScale,
-                                                child: Image.file(
-                                                  File(shop.imagePath!),
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (context, error, stackTrace) {
-                                                    return Center(child: Icon(Icons.broken_image, size: 50 * imageScale));
-                                                  },
-                                                ),
-                                              )
-                                            : SizedBox(
-                                                width: 40 * imageScale,
-                                                height: 60 * imageScale,
-                                                child: CachedNetworkImage(
-                                                  imageUrl: shop.thumbUrl,
-                                                  fit: BoxFit.cover,
-                                                  placeholder: (context, url) => CircularProgressIndicator(),
-                                                  errorWidget: (context, url, error) => Icon(Icons.broken_image, size: 50 * imageScale),
-                                                ),
-                                              )
-                                      ),
-                                    ),
-                                    if (shop.isFavorite)
-                                    Positioned(
-                                      top: 0,
-                                      right: 0,
-                                      child: SvgPicture.asset(
-                                        'lib/assets/icons/heart.svg',
-                                        width: 14 * textScale,
-                                        height: 14 * textScale,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                child: isCurrentUser
+                  ? provider.Consumer<ShopState>(
+                      builder: (context, shopState, _) {
+                        return shopGrid(shopState.all);
+                      }
+                    )
+                  : FutureBuilder(
+                      future: fetchUserShops(widget.user.id),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: SplashPage());
+                        }
+                        if (snapshot.hasError) {
+                          return Center(child: Text('Error: ${snapshot.error}'));
+                        }
+                        return shopGrid(snapshot.data ?? []);
+                      }
+                    )
               ),
             ],
           ),
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 24,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 20),
-              decoration: BoxDecoration(
-                color: Constants.getThemeColor(user.themeSlug).shade50,
-                borderRadius: BorderRadius.circular(40),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey,
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  CommandIcon(icon: Icons.group, label: "Friends", notificationCount: friendState.incomingRequests.length, onTap: () => _navigateToPage(FriendsPage())),
-                  CommandIcon(icon: Icons.room, label: "Tea Room", onTap: () => _navigateToPage(TeaRoomPage())),
+          if (isCurrentUser)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 24,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 20),
+                decoration: BoxDecoration(
+                  color: Constants.getThemeColor(user.themeSlug).shade50,
+                  borderRadius: BorderRadius.circular(40),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey,
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    CommandIcon(icon: Icons.group, label: "Friends", notificationCount: friendState.incomingRequests.length, onTap: () => _navigateToPage(FriendsPage())),
+                    CommandIcon(icon: Icons.room, label: "Tea Room", onTap: () => _navigateToPage(TeaRoomPage())),
 
-                  // 🌟 Highlighted Add Shop Button
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      GestureDetector(
-                        onTap: () => _navigateToPage(AddShopSearchPage()),
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Constants.getThemeColor(user.themeSlug).shade300,
-                            shape: BoxShape.circle,
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GestureDetector(
+                          onTap: () => _navigateToPage(AddShopSearchPage()),
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Constants.getThemeColor(user.themeSlug).shade300,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.add, color: Colors.white, size: 28),
                           ),
-                          child: const Icon(Icons.add, color: Colors.white, size: 28),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
 
-                  CommandIcon(icon: Icons.leaderboard, label: "Rankings", onTap: () => _navigateToPage(BrandRankingsPage())),
-                  CommandIcon(icon: Icons.person, label: "Profile", onTap: () => _navigateToPage(AccountViewPage(user: user))),
-                ],
+                    CommandIcon(icon: Icons.leaderboard, label: "Rankings", onTap: () => _navigateToPage(BrandRankingsPage())),
+                    CommandIcon(icon: Icons.person, label: "Profile", onTap: () => _navigateToPage(AccountViewPage(user: user))),
+                  ],
+                ),
               ),
-            ),
-          )
-        ]
-      ),
-    );
-  }
+            )
+          ]
+        ),
+      );
+    }
 }

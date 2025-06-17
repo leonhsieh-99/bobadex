@@ -16,13 +16,16 @@ import '../widgets/filter_sort_bar.dart';
 import '../state/drink_state.dart';
 import '../config/constants.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../models/user.dart' as u;
 
 class ShopDetailPage extends StatefulWidget{
   final Shop shop;
+  final u.User user;
 
   const ShopDetailPage({
     super.key,
     required this.shop,
+    required this.user,
   });
 
   @override
@@ -40,18 +43,19 @@ class _ShopDetailPage extends State<ShopDetailPage> {
     super.initState();
   }
 
+  bool get isCurrentUser => widget.user.id == Supabase.instance.client.auth.currentUser!.id;
+
   Shop get _shop {
     return context.watch<ShopState>().getShop(widget.shop.id) ?? widget.shop;
   }
 
-
   List<Drink> get _shopDrinks {
-    return context.watch<DrinkState>().drinksByShop[widget.shop.id] ?? [];
+    return context.watch<DrinkState>().drinksByShop[_shop.id] ?? [];
   }
 
   String get pinnedDrink {
     final allDrinks = context.watch<DrinkState>().all;
-    final pinned = allDrinks.where((d) => d.id == widget.shop.pinnedDrinkId).firstOrNull;
+    final pinned = allDrinks.where((d) => d.id == _shop.pinnedDrinkId).firstOrNull;
     return pinned?.name ?? '';
   }
 
@@ -77,8 +81,13 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   @override
   Widget build(BuildContext context) {
     final shopState = context.read<ShopState>();
+    final brandState = context.read<BrandState>();
     final drinkState = context.read<DrinkState>();
-    final user = context.watch<UserState>().user;
+    final userState = context.watch<UserState>();
+    final user = isCurrentUser ? userState.user : widget.user;
+
+    Shop shopRead = shopState.getShop(widget.shop.id) ?? widget.shop;
+    final brand = brandState.getBrand(shopRead.brandSlug);
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -157,41 +166,33 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                               ),
                             ),
                             SizedBox(width: 14),
-                            ActionChip(
-                              label: const Text(
-                                '+ Drink',
-                                style: TextStyle(fontSize: 13),
+                            if (isCurrentUser)
+                              ActionChip(
+                                label: const Text(
+                                  '+ Drink',
+                                  style: TextStyle(fontSize: 13),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                                visualDensity: VisualDensity.compact,
+                                backgroundColor: Constants.getThemeColor(user.themeSlug).shade100,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                onPressed: () async {
+                                  await showDialog(
+                                    context: context,
+                                    builder: (_) => AddOrEditDrinkDialog(
+                                      onSubmit: (drink) async {
+                                        try {
+                                          await drinkState.add(drink.toDrink(shopId: shopRead.id), shopRead.id!);
+                                        } catch (e) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Failed to add drink.')),
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  );
+                                },
                               ),
-                              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                              visualDensity: VisualDensity.compact,
-                              backgroundColor: Constants.getThemeColor(user.themeSlug).shade100,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              onPressed: () async {
-                                await showDialog(
-                                  context: context,
-                                  builder: (_) => AddOrEditDrinkDialog(
-                                    onSubmit: (drink) async {
-                                      final response = await supabase.from('drinks').insert({
-                                        'shop_id': _shop.id,
-                                        'user_id': supabase.auth.currentUser!.id,
-                                        'name': drink.name,
-                                        'rating': drink.rating,
-                                        'notes': drink.notes,
-                                      }).select().single();
-
-                                      if (response != null && context.mounted) {
-                                        final newDrink = Drink.fromJson(response);
-                                        drinkState.add(newDrink);
-                                      } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Failed to add drink.')),
-                                        );
-                                      }
-                                    },
-                                  ),
-                                );
-                              },
-                            ),
                           ],
                         ),
                         Row(
@@ -199,7 +200,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                             Icon(Icons.bookmark, color: Constants.heartColor, size: 24),
                             const SizedBox(width: 8),
                             Flexible(
-                              flex: 7,
+                              flex: 8,
                               child: Text(
                                 pinnedDrink != '' ? pinnedDrink : 'No pinned drink',
                                 style: const TextStyle(fontSize: 20),
@@ -207,10 +208,9 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                 maxLines: 1,
                               ),
                             ),
-                            const SizedBox(width: 12),
                             if (pinnedDrink != '')
                               Flexible(
-                                flex: 5,
+                                flex: 2,
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   mainAxisSize: MainAxisSize.max,
@@ -294,23 +294,20 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 GestureDetector(
-                                                  onTap: () async {
-                                                    final updated = drink.copyWith(isFavorite: !drink.isFavorite);
-                                                    drinkState.update(updated); // optimistic update
-                                                    try {
-                                                      await supabase
-                                                        .from('drinks')
-                                                        .update({'is_favorite': updated.isFavorite})
-                                                        .eq('id', drink.id);
-                                                    } catch (_) {
-                                                      drinkState.update(drink); // rollback on error
-                                                      if (context.mounted) {
-                                                        ScaffoldMessenger.of(context).showSnackBar(
-                                                          SnackBar(content: Text('Failed to update favorite status.')),
-                                                        );
+                                                  onTap: isCurrentUser
+                                                    ? () async {
+                                                        final updated = drink.copyWith(isFavorite: !drink.isFavorite);
+                                                        try {
+                                                          await drinkState.update(updated);
+                                                        } catch (_) {
+                                                          if (context.mounted) {
+                                                            ScaffoldMessenger.of(context).showSnackBar(
+                                                              SnackBar(content: Text('Failed to update favorite status.')),
+                                                            );
+                                                          }
+                                                        }
                                                       }
-                                                    }
-                                                  },
+                                                    : null,
                                                   child: SvgPicture.asset(
                                                     drink.isFavorite 
                                                       ? 'lib/assets/icons/heart.svg'
@@ -319,89 +316,90 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                     height: 16,
                                                   ),
                                                 ),
-                                                PopupMenuButton<String>(
-                                                  icon: const Icon(Icons.more_horiz, size: 16),
-                                                  onSelected: (value) async {
-                                                    switch(value) {
-                                                      case 'pin':
-                                                        final isPinned = _shop.pinnedDrinkId == drink.id;
-                                                        await supabase.from('shops')
-                                                          .update({'pinned_drink_id': isPinned ? null : drink.id})
-                                                          .eq('id', _shop.id);
-                                                        setState(() {
-                                                          _shop.pinnedDrinkId = isPinned ? null : drink.id;
-                                                        });
-                                                        break;
-                                                      case 'edit':
-                                                        await showDialog(
-                                                          context: context,
-                                                          builder: (_) => AddOrEditDrinkDialog(
-                                                            initialData: DrinkFormData(
-                                                              name: drink.name,
-                                                              rating: drink.rating,
-                                                              notes: drink.notes,
+                                                if (isCurrentUser)
+                                                  PopupMenuButton<String>(
+                                                    icon: const Icon(Icons.more_horiz, size: 16),
+                                                    onSelected: (value) async {
+                                                      final shop = shopState.getShop(widget.shop.id);
+                                                      switch(value) {
+                                                        case 'pin':
+                                                          final isPinned = shop?.pinnedDrinkId == drink.id;
+                                                          try {
+                                                            if (isPinned) {
+                                                              await shopState.update(shop!.copyWith(pinnedDrinkId: ''));
+                                                            } else {
+                                                              await shopState.update(shop!.copyWith(pinnedDrinkId: drink.id));
+                                                            }
+                                                          } catch (_) {
+                                                            ScaffoldMessenger.of(context).showSnackBar(
+                                                              SnackBar(content: const Text('Pin failed'))
+                                                            );
+                                                          }
+                                                          break;
+                                                        case 'edit':
+                                                          await showDialog(
+                                                            context: context,
+                                                            builder: (_) => AddOrEditDrinkDialog(
+                                                              initialData: DrinkFormData(
+                                                                name: drink.name,
+                                                                rating: drink.rating,
+                                                                notes: drink.notes,
+                                                                isFavorite: drink.isFavorite,
+                                                              ),
+                                                              onSubmit: (updatedDrink) async {
+                                                                try {
+                                                                  await drinkState.update(updatedDrink.toDrink(id: drink.id, shopId: drink.shopId));
+                                                                } catch (_) {
+                                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                                    SnackBar(content: Text('Failed to update drink.')),
+                                                                  );
+                                                                }
+                                                              },
                                                             ),
-                                                            onSubmit: (updatedDrink) async {
-                                                              final response = await supabase
-                                                                .from('drinks')
-                                                                .update({
-                                                                  'name': updatedDrink.name,
-                                                                  'rating': updatedDrink.rating,
-                                                                  'notes': updatedDrink.notes,
-                                                                })
-                                                                .eq('id', drink.id)
-                                                                .select()
-                                                                .single();
-                                                              
-                                                              if (response != null && context.mounted) {
-                                                                final updated = Drink.fromJson(response);
-                                                                drinkState.update(updated);
-                                                              } else {
-                                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                                  SnackBar(content: Text('Failed to update drink.')),
-                                                                );
-                                                              }
-                                                            },
-                                                          ),
-                                                        );
-                                                        break;
-                                                      case 'remove':
-                                                        final confirm = await showDialog<bool>(
-                                                          context: context,
-                                                          builder: (context) => AlertDialog(
-                                                            title: const Text('Delete Drink'),
-                                                            content: const Text('Are you sure you want to remove this drink ?'),
-                                                            actions: [
-                                                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                                                              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
-                                                            ],
-                                                          )
-                                                        );
-                                                        if (confirm == true) {
-                                                          await supabase.from('drinks').delete().eq('id', drink.id);
-                                                          drinkState.remove(drink.id!);
-                                                        }
-                                                        break;
-                                                    }
-                                                  },
-                                                  itemBuilder: (_) => [
-                                                    PopupMenuItem(
-                                                      value: 'pin',
-                                                      child: Text(drink.id != _shop.pinnedDrinkId
-                                                        ? 'Pin'
-                                                        : 'Unpin'
-                                                      )
-                                                    ),
-                                                    PopupMenuItem(
-                                                      value: 'edit',
-                                                      child: Text('Edit'),
-                                                    ),
-                                                    PopupMenuItem(
-                                                      value: 'remove',
-                                                      child: Text('Remove'),
-                                                    ),
-                                                  ]
-                                                ),
+                                                          );
+                                                          break;
+                                                        case 'remove':
+                                                          final confirm = await showDialog<bool>(
+                                                            context: context,
+                                                            builder: (context) => AlertDialog(
+                                                              title: const Text('Remove Drink'),
+                                                              content: const Text('Are you sure you want to remove this drink ?'),
+                                                              actions: [
+                                                                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                                                TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
+                                                              ],
+                                                            )
+                                                          );
+                                                          if (confirm == true) {
+                                                            try {
+                                                              await drinkState.remove(drink.id!);
+                                                            } catch (_) {
+                                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                                SnackBar(content: const Text('Remove failed'))
+                                                              );
+                                                            }
+                                                          }
+                                                          break;
+                                                      }
+                                                    },
+                                                    itemBuilder: (_) => [
+                                                      PopupMenuItem(
+                                                        value: 'pin',
+                                                        child: Text(drink.id != shopRead.pinnedDrinkId
+                                                          ? 'Pin'
+                                                          : 'Unpin'
+                                                        )
+                                                      ),
+                                                      PopupMenuItem(
+                                                        value: 'edit',
+                                                        child: Text('Edit'),
+                                                      ),
+                                                      PopupMenuItem(
+                                                        value: 'remove',
+                                                        child: Text('Remove'),
+                                                      ),
+                                                    ]
+                                                  ),
                                               ],
                                             ),
                                             title: Row(
@@ -478,129 +476,126 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
-              Positioned(
-                top: 40,
-                right: 4,
-                child: Row(
-                  children: [ 
-                    GestureDetector(
-                      onTap: () async {
-                        final updated = _shop.copyWith(isFavorite: !_shop.isFavorite);
-                        try {
-                          await shopState.update(updated);
-                        } catch (_) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Failed to update favorite status.')),
-                            );
+              if (isCurrentUser)
+                Positioned(
+                  top: 40,
+                  right: 4,
+                  child: Row(
+                    children: [ 
+                      GestureDetector(
+                        onTap: () async {
+                          final updated = shopRead.copyWith(isFavorite: !shopRead.isFavorite);
+                          try {
+                            await shopState.update(updated);
+                          } catch (_) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Failed to update favorite status.')),
+                              );
+                            }
                           }
-                        }
-                      },
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          if (!_shop.isFavorite)
+                        },
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            if (!_shop.isFavorite)
+                              SvgPicture.asset(
+                                'lib/assets/icons/heart.svg',
+                                width: 16,
+                                height: 16,
+                                colorFilter: ColorFilter.mode(Colors.white.withOpacity(.3), BlendMode.srcIn),
+                              ),
                             SvgPicture.asset(
-                              'lib/assets/icons/heart.svg',
+                              _shop.isFavorite 
+                                ? 'lib/assets/icons/heart.svg'
+                                : 'lib/assets/icons/heart_outlined.svg',
                               width: 16,
                               height: 16,
-                              colorFilter: ColorFilter.mode(Colors.white.withOpacity(.3), BlendMode.srcIn),
                             ),
-                          SvgPicture.asset(
-                            _shop.isFavorite 
-                              ? 'lib/assets/icons/heart.svg'
-                              : 'lib/assets/icons/heart_outlined.svg',
-                            width: 16,
-                            height: 16,
-                          ),
-                        ],
-                      )
-                    ),
-                    PopupMenuButton<String>(
-                      icon: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Container(
-                            width: 20,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(.3),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          const Icon(Icons.more_horiz, size: 18, color: Colors.black),
-                        ]
+                          ],
+                        )
                       ),
-                      onSelected: (value) async {
-                        switch(value) {
-                          case 'edit':
-                            await showDialog(
-                              context: context,
-                              builder: (_) => AddOrEditShopDialog(
-                                shop: _shop,
-                                brand: context.read<BrandState>().getBrand(_shop.brandSlug),
-                                onSubmit: (updatedshop) async {
-                                  try {
-                                    await shopState.update(updatedshop);
-                                  } catch (e) {
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Failed to update _shop.')),
-                                      );
-                                    }
-                                  }
-                                },
+                      PopupMenuButton<String>(
+                        icon: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Container(
+                              width: 20,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(.3),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                            );
-                            break;
-                          case 'delete':
-                            // Store all necessary data before any async operations
-                            final shopId = widget.shop.id!;
-                            final shopState = p.Provider.of<ShopState>(context, listen: false);
-                            
-                            final confirm = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Delete shop'),
-                                content: const Text('Are you sure you want to remove this shop ?'),
-                                actions: [
-                                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                                  TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
-                                ],
-                              )
-                            );
-                            
-                            if (confirm == true && context.mounted) {
-                              try {
-                                Navigator.pop(context);
-                                await shopState.remove(shopId);
-                              } catch (e) {
-                                debugPrint("Failed to remove shop: $e");
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Failed to remove shop'))
-                                  );
+                            ),
+                            const Icon(Icons.more_horiz, size: 18, color: Colors.black),
+                          ]
+                        ),
+                        onSelected: (value) async {
+                          switch(value) {
+                            case 'edit':
+                              await showDialog(
+                                context: context,
+                                builder: (_) => AddOrEditShopDialog(
+                                  shop: shopRead,
+                                  brand: brand,
+                                  onSubmit: (updatedshop) async {
+                                    try {
+                                      await shopState.update(updatedshop);
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Failed to update shop.')),
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
+                              );
+                              break;
+                            case 'delete':
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Delete shop'),
+                                  content: const Text('Are you sure you want to remove this shop ?'),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                    TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+                                  ],
+                                )
+                              );
+                              
+                              if (confirm == true && context.mounted) {
+                                try {
+                                  Navigator.pop(context);
+                                  await shopState.remove(widget.shop.id!);
+                                } catch (e) {
+                                  debugPrint("Failed to remove shop: $e");
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Failed to remove shop'))
+                                    );
+                                  }
                                 }
                               }
-                            }
-                            break;
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        PopupMenuItem(
-                          value: 'edit',
-                          child: Text('Edit'),
-                        ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Text('Delete'),
-                        ),
-                      ]
-                    ),
-                  ],
+                              break;
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Text('Edit'),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Text('Delete'),
+                          ),
+                        ]
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ]
+              ]
           );
         }
       ),

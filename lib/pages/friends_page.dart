@@ -1,4 +1,5 @@
 import 'package:bobadex/models/user.dart';
+import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/add_friends_page.dart';
 import 'package:bobadex/pages/friend_requests_page.dart';
 import 'package:bobadex/state/friend_state.dart';
@@ -105,6 +106,7 @@ class _FriendsPageState extends State<FriendsPage> {
                   title: Text(friend.displayName),
                   leading: ThumbPic(url: friend.thumbUrl),
                   subtitle: Text('@${friend.username}'),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountViewPage(user: friend))),
                 );
               },
             ),
