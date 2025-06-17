@@ -349,7 +349,7 @@ class _HomePageState extends State<HomePage> {
                               color: Constants.getThemeColor(user.themeSlug).shade300,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.add, color: Colors.white, size: 28),
+                            child: const Icon(Icons.add, color: Colors.white, size: 24),
                           ),
                         ),
                       ],

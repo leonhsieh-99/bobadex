@@ -30,7 +30,7 @@ class CommandIcon extends StatelessWidget {
             ),
             child: Icon(icon, size: 26),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 0),
           if (label.isNotEmpty)
             Text(label, style: const TextStyle(fontSize: 12)),
         ],
