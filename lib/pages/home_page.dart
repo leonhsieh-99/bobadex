@@ -19,7 +19,7 @@ import '../config/constants.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'add_shop_search_page.dart';
 import '../widgets/command_icon.dart';
-import 'tea_room_page.dart';
+import 'tea_rooms_page.dart';
 import 'friends_page.dart';
 import 'rankings_page.dart';
 import '../models/user.dart' as u;
@@ -336,7 +336,7 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     CommandIcon(icon: Icons.group, label: "Friends", notificationCount: friendState.incomingRequests.length, onTap: () => _navigateToPage(FriendsPage())),
-                    CommandIcon(icon: Icons.room, label: "Tea Room", onTap: () => _navigateToPage(TeaRoomPage())),
+                    CommandIcon(icon: Icons.room, label: "Tea Rooms", onTap: () => _navigateToPage(TeaRoomsPage())),
 
                     Column(
                       mainAxisSize: MainAxisSize.min,

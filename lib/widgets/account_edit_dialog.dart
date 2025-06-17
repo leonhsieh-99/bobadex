@@ -72,7 +72,6 @@ Future<void> accountEditDialog ({
                   return;
                 }
               }
-
               onSave(controller.text.trim());
               Navigator.pop(context);
             },

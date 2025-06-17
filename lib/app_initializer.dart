@@ -1,4 +1,5 @@
 import 'package:bobadex/state/friend_state.dart';
+import 'package:bobadex/state/tea_room_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -39,6 +40,7 @@ class _AppInitializerState extends State<AppInitializer> {
         p.Provider.of<ShopState>(context, listen: false).reset();
         p.Provider.of<BrandState>(context, listen: false).reset();
         p.Provider.of<FriendState>(context, listen: false).reset();
+        p.Provider.of<TeaRoomState>(context, listen: false).reset();
         p.Provider.of<UserStatsCache>(context, listen: false).clearCache();
       });
     }
@@ -60,6 +62,7 @@ class _AppInitializerState extends State<AppInitializer> {
           final shopState = context.read<ShopState>();
           final brandState = context.read<BrandState>();
           final friendState = context.read<FriendState>();
+          final teaRoomState = context.read<TeaRoomState>();
 
           try {
             await userState.loadFromSupabase();
@@ -100,6 +103,13 @@ class _AppInitializerState extends State<AppInitializer> {
             print('Loaded ${friendState.allFriendships.length} friendships');
           } catch (e) {
             print('Error loading friend state: $e');
+          }
+
+          try {
+            await teaRoomState.loadFromSupabase();
+            print('Loaded ${teaRoomState.all.length} tea rooms');
+          } catch (e) {
+            print('Error loading tea rooms state: $e');
           }
           if (mounted) {
             setState(() {
