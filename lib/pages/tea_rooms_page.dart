@@ -1,4 +1,5 @@
 import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/pages/tea_room_details_page.dart';
 import 'package:bobadex/state/tea_room_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/add_tea_room_dialog.dart';
@@ -21,7 +22,7 @@ class _TeaRoomsPageState extends State<TeaRoomsPage> {
     final userState = context.watch<UserState>();
     final teaRoomState = context.watch<TeaRoomState>();
     final user = userState.user;
-    final teaRooms = teaRoomState.all;
+    final rooms = teaRoomState.all;
     final themeColor = Constants.getThemeColor(user.themeSlug);
 
     return Scaffold(
@@ -49,13 +50,13 @@ class _TeaRoomsPageState extends State<TeaRoomsPage> {
                     builder: (_) => AddTeaRoomDialog(
                       onSubmit: (teaRoom) async {
                         try {
-                          await teaRoomState.add(teaRoom.copyWith(ownerId: user.id));
+                          await teaRoomState.add(teaRoom.copyWith(ownerId: user.id), user);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Added tea room!'))
                           );
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to add tea room'))
+                            SnackBar(content: Text('Failed to add tea room: $e'))
                           );
                         }
                       }
@@ -82,19 +83,19 @@ class _TeaRoomsPageState extends State<TeaRoomsPage> {
               child: ListView.builder(
                 itemCount: teaRoomState.all.length,
                 itemBuilder: (context, index) {
-                  final room = teaRooms[index];
+                  final room = rooms[index];
+                  final members = teaRoomState.getMembers(room.id) ?? [];
                   return TeaRoomBanner(
                     name: room.name,
                     description: room.description,
                     accentColor: themeColor,
-                    memberAvatars: [
-                      "https://randomuser.me/api/portraits/men/18.jpg",
-                      "https://randomuser.me/api/portraits/women/32.jpg",
-                      "https://randomuser.me/api/portraits/men/44.jpg",
-                    ],
+                    memberAvatars: members.map((u) => u.thumbUrl).toList(),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => TeaRoomDetailsPage(roomId: room.id))
+                    )
                   );
-                }
-              )
+                },
+              ),
             )
           ],
         )

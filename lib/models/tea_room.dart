@@ -12,12 +12,13 @@ class TeaRoom {
   });
 
   TeaRoom copyWith ({
+    String? id,
     String? name,
     String? description,
     String? ownerId,
   }) {
     return TeaRoom(
-      id: id,
+      id: id ?? this.id,
       name: name ?? this.name,
       ownerId: ownerId ?? this.ownerId,
     );

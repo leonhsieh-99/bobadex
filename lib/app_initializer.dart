@@ -133,7 +133,7 @@ class _AppInitializerState extends State<AppInitializer> {
         handleSession(data.session);
       });
 
-      handleSession(supabase.currentSession);
+      // handleSession(supabase.currentSession);
 
     } catch (e) {
       print('Error during app initialization: $e');
