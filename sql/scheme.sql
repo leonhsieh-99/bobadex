@@ -73,6 +73,7 @@ CREATE TABLE tea_rooms (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   description text,
+  room_image_path text,
   owner_id uuid REFERENCES users(id) ON DELETE CASCADE,
   created_at timestamptz DEFAULT now()
 );

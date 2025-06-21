@@ -18,6 +18,28 @@ class TeaRoomState extends ChangeNotifier {
   TeaRoom getTeaRoom(String roomId) {
     return teaRooms.firstWhere((r) => r.id == roomId);
   }
+  Future<void> update(TeaRoom teaRoom) async {
+    final index = teaRooms.indexWhere((tr) => tr.id == teaRoom.id);
+    final temp = teaRooms[index];
+    teaRooms[index] = teaRoom;
+    notifyListeners();
+
+    try {
+      Supabase.instance.client
+        .from('tea_rooms')
+        .update({
+          'name': teaRoom.name,
+          'description': teaRoom.description,
+          'owner_id': teaRoom.ownerId,
+          'room_image_path': teaRoom.roomImagePath,
+        });
+    } catch (e) {
+      print('update failed');
+      teaRooms[index] = temp;
+      notifyListeners();
+      rethrow;
+    }
+  }
 
   Future<void> add(TeaRoom teaRoom, u.User user) async {
     if (teaRooms.length >= Constants.teaRoomCap) {
@@ -34,6 +56,7 @@ class TeaRoomState extends ChangeNotifier {
           'name': teaRoom.name,
           'description': teaRoom.description,
           'owner_id': teaRoom.ownerId,
+          'room_image_path': teaRoom.roomImagePath,
         }).select().single();
 
       final index = teaRooms.indexWhere((t) => t.id == tempId);
@@ -49,6 +72,25 @@ class TeaRoomState extends ChangeNotifier {
     } catch (e) {
       print('insert failed: $e');
       teaRooms.removeWhere((t) => t.id == tempId);
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> delete(String roomId) async {
+    final index = teaRooms.indexWhere((tr) => tr.id == roomId);
+    final temp = teaRooms[index];
+    teaRooms.removeAt(index);
+    notifyListeners();
+
+    try {
+      await Supabase.instance.client
+        .from('tea_rooms')
+        .delete()
+        .eq('room_id', roomId);
+    } catch (e) {
+      print('Delete failed: $e');
+      teaRooms.insert(index, temp);
       notifyListeners();
       rethrow;
     }
@@ -102,6 +144,7 @@ class TeaRoomState extends ChangeNotifier {
       final membersJson = room['members'] as List;
       final members = membersJson.map((userJson) => u.User.fromJson(userJson as Map<String, dynamic>)).toList();
       teaRoomMembers[roomId] = members;
+      print(teaRoomMembers);
     }
     notifyListeners();
   }

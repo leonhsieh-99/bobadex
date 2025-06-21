@@ -38,7 +38,7 @@ class ShopState extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('❌ Insert failed: $e');
+      print('Insert failed: $e');
       _shops.remove(shop);
       notifyListeners();
       rethrow;

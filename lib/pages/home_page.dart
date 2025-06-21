@@ -19,7 +19,7 @@ import '../config/constants.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'add_shop_search_page.dart';
 import '../widgets/command_icon.dart';
-import 'tea_rooms_page.dart';
+import 'tea_room_pages/tea_rooms_page.dart';
 import 'friends_page.dart';
 import 'rankings_page.dart';
 import '../models/user.dart' as u;

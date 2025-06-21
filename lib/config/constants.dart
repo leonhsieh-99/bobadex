@@ -36,4 +36,17 @@ class Constants {
   //------------- TEA ROOM ------------------
   static const teaRoomCap = 20;
   static const teaRoomMemberCap = 50;
+  static const teaRoomNameLen = 30;
+  static const teaRoomDescriptionLen = 150;
+}
+
+class AppButtonStyles {
+  static final ButtonStyle deleteButtonStyle = ElevatedButton.styleFrom(
+    backgroundColor: Colors.red,
+    foregroundColor: Colors.white,
+    minimumSize: const Size(double.infinity, 44),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(8)),
+    ),
+  );
 }

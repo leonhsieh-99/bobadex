@@ -13,8 +13,14 @@ pass
 [X] login auth
 [X] set up database
 [X] maybe set up Google API or OSM export to get unique shop IDs for statistics
-[] add friends and visit their bobadex
-    - [] add an aggregate bobadex (squadadex .... ? ok thats a tentative nanme) that shows statistices like averages, photos etc (requires the above check)
+[] Brand view page, want to switch the add shop dialog with this (keep the current one for adding shops that are NOT in the db)
+[] add a verification for shops not in db. Can have 1 pass through perplexity AI API and then a 2nd pass for manual verification.
+[] Automate current OSM brand normalization and import scripts using github
+[X] add friends and visit their bobadex
+    - [] Account view page should have more stats
+        - [] shared number of shops
+        - [] highest rated shop -> check shop rating -> check avg drink ratings
+    - [X] add an aggregate bobadex (squadadex .... ? ok thats a tentative nanme) that shows statistices like averages, photos etc (requires the above check)
     - [-] maybe a central feed on what you and your friends 'caught'
     - [X] Allow users to make a customizable banner for each shop with their favorite drink/drinks
     - [] allow users to make comments on shops of friends

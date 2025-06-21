@@ -76,24 +76,26 @@ class TeaRoomBanner extends StatelessWidget {
                     // Avatars Row
                     Row(
                       children: memberAvatars
-                          .take(5) // show up to 5
+                          .take(5)
                           .map((url) => Padding(
                             padding: const EdgeInsets.only(right: 4.0),
                             child: CircleAvatar(
                               radius: 12,
                               backgroundColor: Colors.white,
                               child: ClipOval(
-                                child: CachedNetworkImage(
-                                  imageUrl: url,
-                                  width: 24,
-                                  height: 24,
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, _) => Container(
-                                    width: 24, height: 24,
-                                    color: Colors.grey[200],
-                                  ),
-                                  errorWidget: (context, _, __) => Icon(Icons.person, size: 18, color: Colors.grey),
-                                ),
+                                child: (url.trim().isNotEmpty)
+                                  ? CachedNetworkImage(
+                                    imageUrl: url,
+                                    width: 24,
+                                    height: 24,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, _) => Container(
+                                      width: 24, height: 24,
+                                      color: Colors.grey[200],
+                                    ),
+                                    errorWidget: (context, _, __) => Icon(Icons.person, size: 18, color: Colors.grey),
+                                  )
+                                  : Icon(Icons.person),
                               ),
                             ),
                           ))

@@ -1,5 +1,5 @@
 import 'package:bobadex/config/constants.dart';
-import 'package:bobadex/pages/tea_room_details_page.dart';
+import 'package:bobadex/pages/tea_room_pages/tea_room_details_page.dart';
 import 'package:bobadex/state/tea_room_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/add_tea_room_dialog.dart';

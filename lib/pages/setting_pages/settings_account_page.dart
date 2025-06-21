@@ -9,7 +9,7 @@ import 'dart:io';
 import '../../helpers/image_picker_helper.dart';
 import '../../state/user_state.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../widgets/account_edit_dialog.dart';
+import '../../widgets/text_field_edit_dialog.dart';
 
 class SettingsAccountPage extends StatefulWidget{
   const SettingsAccountPage({super.key});
@@ -145,7 +145,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                           fontSize: 18,
                         )
                     ),
-                    onTap: () => accountEditDialog(
+                    onTap: () => textFieldEditDialog(
                       context: context,
                       title: 'Edit Name',
                       initalValue: user.displayName,
@@ -175,7 +175,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                           fontSize: 18,
                         )
                     ),
-                    onTap: () => accountEditDialog(
+                    onTap: () => textFieldEditDialog(
                       context: context,
                       title: 'Edit Username',
                       initalValue: user.username,
@@ -212,7 +212,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                           fontSize: 18,
                         )
                     ),
-                    onTap: () => accountEditDialog(
+                    onTap: () => textFieldEditDialog(
                       context: context,
                       title: 'Edit Bio',
                       initalValue: user.bio ?? '',
