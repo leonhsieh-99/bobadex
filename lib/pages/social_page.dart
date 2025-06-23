@@ -1,0 +1,176 @@
+import 'package:bobadex/models/friends_shop.dart';
+import 'package:bobadex/pages/friends_shop_details_page.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class SocialPage extends StatefulWidget {
+  const SocialPage({
+    super.key,
+  });
+
+  @override
+  State<SocialPage> createState() => _SocialPageState();
+}
+
+class _SocialPageState extends State<SocialPage> {
+  bool _loading = true;
+  List<FriendsShop>? shopsData;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadShops();
+  }
+
+  Future<void> _loadShops() async {
+    final supabase = Supabase.instance.client;
+    final currentUserId = supabase.auth.currentUser!.id;
+    try {
+      final response = await supabase.rpc('get_friends_shops', params: {'user_id': currentUserId});
+      final data = response as List? ?? [];
+      shopsData = data.map((json) => FriendsShop.fromJson(json)).toList();
+    } catch (e) {
+      print('Error loading shops $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading shops'))
+      );
+    }
+    shopsData ??= [];
+    if (mounted) setState(() => _loading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Social'),
+      ),
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.all(16),
+            sliver: SliverGrid(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) {
+                  if (_loading) {
+                    return _buildLoadingPearl();
+                  } else if (i < shopsData!.length) {
+                    final shop = shopsData![i];
+                    return _buildShopPearl(shop);
+                  } else {
+                    return SizedBox.shrink(); // Never render past the real data!
+                  }
+                },
+                childCount: _loading ? 8 : shopsData!.length,
+              ),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 18,
+                crossAxisSpacing: 18,
+                childAspectRatio: 0.9,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingPearl() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Grayed out circle
+        Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(height: 10),
+        // Grayed-out text bars
+        Container(
+          height: 16,
+          width: 70,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        const SizedBox(height: 5),
+        Container(
+          height: 12,
+          width: 45,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShopPearl(shop) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => FriendsShopDetailsPage(
+              shop: shop,
+            ),
+          ),
+        );
+      },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: Colors.purple.shade100,
+              shape: BoxShape.circle,
+            ),
+            child: (shop.iconPath != null && shop.iconPath!.trim().isNotEmpty)
+              ? ClipOval(
+                  child: CachedNetworkImage(
+                    imageUrl: shop.iconPath!,
+                    width: 64,
+                    height: 64,
+                    fit: BoxFit.cover,
+                    placeholder: (context, _) => Container(
+                      color: Colors.grey.shade200,
+                    ),
+                    errorWidget: (context, _, __) => Icon(Icons.store, size: 30, color: Colors.grey),
+                  ),
+                )
+              : Icon(Icons.emoji_food_beverage, size: 30, color: Colors.deepPurple.shade200),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            shop.name,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              overflow: TextOverflow.ellipsis,
+            ),
+            maxLines: 1,
+          ),
+          const SizedBox(height: 5),
+          Text(
+            'Avg: ${shop.avgRating.toStringAsFixed(1)}',
+            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            'Ratings: ${shop.friendsRatings.length.toString()}',
+            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+          ),
+        ],
+      )
+    );
+  }
+}

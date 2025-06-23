@@ -30,6 +30,14 @@ class FriendState extends ChangeNotifier {
     .toList()
     ..sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
 
+  String getDisplayName(userId) {
+    return friends.firstWhere((f) => f.id == userId).displayName;
+  }
+
+  String getThumbUrl(userId) {
+    return friends.firstWhere((f) => f.id == userId).thumbUrl;
+  }
+
   void removeByUsers(String requesterId, String addresseeId) {
     _friendships.removeWhere((f) =>
       f.requester.id == requesterId && f.addressee.id == addresseeId);

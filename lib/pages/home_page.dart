@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/settings_page.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
+import 'package:bobadex/pages/social_page.dart';
 import 'package:bobadex/pages/splash_page.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +20,6 @@ import '../config/constants.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'add_shop_search_page.dart';
 import '../widgets/command_icon.dart';
-import 'tea_room_pages/tea_rooms_page.dart';
 import 'friends_page.dart';
 import 'rankings_page.dart';
 import '../models/user.dart' as u;
@@ -336,7 +336,7 @@ class _HomePageState extends State<HomePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     CommandIcon(icon: Icons.group, label: "Friends", notificationCount: friendState.incomingRequests.length, onTap: () => _navigateToPage(FriendsPage())),
-                    CommandIcon(icon: Icons.room, label: "Tea Rooms", onTap: () => _navigateToPage(TeaRoomsPage())),
+                    CommandIcon(icon: Icons.people, label: "Social", onTap: () => _navigateToPage(SocialPage())),
 
                     Column(
                       mainAxisSize: MainAxisSize.min,

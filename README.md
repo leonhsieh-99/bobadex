@@ -13,6 +13,7 @@ pass
 [X] login auth
 [X] set up database
 [X] maybe set up Google API or OSM export to get unique shop IDs for statistics
+[] add achievments and badges
 [] Brand view page, want to switch the add shop dialog with this (keep the current one for adding shops that are NOT in the db)
 [] add a verification for shops not in db. Can have 1 pass through perplexity AI API and then a 2nd pass for manual verification.
 [] Automate current OSM brand normalization and import scripts using github
