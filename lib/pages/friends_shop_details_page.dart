@@ -1,9 +1,11 @@
 import 'package:bobadex/models/friends_shop.dart';
+import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class FriendsShopDetailsPage extends StatelessWidget {
   final FriendsShop shop;
@@ -13,10 +15,17 @@ class FriendsShopDetailsPage extends StatelessWidget {
     required this.shop,
   });
 
+  String getThumbUrl(imagePath) {
+    return imagePath != null && imagePath!.isNotEmpty
+      ? Supabase.instance.client.storage.from('media-uploads').getPublicUrl('thumbs/${imagePath!.trim()}')
+      : '';
+  }
+
   @override
   Widget build(BuildContext context) {
     final friendState = context.read<FriendState>();
     final userState = context.read<UserState>();
+    final brandState = context.read<BrandState>();
     return Scaffold(
       appBar: AppBar(
       ),
@@ -28,7 +37,7 @@ class FriendsShopDetailsPage extends StatelessWidget {
               child: ClipOval(
                 child: (shop.iconPath.isNotEmpty)
                   ? CachedNetworkImage(
-                      imageUrl: shop.iconPath,
+                      imageUrl: brandState.getBrand(shop.brandSlug)!.thumbUrl,
                       width: 90,
                       height: 90,
                       fit: BoxFit.cover,
@@ -63,7 +72,7 @@ class FriendsShopDetailsPage extends StatelessWidget {
                       return ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: CachedNetworkImage(
-                          imageUrl: img,
+                          imageUrl: getThumbUrl(img),
                           width: 100,
                           height: 100,
                           fit: BoxFit.cover,
@@ -94,7 +103,12 @@ class FriendsShopDetailsPage extends StatelessWidget {
                     ? CircleAvatar(backgroundImage: CachedNetworkImageProvider(thumbUrl))
                     : CircleAvatar(child: Icon(Icons.person)),
                 title: Text(displayName),
-                trailing: Text(rating.toStringAsFixed(1)),
+                trailing: Text(
+                  rating.toStringAsFixed(1),
+                  style: TextStyle(
+                    fontSize: 16,
+                  ),
+                ),
               );
             }),
 

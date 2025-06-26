@@ -1,7 +1,9 @@
 import 'package:bobadex/models/friends_shop.dart';
 import 'package:bobadex/pages/friends_shop_details_page.dart';
+import 'package:bobadex/state/brand_state.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SocialPage extends StatefulWidget {
@@ -114,6 +116,11 @@ class _SocialPageState extends State<SocialPage> {
   }
 
   Widget _buildShopPearl(shop) {
+    final brandState = context.read<BrandState>();
+    final brand = brandState.getBrand(shop.brandSlug);
+            print('name: ${shop.name}');
+            print('slug: ${shop.brandSlug}');
+            print("brand: ${brand?.iconPath}");
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
@@ -134,10 +141,11 @@ class _SocialPageState extends State<SocialPage> {
               color: Colors.purple.shade100,
               shape: BoxShape.circle,
             ),
-            child: (shop.iconPath != null && shop.iconPath!.trim().isNotEmpty)
-              ? ClipOval(
+            child: (shop.brandSlug == null || shop.brandSlug!.isEmpty) || (brand!.iconPath == null || brand.iconPath!.isEmpty)
+              ? Icon(Icons.emoji_food_beverage, size: 30, color: Colors.deepPurple.shade200)
+              : ClipOval(
                   child: CachedNetworkImage(
-                    imageUrl: shop.iconPath!,
+                    imageUrl: brand.thumbUrl,
                     width: 64,
                     height: 64,
                     fit: BoxFit.cover,
@@ -147,7 +155,6 @@ class _SocialPageState extends State<SocialPage> {
                     errorWidget: (context, _, __) => Icon(Icons.store, size: 30, color: Colors.grey),
                   ),
                 )
-              : Icon(Icons.emoji_food_beverage, size: 30, color: Colors.deepPurple.shade200),
           ),
           const SizedBox(height: 10),
           Text(

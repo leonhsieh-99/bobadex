@@ -4,10 +4,10 @@ import 'package:bobadex/pages/settings_page.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
 import 'package:bobadex/pages/social_page.dart';
 import 'package:bobadex/pages/splash_page.dart';
+import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider;
-import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../helpers/sortable_entry.dart';
@@ -88,6 +88,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final userState = context.watch<UserState>();
     final friendState = context.watch<FriendState>();
+    final brandState = context.watch<BrandState>();
     final user = isCurrentUser ? userState.user : widget.user;
 
     Widget shopGrid(List<Shop> shops) {
@@ -120,6 +121,7 @@ class _HomePageState extends State<HomePage> {
             final textScale = columns == 2 ? scaleFactor * 1 : scaleFactor;
 
             final shop = visibleShops[index];
+            final brand = brandState.getBrand(shop.brandSlug);
             return GestureDetector(
               onTap: () async => _navigateToShop(shop, user),
               child: Card(
@@ -189,30 +191,18 @@ class _HomePageState extends State<HomePage> {
                         right: 8,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: shop.imagePath == null || shop.imagePath!.isEmpty
+                          child: (shop.brandSlug == null || shop.brandSlug!.isEmpty) || (brand!.iconPath == null || brand.iconPath!.isEmpty)
                             ? Center(child: Icon(Icons.store, size: 50 * imageScale, color: Colors.grey))
-                            : (shop.imagePath != null && shop.imagePath!.startsWith('/')) 
-                              ? SizedBox(
-                                  width: 40 * imageScale,
-                                  height: 60 * imageScale,
-                                  child: Image.file(
-                                    File(shop.imagePath!),
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Center(child: Icon(Icons.broken_image, size: 50 * imageScale));
-                                    },
-                                  ),
-                                )
-                              : SizedBox(
-                                  width: 40 * imageScale,
-                                  height: 60 * imageScale,
-                                  child: CachedNetworkImage(
-                                    imageUrl: shop.thumbUrl,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) => CircularProgressIndicator(),
-                                    errorWidget: (context, url, error) => Icon(Icons.broken_image, size: 50 * imageScale),
-                                  ),
-                                )
+                            : SizedBox(
+                                width: 50 * imageScale,
+                                height: 60 * imageScale,
+                                child: CachedNetworkImage(
+                                  imageUrl: brand.thumbUrl,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => CircularProgressIndicator(),
+                                  errorWidget: (context, url, error) => Icon(Icons.broken_image, size: 50 * imageScale),
+                                ),
+                              )
                         ),
                       ),
                       if (shop.isFavorite)

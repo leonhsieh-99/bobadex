@@ -32,7 +32,7 @@ class BrandState extends ChangeNotifier {
 
   Future<void> loadFromSupabase() async {
     final supabase = Supabase.instance.client;
-    final response = await supabase.useSchema('ref').from('brands').select();
+    final response = await supabase.from('brands').select();
     final allBrands = (response as List).map((json) => Brand.fromJson(json)).toList();
     _brands.clear();
     _brands.addAll(allBrands);

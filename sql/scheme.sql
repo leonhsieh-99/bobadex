@@ -102,7 +102,7 @@ create index on drinks(visibility);
 ----------READ ONLY TABLES------------
 
 -- Brands Table
-create table ref.brands (
+create table brands (
   slug text primary key,                -- e.g. 'gong-cha'
   display text,
   wikidata text,                        -- Q-ID when known
