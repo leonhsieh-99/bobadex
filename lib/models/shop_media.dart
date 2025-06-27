@@ -17,7 +17,7 @@ class ShopMedia {
     this.drinkId,
     required this.imagePath,
     this.isBanner = false,
-    this.visibility,
+    this.visibility = 'public', // change to private after testing
     this.comment,
   });
 
@@ -37,7 +37,7 @@ class ShopMedia {
       drinkId: json['drink_id'],
       imagePath: json['image_path'],
       isBanner: json['is_banner'] ?? false,
-      visibility: json['visibility'],
+      visibility: json['visibility'] ?? 'public', // change to private after testing
       comment: json['comment'],
     );
   }

@@ -1,3 +1,4 @@
+import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/state/shop_state.dart';
@@ -542,26 +543,29 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                         ),
                         onSelected: (value) async {
                           switch(value) {
+                            case 'view':
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand!)));
                             case 'edit':
-                              // await showDialog(
-                              //   context: context,
-                              //   builder: (_) => {};
-                              //   AddOrEditShopDialog(
-                              //     shop: shopRead,
-                              //     brand: brand,
-                              //     onSubmit: (updatedshop) async {
-                              //       try {
-                              //         await shopState.update(updatedshop);
-                              //       } catch (e) {
-                              //         if (context.mounted) {
-                              //           ScaffoldMessenger.of(context).showSnackBar(
-                              //             SnackBar(content: Text('Failed to update shop.')),
-                              //           );
-                              //         }
-                              //       }
-                              //     },
-                              //   ),
-                              // );
+                              await showDialog(
+                                context: context,
+                                builder: (_) => AddOrEditShopDialog(
+                                  shop: shopRead,
+                                  brand: brand,
+                                  onSubmit: (submittedShop) async {
+                                    try {
+                                      final persistedShop = await shopState.update(submittedShop);
+                                      return persistedShop;
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Failed to update shop.')),
+                                        );
+                                      }
+                                      rethrow;
+                                    }
+                                  },
+                                ),
+                              );
                               break;
                             case 'delete':
                               final confirm = await showDialog<bool>(
@@ -593,6 +597,10 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                           }
                         },
                         itemBuilder: (_) => [
+                          PopupMenuItem(
+                            value: 'view',
+                            child: Text('View page'),
+                          ),
                           PopupMenuItem(
                             value: 'edit',
                             child: Text('Edit'),

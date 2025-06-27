@@ -1,10 +1,10 @@
+import 'package:bobadex/pages/brand_details_page.dart';
+import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/widgets/custom_search_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../state/brand_state.dart';
 import '../models/brand.dart';
-import '../widgets/add_edit_shop_dialog.dart';
 
 class AddShopSearchPage extends StatefulWidget {
   final void Function(Brand)? onBrandSelected;
@@ -57,21 +57,15 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
       widget.onBrandSelected!(brand!);
       Navigator.pop(context);
     } else {
-      // showDialog(
-      //   context: context,
-      //   builder: (context) => AddOrEditShopDialog(
-      //     onSubmit: (shop) {
-      //       context.read<ShopState>().add(shop);
-      //       Navigator.of(context).pop();
-      //     },
-      //     brand: brand,
-      //   ),
-      // );
+      Navigator.push(context, MaterialPageRoute(
+        builder: (_) => BrandDetailsPage(brand: brand!)
+      ));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final shopState = context.watch<ShopState>();
     return Scaffold(
       appBar: AppBar(title: Text('Select Shop Brand')),
       body: Column(
@@ -96,7 +90,9 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
                 return ListTile(
                   title: Text(brand.display),
                   trailing: CircleAvatar(
-                    child: Icon(Icons.add),
+                    child: shopState.all.map((s) => s.brandSlug).contains(brand.slug)
+                      ? Icon(Icons.check)
+                      : Icon(Icons.add)
                   ),
                   onTap: () => _handleBrandTap(brand)
                 );
