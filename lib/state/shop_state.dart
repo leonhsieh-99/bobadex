@@ -1,10 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../models/shop.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 
 class ShopState extends ChangeNotifier {
-  List<Shop> _shops = [];
+  final List<Shop> _shops = [];
 
   List<Shop> get all => _shops;
 
@@ -15,7 +16,9 @@ class ShopState extends ChangeNotifier {
 
   void add(Shop shop) async {
     String userId = Supabase.instance.client.auth.currentUser!.id;
-    _shops.add(shop);
+    final tempId = const Uuid().v4();
+    final tempShop = shop.copyWith(id: tempId);
+    _shops.add(tempShop);
     notifyListeners();
 
     // save to db
@@ -25,20 +28,22 @@ class ShopState extends ChangeNotifier {
         .insert({
           'user_id': userId,
           'name': shop.name,
-          'image_path': shop.imagePath,
           'rating': shop.rating,
           'is_favorite': shop.isFavorite,
           'brand_slug': shop.brandSlug,
-        }).select().single();
-      
-      // Update the shop with the ID from the database
+        })
+        .select()
+        .single();
+
+      final insertedShop = Shop.fromJson(response);
+
       final index = _shops.indexWhere((s) => s.name == shop.name);
       if (index != -1) {
-        _shops[index] = Shop.fromJson(response);
+        _shops[index] = insertedShop;
         notifyListeners();
       }
     } catch (e) {
-      print('Insert failed: $e');
+      debugPrint('Insert failed: $e');
       _shops.remove(shop);
       notifyListeners();
       rethrow;
@@ -56,7 +61,6 @@ class ShopState extends ChangeNotifier {
           .from('shops')
           .update({
             'name': updated.name,
-            'image_path': updated.imagePath,
             'rating': updated.rating,
             'is_favorite': updated.isFavorite,
             'brand_slug': updated.brandSlug,
@@ -65,7 +69,7 @@ class ShopState extends ChangeNotifier {
           })
           .eq('id', updated.id);
       } catch (e) {
-        print("Update failed: $e");
+        debugPrint("Update failed: $e");
         _shops[index] = temp;
         notifyListeners();
         rethrow;
@@ -112,7 +116,12 @@ class ShopState extends ChangeNotifier {
       .from('shops')
       .select()
       .eq('user_id', userId);
-
-    _shops = (response as List).map((json) => Shop.fromJson(json)).toList();
+    
+    _shops
+      ..clear()
+      ..addAll(
+        response.map<Shop>((json) => Shop.fromJson(json))
+      );
+      notifyListeners();
   }
 }

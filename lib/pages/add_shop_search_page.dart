@@ -57,16 +57,16 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
       widget.onBrandSelected!(brand!);
       Navigator.pop(context);
     } else {
-      showDialog(
-        context: context,
-        builder: (context) => AddOrEditShopDialog(
-          onSubmit: (shop) {
-            context.read<ShopState>().add(shop);
-            Navigator.of(context).pop();
-          },
-          brand: brand,
-        ),
-      );
+      // showDialog(
+      //   context: context,
+      //   builder: (context) => AddOrEditShopDialog(
+      //     onSubmit: (shop) {
+      //       context.read<ShopState>().add(shop);
+      //       Navigator.of(context).pop();
+      //     },
+      //     brand: brand,
+      //   ),
+      // );
     }
   }
 

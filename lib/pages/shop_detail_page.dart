@@ -1,4 +1,5 @@
 import 'package:bobadex/state/brand_state.dart';
+import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/add_edit_drink_dialog.dart';
@@ -6,6 +7,7 @@ import 'package:bobadex/helpers/sortable_entry.dart';
 import 'package:bobadex/models/drink_form_data.dart';
 import 'package:bobadex/models/shop.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as p;
 import '../models/drink.dart';
@@ -84,10 +86,18 @@ class _ShopDetailPage extends State<ShopDetailPage> {
     final brandState = context.read<BrandState>();
     final drinkState = context.read<DrinkState>();
     final userState = context.watch<UserState>();
+    final shopMediaState = context.watch<ShopMediaState>();
     final user = isCurrentUser ? userState.user : widget.user;
 
     Shop shopRead = shopState.getShop(widget.shop.id) ?? widget.shop;
     final brand = brandState.getBrand(shopRead.brandSlug);
+
+    final bannerPath = shopMediaState
+      .getByShop(shopRead.id!)
+      .firstWhereOrNull((media) => media.isBanner);
+
+    final bannerUrl = bannerPath?.imageUrl;
+
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -100,7 +110,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
               SizedBox(
                 height: bannerHeight,
                 width: double.infinity,
-                child: (_shop.imagePath == null ||  _shop.imagePath!.isEmpty)
+                child: (bannerUrl == null ||  bannerUrl.isEmpty)
                   ? Container(
                     width: double.infinity,
                     height: 200,
@@ -110,7 +120,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                     ),
                   )
                   : CachedNetworkImage(
-                    imageUrl: _shop.imageUrl,
+                    imageUrl: bannerUrl,
                     fadeInDuration: Duration(milliseconds: 300),
                     width: double.infinity,
                     height: 200,
@@ -533,24 +543,25 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                         onSelected: (value) async {
                           switch(value) {
                             case 'edit':
-                              await showDialog(
-                                context: context,
-                                builder: (_) => AddOrEditShopDialog(
-                                  shop: shopRead,
-                                  brand: brand,
-                                  onSubmit: (updatedshop) async {
-                                    try {
-                                      await shopState.update(updatedshop);
-                                    } catch (e) {
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Failed to update shop.')),
-                                        );
-                                      }
-                                    }
-                                  },
-                                ),
-                              );
+                              // await showDialog(
+                              //   context: context,
+                              //   builder: (_) => {};
+                              //   AddOrEditShopDialog(
+                              //     shop: shopRead,
+                              //     brand: brand,
+                              //     onSubmit: (updatedshop) async {
+                              //       try {
+                              //         await shopState.update(updatedshop);
+                              //       } catch (e) {
+                              //         if (context.mounted) {
+                              //           ScaffoldMessenger.of(context).showSnackBar(
+                              //             SnackBar(content: Text('Failed to update shop.')),
+                              //           );
+                              //         }
+                              //       }
+                              //     },
+                              //   ),
+                              // );
                               break;
                             case 'delete':
                               final confirm = await showDialog<bool>(

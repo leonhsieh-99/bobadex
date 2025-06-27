@@ -58,13 +58,14 @@ class Drink extends SortableEntry {
   }
 
   Drink copyWith({
+    String? id,
     String? name,
     double? rating,
     String? notes,
     bool? isFavorite,
   }) {
     return Drink(
-      id: id,
+      id: id ?? id,
       shopId: shopId,
       name: name ?? this.name,
       rating: rating ?? this.rating,

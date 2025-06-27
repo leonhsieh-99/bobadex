@@ -1,4 +1,3 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'drink.dart';
 import '../helpers/sortable_entry.dart';
 
@@ -6,7 +5,6 @@ class Shop extends SortableEntry {
   final String? id;
   String _name;
   double _rating;
-  String? imagePath;  // raw Supabase path
   bool _isFavorite;
   String? notes;
   String? pinnedDrinkId;
@@ -32,21 +30,10 @@ class Shop extends SortableEntry {
 
   set isFavorite(bool val) => _isFavorite = val;
 
-  String get imageUrl => imagePath != null && imagePath!.isNotEmpty
-    ? Supabase.instance.client.storage.from('media-uploads').getPublicUrl(imagePath!.trim())
-    : '';
-
-  String get thumbUrl => imagePath != null && imagePath!.isNotEmpty
-    ? Supabase.instance.client.storage.from('media-uploads').getPublicUrl('thumbs/${imagePath!.trim()}')
-    : '';
-
-  bool get hasImage => imagePath != null && imagePath!.isNotEmpty;
-
   Shop({
     this.id,
     required String name,
     required double rating,
-    this.imagePath,
     bool isFavorite = false,
     this.notes,
     this.pinnedDrinkId,
@@ -59,6 +46,7 @@ class Shop extends SortableEntry {
         _createdAt = createdAt;
 
   Shop copyWith({
+    String? id,
     String? name,
     double? rating,
     String? imagePath,
@@ -71,10 +59,9 @@ class Shop extends SortableEntry {
     String? brandSlug,
   }) {
     return Shop(
-      id: id,
+      id: id ?? this.id,
       name: name ?? this.name,
       rating: rating ?? this.rating,
-      imagePath: imagePath ?? this.imagePath,
       isFavorite: isFavorite ?? this.isFavorite,
       notes: notes ?? this.notes,
       pinnedDrinkId: pinnedDrinkId == '' ? null : pinnedDrinkId ?? this.pinnedDrinkId,
@@ -89,7 +76,6 @@ class Shop extends SortableEntry {
       id: json['id'],
       name: json['name'] ?? 'Unnamed',
       rating: (json['rating'] ?? 0).toDouble(),
-      imagePath: json['image_path'] ?? '',
       notes: json['notes'] as String?,
       isFavorite: json['is_favorite'] ?? false,
       pinnedDrinkId: json['pinned_drink_id'] as String?,
@@ -105,7 +91,6 @@ class Shop extends SortableEntry {
     return {
       'id': id,
       'name': name,
-      'image_path': imagePath,
       'rating': rating,
       'notes': notes,
       'is_favorite': isFavorite,

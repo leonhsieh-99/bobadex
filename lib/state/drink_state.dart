@@ -2,22 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/drink.dart';
 import 'package:collection/collection.dart';
+import 'package:uuid/uuid.dart';
 
 class DrinkState extends ChangeNotifier {
-  List<Drink> drinks = [];
+  final List<Drink> _drinks = [];
   
-  List<Drink> get all => drinks;
+  List<Drink> get all => _drinks;
 
   Drink? getDrink(String? id) {
     if (id == null) return null;
-    return drinks.firstWhereOrNull((d) => d.id == id);
+    return _drinks.firstWhereOrNull((d) => d.id == id);
   }
 
   Future<void> update(Drink updated) async {
-    final index = drinks.indexWhere((d) => d.id == updated.id);
+    final index = _drinks.indexWhere((d) => d.id == updated.id);
     if (index != -1) {
-      final temp = drinks[index];
-      drinks[index] = updated;
+      final temp = _drinks[index];
+      _drinks[index] = updated;
       notifyListeners();
       try {
         await Supabase.instance.client
@@ -30,8 +31,8 @@ class DrinkState extends ChangeNotifier {
           })
           .eq('id', updated.id);
       } catch (e) {
-        print('Update failed: $e');
-        drinks[index] = temp;
+        debugPrint('Update failed: $e');
+        _drinks[index] = temp;
         notifyListeners();
         rethrow;
       }
@@ -40,7 +41,7 @@ class DrinkState extends ChangeNotifier {
 
   Future<void> remove(String id) async {
     final temp = getDrink(id);
-    drinks.removeWhere((d) => d.id == id);
+    _drinks.removeWhere((d) => d.id == id);
     notifyListeners();
 
     try {
@@ -49,8 +50,8 @@ class DrinkState extends ChangeNotifier {
         .delete()
         .eq('id', id);
     } catch (e) {
-      print('Remove failed: $e');
-      drinks.add(temp!);
+      debugPrint('Remove failed: $e');
+      _drinks.add(temp!);
       notifyListeners();
       rethrow;
     }
@@ -58,7 +59,9 @@ class DrinkState extends ChangeNotifier {
 
   Future<void> add(Drink drink, String shopId) async {
     String userId = Supabase.instance.client.auth.currentUser!.id;
-    drinks.add(drink);
+    final tempId = const Uuid().v4();
+    final tempDrink = drink.copyWith(id: tempId);
+    _drinks.add(tempDrink);
     notifyListeners();
 
     // save to db
@@ -74,21 +77,23 @@ class DrinkState extends ChangeNotifier {
         }).select().single();
       
       // Update the drink with the ID from the database
-      final index = drinks.indexWhere((s) => s.name == drink.name);
+      final insertedDrink = Drink.fromJson(response);
+
+      final index = _drinks.indexWhere((d) => d.id == tempId);
       if (index != -1) {
-        drinks[index] = Drink.fromJson(response);
+        _drinks[index] = insertedDrink;
         notifyListeners();
       }
     } catch (e) {
-      print('Insert failed: $e');
-      drinks.remove(drink);
+      debugPrint('Insert failed: $e');
+      _drinks.remove(drink);
       notifyListeners();
       rethrow;
     }
   }
 
   void reset() {
-    drinks.clear();
+    _drinks.clear();
     notifyListeners();
   }
 
@@ -103,10 +108,16 @@ class DrinkState extends ChangeNotifier {
 
   Future<void> loadFromSupabase() async {
     final supabase = Supabase.instance.client;
-    final response = await supabase.from('drinks').select();
-    final allDrinks = (response as List).map((json) => Drink.fromJson(json)).toList();
-    drinks.clear();
-    drinks.addAll(allDrinks);
+    final response = await supabase
+      .from('drinks')
+      .select()
+      .eq('user_id', supabase.auth.currentUser!.id);
+
+    _drinks
+      ..clear()
+      ..addAll(
+        response.map<Drink>((json) => Drink.fromJson(json))
+      );
     notifyListeners();
   }
 }

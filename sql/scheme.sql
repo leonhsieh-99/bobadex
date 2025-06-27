@@ -3,7 +3,6 @@ create table shops (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references users(id) on delete cascade,
   name text not null,
-  image_path text,
   rating float4 check (rating >= 0 and rating <= 5),
   is_favorite boolean default false,
   notes text,
@@ -34,6 +33,7 @@ create table shop_media (
   user_id uuid not null references users(id) on delete cascade,
   drink_id uuid references drinks(id) on delete set null, -- optional association
   image_path text not null,
+  comment text default null,
   is_banner boolean default false, -- optional flag
   visibility text default 'private' check (visibility in ('private', 'friends', 'public')),
   created_at timestamptz default now()

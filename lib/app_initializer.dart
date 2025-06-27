@@ -1,4 +1,5 @@
 import 'package:bobadex/state/friend_state.dart';
+import 'package:bobadex/state/shop_media_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -60,46 +61,54 @@ class _AppInitializerState extends State<AppInitializer> {
           final shopState = context.read<ShopState>();
           final brandState = context.read<BrandState>();
           final friendState = context.read<FriendState>();
+          final shopMediaState = context.read<ShopMediaState>();
 
           try {
             await userState.loadFromSupabase();
-            print('Loaded user state');
+            debugPrint('Loaded user state');
           } catch (e) {
-            print('Error loading user state: $e');
+            debugPrint('Error loading user state: $e');
           }
 
           final user = context.read<UserState>().user;
           if (user.id.isEmpty) {
-            print('No valid user loaded — skipping rest');
+            debugPrint('No valid user loaded — skipping rest');
             return;
           }
 
           try {
             await drinkState.loadFromSupabase();
-            print('Loaded ${drinkState.all.length} drinks');
+            debugPrint('Loaded ${drinkState.all.length} drinks');
           } catch (e) {
-            print('Error loading drinks: $e');
+            debugPrint('Error loading drinks: $e');
           }
 
           try {
             await brandState.loadFromSupabase();
-            print('Loaded ${brandState.all.length} brands');
+            debugPrint('Loaded ${brandState.all.length} brands');
           } catch (e) {
-            print('Error loading brands: $e');
+            debugPrint('Error loading brands: $e');
           }
 
           try {
             await shopState.loadFromSupabase();
-            print('Loaded ${shopState.all.length} shops');
+            debugPrint('Loaded ${shopState.all.length} shops');
           } catch (e) {
-            print('Error loading shops: $e');
+            debugPrint('Error loading shops: $e');
           }
 
           try {
             await friendState.loadFromSupabase();
-            print('Loaded ${friendState.allFriendships.length} friendships');
+            debugPrint('Loaded ${friendState.allFriendships.length} friendships');
           } catch (e) {
-            print('Error loading friend state: $e');
+            debugPrint('Error loading friend state: $e');
+          }
+
+          try {
+            await shopMediaState.loadFromSupabase();
+            debugPrint('Loaded ${shopMediaState.all.length} shop medias');
+          } catch (e) {
+            debugPrint('Error loading friend state: $e');
           }
 
           if (mounted) {
@@ -127,7 +136,7 @@ class _AppInitializerState extends State<AppInitializer> {
       // handleSession(supabase.currentSession);
 
     } catch (e) {
-      print('Error during app initialization: $e');
+      debugPrint('Error during app initialization: $e');
       debugPrint('$e');
     }
   }

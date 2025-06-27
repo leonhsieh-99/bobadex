@@ -33,9 +33,11 @@ class BrandState extends ChangeNotifier {
   Future<void> loadFromSupabase() async {
     final supabase = Supabase.instance.client;
     final response = await supabase.from('brands').select();
-    final allBrands = (response as List).map((json) => Brand.fromJson(json)).toList();
-    _brands.clear();
-    _brands.addAll(allBrands);
+    _brands
+      ..clear()
+      ..addAll(
+        response.map<Brand>((json) => Brand.fromJson(json))
+      );
     nameLookup = {for (var brand in _brands) brand.slug: brand.display};
     notifyListeners();
   }
