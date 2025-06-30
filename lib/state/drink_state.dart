@@ -86,7 +86,7 @@ class DrinkState extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Insert failed: $e');
-      _drinks.remove(drink);
+      _drinks.remove(tempDrink);
       notifyListeners();
       rethrow;
     }

@@ -65,7 +65,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _navigateToShop(Shop shop, user) async {
-    print('Shop id: ${shop.id}');
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -191,18 +190,21 @@ class _HomePageState extends State<HomePage> {
                         right: 8,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: (shop.brandSlug == null || shop.brandSlug!.isEmpty) || (brand!.iconPath == null || brand.iconPath!.isEmpty)
-                            ? Center(child: Icon(Icons.store, size: 50 * imageScale, color: Colors.grey))
-                            : SizedBox(
-                                width: 50 * imageScale,
-                                height: 60 * imageScale,
-                                child: CachedNetworkImage(
-                                  imageUrl: brand.thumbUrl,
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) => CircularProgressIndicator(),
-                                  errorWidget: (context, url, error) => Icon(Icons.broken_image, size: 50 * imageScale),
-                                ),
+                          child: SizedBox(
+                            width: 55 * imageScale,
+                            height: 60 * imageScale,
+                            child: (shop.brandSlug == null || shop.brandSlug!.isEmpty) || (brand!.iconPath == null || brand.iconPath!.isEmpty)
+                              ? Image.asset(
+                                'lib/assets/default_icon.png',
+                                fit: BoxFit.cover,
                               )
+                              : CachedNetworkImage(
+                                imageUrl: brand.thumbUrl,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => CircularProgressIndicator(),
+                                errorWidget: (context, url, error) => Icon(Icons.broken_image, size: 50 * imageScale),
+                              )
+                          )
                         ),
                       ),
                       if (shop.isFavorite)

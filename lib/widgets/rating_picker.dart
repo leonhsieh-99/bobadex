@@ -1,10 +1,9 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
-class RatingPicker extends StatelessWidget{
+class RatingPicker extends StatelessWidget {
   final double rating;
   final void Function(double)? onChanged;
 
@@ -18,34 +17,35 @@ class RatingPicker extends StatelessWidget{
   Widget build(BuildContext context) {
     final user = context.watch<UserState>().user;
     final iconSize = 50.0;
+    final color = Constants.getThemeColor(user.themeSlug).shade700;
+
     return Row(
       children: List.generate(5, (index) {
         double current = index + 1.0;
-        String asset;
+        IconData iconData;
 
         if (rating >= current) {
-          asset = 'lib/assets/icons/tapioca_pearls/pearl_full.svg';
+          iconData = Icons.star;
         } else if (rating >= current - 0.5) {
-          asset = 'lib/assets/icons/tapioca_pearls/pearl_half.svg';
+          iconData = Icons.star_half;
         } else {
-          asset = 'lib/assets/icons/tapioca_pearls/pearl_outline.svg';
+          iconData = Icons.star_border;
         }
 
         Widget icon = Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: SvgPicture.asset(
-            asset,
-            width: iconSize,
-            height: iconSize,
-            colorFilter: ColorFilter.mode(Constants.getThemeColor(user.themeSlug).shade700, BlendMode.srcIn),
-          )
+          child: Icon(
+            iconData,
+            size: iconSize,
+            color: color,
+          ),
         );
 
         if (onChanged != null) {
           return GestureDetector(
             onPanDown: (details) {
               final localX = details.localPosition.dx;
-              final width = iconSize; // icon size
+              final width = iconSize;
               final isHalf = localX < width / 2;
 
               onChanged!(isHalf ? current - 0.5 : current);

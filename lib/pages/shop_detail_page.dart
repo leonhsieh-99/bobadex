@@ -7,6 +7,7 @@ import 'package:bobadex/widgets/add_edit_drink_dialog.dart';
 import 'package:bobadex/helpers/sortable_entry.dart';
 import 'package:bobadex/models/drink_form_data.dart';
 import 'package:bobadex/models/shop.dart';
+import 'package:bobadex/pages/shop_gallery_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +15,6 @@ import 'package:provider/provider.dart' as p;
 import '../models/drink.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/add_edit_shop_dialog.dart';
-import 'package:shimmer/shimmer.dart';
 import '../widgets/filter_sort_bar.dart';
 import '../state/drink_state.dart';
 import '../config/constants.dart';
@@ -111,35 +111,65 @@ class _ShopDetailPage extends State<ShopDetailPage> {
               SizedBox(
                 height: bannerHeight,
                 width: double.infinity,
-                child: (bannerUrl == null ||  bannerUrl.isEmpty)
-                  ? Container(
-                    width: double.infinity,
-                    height: 200,
-                    color: Color(0xFFF5F5F5),
-                    child: const Center(
-                      child: Icon(Icons.store, size: 64, color: Colors.white70)
-                    ),
-                  )
-                  : CachedNetworkImage(
-                    imageUrl: bannerUrl,
-                    fadeInDuration: Duration(milliseconds: 300),
-                    width: double.infinity,
-                    height: 200,
-                    fit: BoxFit.cover,
-                    errorWidget: (context, url, error) => Container(
-                      color: Color(0xFFF5F5F5),
-                      child: const Center(child: Icon(Icons.broken_image)),
-                    ),
-                    placeholder: (context, url) => Shimmer.fromColors(
-                      baseColor: Color(0xFFF5F5F5),
-                      highlightColor: Color(0xFFF5F5F5),
-                      child: Container(
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ShopGalleryPage(
+                        shopMediaList: shopMediaState.getByShop(_shop.id!),
+                        bannerMediaId: shopMediaState.getBannerId(_shop.id!), // the current banner image id
+                        onSetBanner: (mediaId) async {
+                          try {
+                            await shopMediaState.setBanner(shopRead.id!, mediaId);
+                            if(context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: const Text('New banner set'))
+                              );
+                            }
+                          } catch (e) {
+                            if(context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: const Text('Banner update failed'))
+                              );
+                            }
+                          }
+                          setState(() {}); // refresh
+                        },
+                        onDelete: (mediaId) async {
+                          try {
+                            await shopMediaState.removeMedia(mediaId);
+                          } catch (e) {
+                            if(context.mounted) {
+                              debugPrint('deletion failed: $e');
+                            }
+                          }
+                          setState(() {});
+                        },
+                        isCurrentUser: isCurrentUser,
+                        shopId: _shop.id!,
+                      ),
+                    )
+                  ),
+                  child: (bannerUrl == null || bannerUrl.isEmpty)
+                    ? Container(
                         width: double.infinity,
                         height: 200,
                         color: Color(0xFFF5F5F5),
+                        child: const Center(
+                          child: Icon(Icons.store, size: 64, color: Colors.white70)
+                        ),
+                      )
+                    : CachedNetworkImage(
+                        imageUrl: bannerUrl,
+                        fadeInDuration: Duration(milliseconds: 300),
+                        width: double.infinity,
+                        height: 200,
+                        fit: BoxFit.cover,
+                        errorWidget: (context, url, error) => Container(
+                          color: Color(0xFFF5F5F5),
+                          child: const Center(child: Icon(Icons.broken_image)),
+                        ),
                       ),
-                    ),
-                  ),
+                ),
               ),
               DraggableScrollableSheet(
                 initialChildSize: initialSheetSize.clamp(0.5, 0.90), // prevent it from being too short/tall
@@ -271,208 +301,210 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                             }
                           ),
                         ),
+                        
                         Expanded(
-                          child: ListView.builder(
-                            // controller: scrollController,
-                            padding: const EdgeInsets.only(bottom: 24),
-                            itemCount: visibleDrinks.length,
-                            itemBuilder: (context, index) {
-                              final drink = visibleDrinks[index];
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
-                                child: Stack(
-                                  children: [
-                                    Container(
-                                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-                                      child: Card(
-                                        margin: EdgeInsets.symmetric(horizontal: 0, vertical: 2),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                        child: Theme(
-                                          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                                          child: ExpansionTile(
-                                            initiallyExpanded: _expandedDrinkIds.contains(drink.id),
-                                            onExpansionChanged: (isExpanded) { 
-                                              setState(() {
-                                                if (isExpanded) {
-                                                  _expandedDrinkIds.add(drink.id ?? '');
-                                                } else {
-                                                  _expandedDrinkIds.remove(drink.id);
-                                                }
-                                              });
-                                            },
-                                            tilePadding: EdgeInsets.fromLTRB(6, 0, 0, 0),
-                                            trailing: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                GestureDetector(
-                                                  onTap: isCurrentUser
-                                                    ? () async {
-                                                        final updated = drink.copyWith(isFavorite: !drink.isFavorite);
-                                                        try {
-                                                          await drinkState.update(updated);
-                                                        } catch (_) {
-                                                          if (context.mounted) {
-                                                            ScaffoldMessenger.of(context).showSnackBar(
-                                                              SnackBar(content: Text('Failed to update favorite status.')),
-                                                            );
-                                                          }
-                                                        }
-                                                      }
-                                                    : null,
-                                                  child: SvgPicture.asset(
-                                                    drink.isFavorite 
-                                                      ? 'lib/assets/icons/heart.svg'
-                                                      : 'lib/assets/icons/heart_outlined.svg',
-                                                    width: 16,
-                                                    height: 16,
-                                                  ),
-                                                ),
-                                                if (isCurrentUser)
-                                                  PopupMenuButton<String>(
-                                                    icon: const Icon(Icons.more_horiz, size: 16),
-                                                    onSelected: (value) async {
-                                                      final shop = shopState.getShop(widget.shop.id);
-                                                      switch(value) {
-                                                        case 'pin':
-                                                          final isPinned = shop?.pinnedDrinkId == drink.id;
+                          child: (_shopDrinks.isEmpty)
+                            ? Center(child: Text('No drinks yet', style: Constants.emptyListTextStyle))
+                            : ListView.builder(
+                              padding: const EdgeInsets.only(bottom: 24),
+                              itemCount: visibleDrinks.length,
+                              itemBuilder: (context, index) {
+                                final drink = visibleDrinks[index];
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  child: Stack(
+                                    children: [
+                                      Container(
+                                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+                                        child: Card(
+                                          margin: EdgeInsets.symmetric(horizontal: 0, vertical: 2),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                          child: Theme(
+                                            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                                            child: ExpansionTile(
+                                              initiallyExpanded: _expandedDrinkIds.contains(drink.id),
+                                              onExpansionChanged: (isExpanded) { 
+                                                setState(() {
+                                                  if (isExpanded) {
+                                                    _expandedDrinkIds.add(drink.id ?? '');
+                                                  } else {
+                                                    _expandedDrinkIds.remove(drink.id);
+                                                  }
+                                                });
+                                              },
+                                              tilePadding: EdgeInsets.fromLTRB(6, 0, 0, 0),
+                                              trailing: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  GestureDetector(
+                                                    onTap: isCurrentUser
+                                                      ? () async {
+                                                          final updated = drink.copyWith(isFavorite: !drink.isFavorite);
                                                           try {
-                                                            if (isPinned) {
-                                                              await shopState.update(shop!.copyWith(pinnedDrinkId: ''));
-                                                            } else {
-                                                              await shopState.update(shop!.copyWith(pinnedDrinkId: drink.id));
-                                                            }
+                                                            await drinkState.update(updated);
                                                           } catch (_) {
-                                                            ScaffoldMessenger.of(context).showSnackBar(
-                                                              SnackBar(content: const Text('Pin failed'))
-                                                            );
-                                                          }
-                                                          break;
-                                                        case 'edit':
-                                                          await showDialog(
-                                                            context: context,
-                                                            builder: (_) => AddOrEditDrinkDialog(
-                                                              initialData: DrinkFormData(
-                                                                name: drink.name,
-                                                                rating: drink.rating,
-                                                                notes: drink.notes,
-                                                                isFavorite: drink.isFavorite,
-                                                              ),
-                                                              onSubmit: (updatedDrink) async {
-                                                                try {
-                                                                  await drinkState.update(updatedDrink.toDrink(id: drink.id, shopId: drink.shopId));
-                                                                } catch (_) {
-                                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                                    SnackBar(content: Text('Failed to update drink.')),
-                                                                  );
-                                                                }
-                                                              },
-                                                            ),
-                                                          );
-                                                          break;
-                                                        case 'remove':
-                                                          final confirm = await showDialog<bool>(
-                                                            context: context,
-                                                            builder: (context) => AlertDialog(
-                                                              title: const Text('Remove Drink'),
-                                                              content: const Text('Are you sure you want to remove this drink ?'),
-                                                              actions: [
-                                                                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                                                                TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
-                                                              ],
-                                                            )
-                                                          );
-                                                          if (confirm == true) {
-                                                            try {
-                                                              await drinkState.remove(drink.id!);
-                                                            } catch (_) {
+                                                            if (context.mounted) {
                                                               ScaffoldMessenger.of(context).showSnackBar(
-                                                                SnackBar(content: const Text('Remove failed'))
+                                                                SnackBar(content: Text('Failed to update favorite status.')),
                                                               );
                                                             }
                                                           }
-                                                          break;
-                                                      }
-                                                    },
-                                                    itemBuilder: (_) => [
-                                                      PopupMenuItem(
-                                                        value: 'pin',
-                                                        child: Text(drink.id != shopRead.pinnedDrinkId
-                                                          ? 'Pin'
-                                                          : 'Unpin'
-                                                        )
-                                                      ),
-                                                      PopupMenuItem(
-                                                        value: 'edit',
-                                                        child: Text('Edit'),
-                                                      ),
-                                                      PopupMenuItem(
-                                                        value: 'remove',
-                                                        child: Text('Remove'),
-                                                      ),
-                                                    ]
+                                                        }
+                                                      : null,
+                                                    child: SvgPicture.asset(
+                                                      drink.isFavorite 
+                                                        ? 'lib/assets/icons/heart.svg'
+                                                        : 'lib/assets/icons/heart_outlined.svg',
+                                                      width: 16,
+                                                      height: 16,
+                                                    ),
                                                   ),
-                                              ],
-                                            ),
-                                            title: Row(
-                                              children: [
-                                                AnimatedRotation(
-                                                  turns: _expandedDrinkIds.contains(drink.id) ? 0.25 : 0.00,
-                                                  duration: const Duration(milliseconds: 200),
-                                                  child: const Icon(Icons.chevron_right, size: 20, color: Colors.brown),
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Expanded(
-                                                  flex: 5,
-                                                  child: Text(
-                                                    drink.name,
-                                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
-                                                    overflow: TextOverflow.ellipsis,
-                                                    maxLines: 1,
+                                                  if (isCurrentUser)
+                                                    PopupMenuButton<String>(
+                                                      icon: const Icon(Icons.more_horiz, size: 16),
+                                                      onSelected: (value) async {
+                                                        final shop = shopState.getShop(widget.shop.id);
+                                                        switch(value) {
+                                                          case 'pin':
+                                                            final isPinned = shop?.pinnedDrinkId == drink.id;
+                                                            try {
+                                                              if (isPinned) {
+                                                                await shopState.update(shop!.copyWith(pinnedDrinkId: ''));
+                                                              } else {
+                                                                await shopState.update(shop!.copyWith(pinnedDrinkId: drink.id));
+                                                              }
+                                                            } catch (_) {
+                                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                                SnackBar(content: const Text('Pin failed'))
+                                                              );
+                                                            }
+                                                            break;
+                                                          case 'edit':
+                                                            await showDialog(
+                                                              context: context,
+                                                              builder: (_) => AddOrEditDrinkDialog(
+                                                                initialData: DrinkFormData(
+                                                                  name: drink.name,
+                                                                  rating: drink.rating,
+                                                                  notes: drink.notes,
+                                                                  isFavorite: drink.isFavorite,
+                                                                ),
+                                                                onSubmit: (updatedDrink) async {
+                                                                  try {
+                                                                    await drinkState.update(updatedDrink.toDrink(id: drink.id, shopId: drink.shopId));
+                                                                  } catch (_) {
+                                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                                      SnackBar(content: Text('Failed to update drink.')),
+                                                                    );
+                                                                  }
+                                                                },
+                                                              ),
+                                                            );
+                                                            break;
+                                                          case 'remove':
+                                                            final confirm = await showDialog<bool>(
+                                                              context: context,
+                                                              builder: (context) => AlertDialog(
+                                                                title: const Text('Remove Drink'),
+                                                                content: const Text('Are you sure you want to remove this drink ?'),
+                                                                actions: [
+                                                                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                                                  TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
+                                                                ],
+                                                              )
+                                                            );
+                                                            if (confirm == true) {
+                                                              try {
+                                                                await drinkState.remove(drink.id!);
+                                                              } catch (_) {
+                                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                                  SnackBar(content: const Text('Remove failed'))
+                                                                );
+                                                              }
+                                                            }
+                                                            break;
+                                                        }
+                                                      },
+                                                      itemBuilder: (_) => [
+                                                        PopupMenuItem(
+                                                          value: 'pin',
+                                                          child: Text(drink.id != shopRead.pinnedDrinkId
+                                                            ? 'Pin'
+                                                            : 'Unpin'
+                                                          )
+                                                        ),
+                                                        PopupMenuItem(
+                                                          value: 'edit',
+                                                          child: Text('Edit'),
+                                                        ),
+                                                        PopupMenuItem(
+                                                          value: 'remove',
+                                                          child: Text('Remove'),
+                                                        ),
+                                                      ]
+                                                    ),
+                                                ],
+                                              ),
+                                              title: Row(
+                                                children: [
+                                                  AnimatedRotation(
+                                                    turns: _expandedDrinkIds.contains(drink.id) ? 0.25 : 0.00,
+                                                    duration: const Duration(milliseconds: 200),
+                                                    child: const Icon(Icons.chevron_right, size: 20, color: Colors.brown),
                                                   ),
-                                                ),
-                                                const SizedBox(width: 6),
-                                                Expanded(
-                                                  flex: 2,
-                                                  child:
-                                                  Row(children: [
-                                                SvgPicture.asset(
-                                                  'lib/assets/icons/star.svg',
-                                                  width: 14,
-                                                  height: 14,
-                                                ),
-                                                SizedBox(width: 6),
-                                                Text(
-                                                  drink.rating.toStringAsFixed(1),
-                                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w300),
-                                                ),
-                                              ]
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    flex: 5,
+                                                    child: Text(
+                                                      drink.name,
+                                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+                                                      overflow: TextOverflow.ellipsis,
+                                                      maxLines: 1,
+                                                    ),
                                                   ),
-                                                ),
-                                              ],
-                                            ),
-                                            children: [
-                                              Padding(
-                                                padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-                                                child: Align(
-                                                  alignment: Alignment.centerLeft,
-                                                  child: Text(
-                                                    (drink.notes == null || drink.notes!.isEmpty)
-                                                    ? 'No notes yet...'
-                                                    : drink.notes!,
+                                                  const SizedBox(width: 6),
+                                                  Expanded(
+                                                    flex: 2,
+                                                    child:
+                                                    Row(children: [
+                                                  SvgPicture.asset(
+                                                    'lib/assets/icons/star.svg',
+                                                    width: 14,
+                                                    height: 14,
+                                                  ),
+                                                  SizedBox(width: 6),
+                                                  Text(
+                                                    drink.rating.toStringAsFixed(1),
                                                     style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w300),
                                                   ),
-                                                )
+                                                ]
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                            ],
+                                              children: [
+                                                Padding(
+                                                  padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                                  child: Align(
+                                                    alignment: Alignment.centerLeft,
+                                                    child: Text(
+                                                      (drink.notes == null || drink.notes!.isEmpty)
+                                                      ? 'No notes yet...'
+                                                      : drink.notes!,
+                                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w300),
+                                                    ),
+                                                  )
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
                         ),
                       ],
                     )

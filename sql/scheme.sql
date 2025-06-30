@@ -34,7 +34,7 @@ create table shop_media (
   drink_id uuid references drinks(id) on delete set null, -- optional association
   image_path text not null,
   comment text default null,
-  is_banner boolean default false, -- optional flag
+  is_banner boolean default false,
   visibility text default 'private' check (visibility in ('private', 'friends', 'public')),
   created_at timestamptz default now()
 );

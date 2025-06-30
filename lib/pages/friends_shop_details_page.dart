@@ -38,11 +38,16 @@ class FriendsShopDetailsPage extends StatelessWidget {
                 child: (shop.iconPath.isNotEmpty)
                   ? CachedNetworkImage(
                       imageUrl: brandState.getBrand(shop.brandSlug)!.thumbUrl,
-                      width: 90,
-                      height: 90,
+                      width: 150,
+                      height: 150,
                       fit: BoxFit.cover,
                     )
-                  : Icon(Icons.emoji_food_beverage, size: 70, color: Colors.deepPurple.shade200),
+                  : Image.asset(
+                    'lib/assets/default_icon.png',
+                    width: 150,
+                    height: 150,
+                    fit: BoxFit.cover,
+                  )
               ),
             ),
             const SizedBox(height: 20),

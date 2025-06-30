@@ -96,7 +96,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                             fit: BoxFit.cover,
                           )
                         : Image.asset(
-                            'lib/assets/default_icon.png', // Note: omit "lib/" prefix
+                            'lib/assets/default_icon.png',
                             width: 100,
                             height: 100,
                             fit: BoxFit.cover,
@@ -109,7 +109,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                     right: 0,
                     child: TextButton(
                       style: TextButton.styleFrom(
-                        backgroundColor: Colors.white,
+                        backgroundColor: themColor.shade200,
                         shape: const StadiumBorder(),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         elevation: 3,
@@ -118,7 +118,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                       child: Text(
                         hasVisit ? "Edit Visit" : "Add Visit",
                         style: TextStyle(
-                          color: themColor,
+                          color: Colors.white,
                           fontSize: 12,
                         ),
                       ),
@@ -148,7 +148,6 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                             brand: widget.brand,
                           ),
                         );
-                        Navigator.of(context).popUntil((route) => route.isFirst);
                       },
                     ),
                   ),

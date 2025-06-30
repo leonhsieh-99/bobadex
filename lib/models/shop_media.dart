@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ShopMedia {
@@ -6,9 +8,11 @@ class ShopMedia {
   final String userId;
   final String? drinkId;
   final String imagePath;
-  final bool isBanner;
+  bool isBanner;
   final String? visibility;
   final String? comment;
+    final File? localFile;
+  final bool isPending;
 
   ShopMedia({
     required this.id,
@@ -19,6 +23,8 @@ class ShopMedia {
     this.isBanner = false,
     this.visibility = 'public', // change to private after testing
     this.comment,
+    this.localFile,
+    this.isPending = false,
   });
 
   String get imageUrl => imagePath.isNotEmpty
@@ -39,6 +45,7 @@ class ShopMedia {
       isBanner: json['is_banner'] ?? false,
       visibility: json['visibility'] ?? 'public', // change to private after testing
       comment: json['comment'],
+      isPending: json['isPending'] ?? false,
     );
   }
 
@@ -51,6 +58,8 @@ class ShopMedia {
     bool? isBanner,
     String? visibility,
     String? comment,
+    File? localFile,
+    bool? isPending,
   }) {
     return ShopMedia(
       id: id ?? this.id,
@@ -61,6 +70,8 @@ class ShopMedia {
       isBanner: isBanner ?? this.isBanner,
       visibility: visibility ?? this.visibility,
       comment: comment ?? this.comment,
+      localFile: localFile ?? this.localFile,
+      isPending: isPending ?? this.isPending,
     );
   }
 }

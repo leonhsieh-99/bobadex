@@ -1,6 +1,8 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/friends_shop.dart';
 import 'package:bobadex/pages/friends_shop_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
+import 'package:bobadex/state/user_state.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -33,7 +35,7 @@ class _SocialPageState extends State<SocialPage> {
       final data = response as List? ?? [];
       shopsData = data.map((json) => FriendsShop.fromJson(json)).toList();
     } catch (e) {
-      print('Error loading shops $e');
+      debugPrint('Error loading shops $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error loading shops'))
       );
@@ -118,9 +120,8 @@ class _SocialPageState extends State<SocialPage> {
   Widget _buildShopPearl(shop) {
     final brandState = context.read<BrandState>();
     final brand = brandState.getBrand(shop.brandSlug);
-            print('name: ${shop.name}');
-            print('slug: ${shop.brandSlug}');
-            print("brand: ${brand?.iconPath}");
+    final userState = context.read<UserState>();
+    final themeColor = Constants.getThemeColor(userState.user.themeSlug);
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
@@ -138,23 +139,26 @@ class _SocialPageState extends State<SocialPage> {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: Colors.purple.shade100,
+              color: themeColor.shade200,
               shape: BoxShape.circle,
             ),
-            child: (shop.brandSlug == null || shop.brandSlug!.isEmpty) || (brand!.iconPath == null || brand.iconPath!.isEmpty)
-              ? Icon(Icons.emoji_food_beverage, size: 30, color: Colors.deepPurple.shade200)
-              : ClipOval(
-                  child: CachedNetworkImage(
-                    imageUrl: brand.thumbUrl,
-                    width: 64,
-                    height: 64,
-                    fit: BoxFit.cover,
-                    placeholder: (context, _) => Container(
-                      color: Colors.grey.shade200,
-                    ),
-                    errorWidget: (context, _, __) => Icon(Icons.store, size: 30, color: Colors.grey),
+            child: ClipOval(
+              child: (shop.brandSlug == null || shop.brandSlug!.isEmpty) || (brand!.iconPath == null || brand.iconPath!.isEmpty)
+                ? Image.asset(
+                  'lib/assets/default_icon.png',
+                  fit: BoxFit.cover,
+                  )
+                : CachedNetworkImage(
+                  imageUrl: brand.thumbUrl,
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.cover,
+                  placeholder: (context, _) => Container(
+                    color: Colors.grey.shade200,
                   ),
-                )
+                  errorWidget: (context, _, __) => Icon(Icons.store, size: 30, color: Colors.grey),
+                ),
+              )
           ),
           const SizedBox(height: 10),
           Text(
