@@ -19,19 +19,13 @@ class ShopMediaState extends ChangeNotifier {
   void addPendingMedia(ShopMedia pending) {
     _shopMedia.add(pending);
     notifyListeners();
-    print('[DEBUG] _shopMedia after mutation:');
-for (final m in _shopMedia) print('  id: ${m.id}, pending: ${m.isPending}, imagePath: ${m.imagePath}');
-
   }
 
 void replacePendingMedia(String pendingId, ShopMedia realMedia) {
-  print('Replacing $pendingId with ${realMedia.id}');
   final idx = _shopMedia.indexWhere((m) => m.id == pendingId);
   if (idx != -1) {
     _shopMedia[idx] = realMedia;
     notifyListeners();
-  } else {
-    print('replacePendingMedia failed: $pendingId not found!');
   }
 }
 
@@ -39,9 +33,6 @@ void replacePendingMedia(String pendingId, ShopMedia realMedia) {
   void removePendingMedia(String mediaId) {
     _shopMedia.removeWhere((m) => m.id == mediaId);
     notifyListeners();
-    print('[DEBUG] _shopMedia after mutation:');
-for (final m in _shopMedia) print('  id: ${m.id}, pending: ${m.isPending}, imagePath: ${m.imagePath}');
-
   }
 
   String? getBannerId(String shopId) {
@@ -49,7 +40,6 @@ for (final m in _shopMedia) print('  id: ${m.id}, pending: ${m.isPending}, image
   }
 
   Future<void> setBanner(String shopId, String mediaId) async {
-    print('start');
     final newIndex = _shopMedia.indexWhere((sm) => sm.id == mediaId);
     final oldIndex = _shopMedia.indexWhere((sm) => sm.isBanner == true && sm.shopId == shopId);
 
@@ -63,7 +53,6 @@ for (final m in _shopMedia) print('  id: ${m.id}, pending: ${m.isPending}, image
     notifyListeners();
 
     try {
-      print('updating');
       if (hadOldBanner && oldBannerId != mediaId) {
         await Supabase.instance.client
           .from('shop_media')
@@ -74,7 +63,6 @@ for (final m in _shopMedia) print('  id: ${m.id}, pending: ${m.isPending}, image
         .from('shop_media')
         .update({'is_banner': true})
         .eq('id', mediaId);
-      print('done');
     } catch (e) {
       // Rollback local state if server update fails
       if (hadOldBanner) _shopMedia[oldIndex].isBanner = true;
@@ -108,6 +96,9 @@ for (final m in _shopMedia) print('  id: ${m.id}, pending: ${m.isPending}, image
     final removedMedia = getById(id);
     if (removedMedia == null) return;
 
+    final wasBanner = removedMedia.isBanner;
+    final shopId = removedMedia.shopId;
+
     _shopMedia.removeWhere((d) => d.id == id);
     notifyListeners();
 
@@ -116,6 +107,13 @@ for (final m in _shopMedia) print('  id: ${m.id}, pending: ${m.isPending}, image
         .from('shop_media')
         .delete()
         .eq('id', id);
+
+      if (wasBanner) {
+        final remaining = _shopMedia.where((m) => m.shopId == shopId).toList();
+        if (remaining.isNotEmpty) {
+          await setBanner(shopId, remaining.first.id);
+        }
+      }
     } catch (e) {
       debugPrint('Remove failed: $e');
       _shopMedia.add(removedMedia);
@@ -123,6 +121,7 @@ for (final m in _shopMedia) print('  id: ${m.id}, pending: ${m.isPending}, image
       rethrow;
     }
   }
+
 
   Future<void> loadFromSupabase() async {
     final supabase = Supabase.instance.client;

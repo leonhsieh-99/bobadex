@@ -6,14 +6,18 @@ import 'package:flutter/material.dart';
 class GalleryGrid extends StatefulWidget {
   final List<ShopMedia> mediaList;
   final bool selectable;
+  final bool isCurrentUser;
   final List<ShopMedia>? selected;
+  final Future<void> Function(String mediaId)? onSetBanner;
   final ValueChanged<List<ShopMedia>>? onSelectionChanged;
 
   const GalleryGrid({
     super.key,
     required this.mediaList,
+    required this.isCurrentUser,
     this.selected,
     this.selectable = false,
+    this.onSetBanner,
     this.onSelectionChanged,
   });
 
@@ -65,11 +69,44 @@ class _GalleryGridState extends State<GalleryGrid> {
         return GestureDetector(
           onTap: () => _onTap(idx),
           onLongPress: () => _onTap(idx), // Optionally, allow long-press for selection too
-          child: TappableImage(
-            media: media,
-            selected: isSelected,
-            selectable: widget.selectable,
-          ),
+          child: Stack(
+            children: [
+              TappableImage(
+                media: media,
+                selected: isSelected,
+                selectable: widget.selectable,
+              ),
+              if (media.isBanner && widget.isCurrentUser)
+                Positioned(
+                  bottom: 4,
+                  left: 4,
+                  child: Container(
+                    color: Colors.black54,
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    child: Text('Banner', style: TextStyle(color: Colors.white, fontSize: 11)),
+                  ),
+                ),
+              if (widget.isCurrentUser && !media.isBanner)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert, color: Colors.white, size: 18),
+                    itemBuilder: (_) => [
+                      PopupMenuItem(
+                        value: 'set_banner',
+                        child: Text('Set as Banner'),
+                      ),
+                    ],
+                    onSelected: (value) async {
+                      if (value == 'set_banner' && widget.onSetBanner != null) {
+                        await widget.onSetBanner!(media.id);
+                      }
+                    },
+                  ),
+                ),
+            ],
+          )
         );
       },
     );
