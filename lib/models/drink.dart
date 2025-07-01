@@ -67,7 +67,7 @@ class Drink extends SortableEntry {
     bool? isFavorite,
   }) {
     return Drink(
-      id: id ?? id,
+      id: id ?? this.id,
       shopId: shopId,
       name: name ?? this.name,
       rating: rating ?? this.rating,

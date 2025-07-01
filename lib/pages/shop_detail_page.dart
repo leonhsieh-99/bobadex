@@ -8,6 +8,7 @@ import 'package:bobadex/helpers/sortable_entry.dart';
 import 'package:bobadex/models/drink_form_data.dart';
 import 'package:bobadex/models/shop.dart';
 import 'package:bobadex/pages/shop_gallery_page.dart';
+import 'package:bobadex/widgets/rating_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -106,6 +107,47 @@ class _ShopDetailPage extends State<ShopDetailPage> {
           final bannerRatio = 0.3;
           final bannerHeight = screenHeight * bannerRatio;
           final initialSheetSize = (1.0 - bannerRatio) + 0.03; // slightly overlap image
+
+          void _openGalleryPage(BuildContext context) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ShopGalleryPage(
+                  shopMediaList: shopMediaState.getByShop(_shop.id!),
+                  bannerMediaId: shopMediaState.getBannerId(_shop.id!),
+                  onSetBanner: (mediaId) async {
+                    try {
+                      await shopMediaState.setBanner(shopRead.id!, mediaId);
+                      if(context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: const Text('New banner set'))
+                        );
+                      }
+                    } catch (e) {
+                      if(context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: const Text('Banner update failed'))
+                        );
+                      }
+                    }
+                    setState(() {}); // refresh
+                  },
+                  onDelete: (mediaId) async {
+                    try {
+                      await shopMediaState.removeMedia(mediaId);
+                    } catch (e) {
+                      if(context.mounted) {
+                        debugPrint('deletion failed: $e');
+                      }
+                    }
+                    setState(() {});
+                  },
+                  isCurrentUser: isCurrentUser,
+                  shopId: _shop.id!,
+                ),
+              ),
+            );
+          }
+          
           return Stack(
             children: [
               // tappable banner
@@ -115,69 +157,69 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                     height: bannerHeight,
                     width: double.infinity,
                     child: GestureDetector(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ShopGalleryPage(
-                            shopMediaList: shopMediaState.getByShop(_shop.id!),
-                            bannerMediaId: shopMediaState.getBannerId(_shop.id!), // the current banner image id
-                            onSetBanner: (mediaId) async {
-                              try {
-                                await shopMediaState.setBanner(shopRead.id!, mediaId);
-                                if(context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: const Text('New banner set'))
-                                  );
-                                }
-                              } catch (e) {
-                                if(context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: const Text('Banner update failed'))
-                                  );
-                                }
-                              }
-                              setState(() {}); // refresh
-                            },
-                            onDelete: (mediaId) async {
-                              try {
-                                await shopMediaState.removeMedia(mediaId);
-                              } catch (e) {
-                                if(context.mounted) {
-                                  debugPrint('deletion failed: $e');
-                                }
-                              }
-                              setState(() {});
-                            },
-                            isCurrentUser: isCurrentUser,
-                            shopId: _shop.id!,
+                      onTap: () => _openGalleryPage(context),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // Banner image
+                          (bannerUrl == null || bannerUrl.isEmpty)
+                              ? Container(
+                                  color: Color(0xFFF5F5F5),
+                                  child: const Center(
+                                    child: Icon(Icons.store, size: 64, color: Colors.white70)
+                                  ),
+                                )
+                              : CachedNetworkImage(
+                                  imageUrl: bannerUrl,
+                                  fadeInDuration: Duration(milliseconds: 300),
+                                  fit: BoxFit.cover,
+                                  errorWidget: (context, url, error) => Container(
+                                    color: Color(0xFFF5F5F5),
+                                    child: const Center(child: Icon(Icons.broken_image)),
+                                  ),
+                                ),
+                          // Gradient overlay at the bottom
+                          Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                              height: bannerHeight * 0.35,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withOpacity(0.22),
+                                    Colors.black.withOpacity(0.38),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
-                        )
+                          // ...your other widgets, icons, etc, can be added here
+                        ],
                       ),
-                      child: (bannerUrl == null || bannerUrl.isEmpty)
-                        ? Container(
-                            width: double.infinity,
-                            height: 200,
-                            color: Color(0xFFF5F5F5),
-                            child: const Center(
-                              child: Icon(Icons.store, size: 64, color: Colors.white70)
-                            ),
-                          )
-                        : CachedNetworkImage(
-                            imageUrl: bannerUrl,
-                            fadeInDuration: Duration(milliseconds: 300),
-                            width: double.infinity,
-                            height: 200,
-                            fit: BoxFit.cover,
-                            errorWidget: (context, url, error) => Container(
-                              color: Color(0xFFF5F5F5),
-                              child: const Center(child: Icon(Icons.broken_image)),
-                            ),
-                          ),
                     ),
                   ),
                   Positioned(
                     bottom: bannerHeight * 0.15,
                     right: 16,
-                    child: Icon(Icons.collections, color: Colors.white),
+                    child: GestureDetector(
+                      onTap: () => _openGalleryPage(context),
+                      child: Container(
+                        padding: EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text('View all photos', style: TextStyle(fontSize: 14, color: Colors.white)),
+                      )
+                    )
+                  ),
+                  Positioned(
+                    bottom: bannerHeight * 0.15,
+                    left: 16,
+                    child: RatingPicker(rating: _shop.rating, size: 30)
                   )
                 ]
               ),
@@ -234,10 +276,17 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                       onSubmit: (drink) async {
                                         try {
                                           await drinkState.add(drink.toDrink(shopId: shopRead.id), shopRead.id!);
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('Drink added.')),
+                                            );
+                                          }
                                         } catch (e) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(content: Text('Failed to add drink.')),
-                                          );
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('Failed to add drink.')),
+                                            );
+                                          }
                                         }
                                       },
                                     ),
@@ -259,26 +308,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                 maxLines: 1,
                               ),
                             ),
-                            if (pinnedDrink != '')
-                              Flexible(
-                                flex: 2,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  mainAxisSize: MainAxisSize.max,
-                                  children: [
-                                    SvgPicture.asset(
-                                      'lib/assets/icons/star.svg',
-                                      width: 18,
-                                      height: 18,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _shop.rating.toStringAsFixed(1),
-                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w400),
-                                    ),
-                                  ],
-                                ),
-                              ),
                           ],
                         ),
                         SizedBox(height: 6),

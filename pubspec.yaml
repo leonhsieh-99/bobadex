@@ -73,6 +73,8 @@ flutter:
   assets:
     - .env
     - lib/assets/icons/star.svg
+    - lib/assets/icons/half_star.svg
+    - lib/assets/icons/outlined_star.svg
     - lib/assets/icons/heart.svg
     - lib/assets/icons/heart_outlined.svg
     - lib/assets/icons/boba1.svg

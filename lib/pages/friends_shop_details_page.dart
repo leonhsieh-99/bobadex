@@ -50,9 +50,8 @@ class FriendsShopDetailsPage extends StatelessWidget {
       final rating = info.rating;
       final note = info.note;
       final isFavorite = info.isFavorite;
-      final top5Drinks = info.top5Drinks;
-      final friendShopUrl = info.thumbUrl;
-      final drinkCount = top5Drinks.length;
+      final top3Drinks = info.top3Drinks;
+      final drinkCount = info.drinksTried;
 
       String displayName;
       String thumbUrl;
@@ -72,120 +71,94 @@ class FriendsShopDetailsPage extends StatelessWidget {
               ? BorderSide(color: Colors.amber, width: 2)
               : BorderSide(color: Colors.grey.shade200, width: 1),
         ),
-        margin: isCrown
-            ? const EdgeInsets.only(bottom: 18) // Extra space below crown
-            : const EdgeInsets.symmetric(vertical: 4),
-        child: ExpansionTile(
-          leading: Stack(
-            alignment: Alignment.bottomRight,
-            children: [
-              CircleAvatar(
-                backgroundImage: thumbUrl.isNotEmpty
-                    ? CachedNetworkImageProvider(thumbUrl)
-                    : null,
-                radius: isCrown ? 28 : 24,
-                child: thumbUrl.isEmpty ? const Icon(Icons.person) : null,
-              ),
-              if (isCrown)
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Icon(Icons.emoji_events, color: Colors.amber, size: 22), // crown
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            leading: Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                CircleAvatar(
+                  backgroundImage: thumbUrl.isNotEmpty
+                      ? CachedNetworkImageProvider(thumbUrl)
+                      : null,
+                  radius: isCrown ? 28 : 24,
+                  child: thumbUrl.isEmpty ? const Icon(Icons.person) : null,
                 ),
-            ],
-          ),
-          title: Row(
-            children: [
-              ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
-                child: Text(
-                  displayName,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (isFavorite == true)
-                Icon(Icons.star, color: Colors.orange, size: 18),
-            ],
-          ),
-          subtitle: Row(
-            children: [
-              Text(rating.toStringAsFixed(1), style: const TextStyle(fontSize: 16)),
-              const SizedBox(width: 8),
-              if (drinkCount > 0)
-                Row(
-                  children: [
-                    Icon(Icons.local_drink, size: 16, color: Colors.blueGrey),
-                    const SizedBox(width: 2),
-                    Text('$drinkCount tried'),
-                  ],
-                ),
-            ],
-          ),
-            children: [
-              Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 100.0), // Leave space for the thumb
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if ((note ?? '').isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                            child: Text('Note: $note'),
-                          ),
-                        if (top5Drinks.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Top Drinks:', style: TextStyle(fontWeight: FontWeight.w500)),
-                                ...top5Drinks.map((drink) => Row(
-                                  children: [
-                                    if (drink.isFavorite == true)
-                                      Icon(Icons.favorite, color: Colors.pink, size: 16),
-                                    ConstrainedBox(
-                                      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
-                                      child: Text(
-                                        drink.name,
-                                        style: TextStyle(
-                                          fontWeight: drink.isFavorite == true ? FontWeight.bold : FontWeight.normal,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Icon(Icons.star, size: 15, color: Colors.orange),
-                                    Text(drink.rating.toStringAsFixed(1)),
-                                  ],
-                                )),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
+                if (isCrown)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Icon(Icons.emoji_events, color: Colors.amber, size: 22), // crown
                   ),
-                  if (friendShopUrl.isNotEmpty)
-                    Positioned(
-                      top: 0,
-                      right: 12,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: CachedNetworkImage(
-                          imageUrl: friendShopUrl,
-                          width: 84,
-                          height: 84,
-                          fit: BoxFit.cover,
-                        ),
+              ],
+            ),
+            title: Row(
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
+                  child: Text(
+                    displayName,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (isFavorite == true)
+                  Icon(Icons.star, color: Colors.orange, size: 18),
+              ],
+            ),
+            subtitle: Row(
+              children: [
+                Text(rating.toStringAsFixed(1), style: const TextStyle(fontSize: 16)),
+                const SizedBox(width: 8),
+                if (drinkCount > 0)
+                  Row(
+                    children: [
+                      Icon(Icons.local_drink, size: 16, color: Colors.blueGrey),
+                      const SizedBox(width: 2),
+                      Text('$drinkCount drinks'),
+                    ],
+                  ),
+              ],
+            ),
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if ((note ?? '').isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      child: Text(note, style: TextStyle(fontWeight: FontWeight.w400)),
+                    ),
+                  if (top3Drinks.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Top Drinks', style: TextStyle(fontWeight: FontWeight.w500)),
+                          ...top3Drinks.map((drink) => Row(
+                            children: [
+                              ConstrainedBox(
+                                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
+                                child: Text(
+                                  drink.name,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(Icons.star, size: 15, color: Colors.orange),
+                              Text(drink.rating.toStringAsFixed(1)),
+                            ],
+                          )),
+                        ],
                       ),
                     ),
                 ],
               ),
-              const SizedBox(height: 8),
-            ],
+            ]
+          ),
         ),
       );
     }
@@ -242,6 +215,7 @@ class FriendsShopDetailsPage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             const Text('Gallery', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
             SizedBox(
               height: 100,
               child: shop.gallery.isEmpty
@@ -266,6 +240,7 @@ class FriendsShopDetailsPage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             const Text('Friends Ratings', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
             ...friendTiles,
             if (shop.friendsInfo.isEmpty)
               const Padding(

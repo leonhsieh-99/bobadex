@@ -39,15 +39,17 @@ class FriendShopInfo {
   final double rating;
   final String? note;
   final bool isFavorite;
-  final List<Drink> top5Drinks;
+  final List<Drink> top3Drinks;
   final String? filePath;
+  final int drinksTried;
 
   FriendShopInfo({
     required this.rating,
     this.note,
     this.isFavorite = false,
-    required this.top5Drinks,
+    required this.top3Drinks,
     this.filePath,
+    required this.drinksTried,
   });
 
   String get thumbUrl => filePath != null && filePath!.isNotEmpty
@@ -61,8 +63,9 @@ class FriendShopInfo {
     rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
     note: json['note'] as String?,
     isFavorite: json['is_favorite'] as bool,
-    top5Drinks: (json['top_5_drinks'] as List<dynamic>? ?? [])
+    top3Drinks: (json['top_3_drinks'] as List<dynamic>? ?? [])
         .map((e) => Drink.fromJson(Map<String, dynamic>.from(e))).toList(),
     filePath: json['file_path'],
+    drinksTried: json['drinks_tried'],
   );
 }

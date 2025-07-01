@@ -73,6 +73,7 @@ class DrinkState extends ChangeNotifier {
           'user_id': userId,
           'name': drink.name,
           'rating': drink.rating,
+          'notes': drink.notes,
           'is_favorite': drink.isFavorite,
         }).select().single();
       

@@ -65,6 +65,7 @@ class _AddOrEditDrinkDialogState extends State<AddOrEditDrinkDialog> {
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Drink Name'),
+              maxLength: 25,
               validator: (val) => val == null || val.isEmpty ? 'Enter a name' : null,
             ),
             const SizedBox(height: 12),
@@ -82,6 +83,7 @@ class _AddOrEditDrinkDialogState extends State<AddOrEditDrinkDialog> {
                 alignLabelWithHint: true,
               ),
               keyboardType: TextInputType.multiline,
+              maxLength: 100,
               maxLines: null,
               minLines: 2,
             ),
