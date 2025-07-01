@@ -108,68 +108,78 @@ class _ShopDetailPage extends State<ShopDetailPage> {
           final initialSheetSize = (1.0 - bannerRatio) + 0.03; // slightly overlap image
           return Stack(
             children: [
-              SizedBox(
-                height: bannerHeight,
-                width: double.infinity,
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ShopGalleryPage(
-                        shopMediaList: shopMediaState.getByShop(_shop.id!),
-                        bannerMediaId: shopMediaState.getBannerId(_shop.id!), // the current banner image id
-                        onSetBanner: (mediaId) async {
-                          try {
-                            await shopMediaState.setBanner(shopRead.id!, mediaId);
-                            if(context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: const Text('New banner set'))
-                              );
-                            }
-                          } catch (e) {
-                            if(context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: const Text('Banner update failed'))
-                              );
-                            }
-                          }
-                          setState(() {}); // refresh
-                        },
-                        onDelete: (mediaId) async {
-                          try {
-                            await shopMediaState.removeMedia(mediaId);
-                          } catch (e) {
-                            if(context.mounted) {
-                              debugPrint('deletion failed: $e');
-                            }
-                          }
-                          setState(() {});
-                        },
-                        isCurrentUser: isCurrentUser,
-                        shopId: _shop.id!,
+              // tappable banner
+              Stack(
+                children: [
+                  SizedBox(
+                    height: bannerHeight,
+                    width: double.infinity,
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ShopGalleryPage(
+                            shopMediaList: shopMediaState.getByShop(_shop.id!),
+                            bannerMediaId: shopMediaState.getBannerId(_shop.id!), // the current banner image id
+                            onSetBanner: (mediaId) async {
+                              try {
+                                await shopMediaState.setBanner(shopRead.id!, mediaId);
+                                if(context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: const Text('New banner set'))
+                                  );
+                                }
+                              } catch (e) {
+                                if(context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: const Text('Banner update failed'))
+                                  );
+                                }
+                              }
+                              setState(() {}); // refresh
+                            },
+                            onDelete: (mediaId) async {
+                              try {
+                                await shopMediaState.removeMedia(mediaId);
+                              } catch (e) {
+                                if(context.mounted) {
+                                  debugPrint('deletion failed: $e');
+                                }
+                              }
+                              setState(() {});
+                            },
+                            isCurrentUser: isCurrentUser,
+                            shopId: _shop.id!,
+                          ),
+                        )
                       ),
-                    )
+                      child: (bannerUrl == null || bannerUrl.isEmpty)
+                        ? Container(
+                            width: double.infinity,
+                            height: 200,
+                            color: Color(0xFFF5F5F5),
+                            child: const Center(
+                              child: Icon(Icons.store, size: 64, color: Colors.white70)
+                            ),
+                          )
+                        : CachedNetworkImage(
+                            imageUrl: bannerUrl,
+                            fadeInDuration: Duration(milliseconds: 300),
+                            width: double.infinity,
+                            height: 200,
+                            fit: BoxFit.cover,
+                            errorWidget: (context, url, error) => Container(
+                              color: Color(0xFFF5F5F5),
+                              child: const Center(child: Icon(Icons.broken_image)),
+                            ),
+                          ),
+                    ),
                   ),
-                  child: (bannerUrl == null || bannerUrl.isEmpty)
-                    ? Container(
-                        width: double.infinity,
-                        height: 200,
-                        color: Color(0xFFF5F5F5),
-                        child: const Center(
-                          child: Icon(Icons.store, size: 64, color: Colors.white70)
-                        ),
-                      )
-                    : CachedNetworkImage(
-                        imageUrl: bannerUrl,
-                        fadeInDuration: Duration(milliseconds: 300),
-                        width: double.infinity,
-                        height: 200,
-                        fit: BoxFit.cover,
-                        errorWidget: (context, url, error) => Container(
-                          color: Color(0xFFF5F5F5),
-                          child: const Center(child: Icon(Icons.broken_image)),
-                        ),
-                      ),
-                ),
+                  Positioned(
+                    bottom: bannerHeight * 0.15,
+                    right: 16,
+                    child: Icon(Icons.collections, color: Colors.white),
+                  )
+                ]
               ),
               DraggableScrollableSheet(
                 initialChildSize: initialSheetSize.clamp(0.5, 0.90), // prevent it from being too short/tall

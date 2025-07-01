@@ -36,13 +36,15 @@ class Drink extends SortableEntry {
 
   factory Drink.fromJson(Map<String, dynamic> json) {
     return Drink(
-      id: json['id'],
-      shopId: json['shop_id'],
-      name: json['name'],
+      id: json['id'] ?? '',
+      shopId: json['shop_id'] ?? '',
+      name: json['name'] ?? '',
       rating: (json['rating'] ?? 0).toDouble(),
-      isFavorite: json['is_favorite'],
-      notes: json['notes'],
-      createdAt: DateTime.parse(json['created_at'] ?? ''),
+      isFavorite: json['is_favorite'] ?? false,
+      notes: json['notes'] ?? '',
+      createdAt: json['created_at'] != null && (json['created_at'] as String).isNotEmpty
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
     );
   }
 

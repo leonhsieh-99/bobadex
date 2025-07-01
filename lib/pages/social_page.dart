@@ -128,6 +128,7 @@ class _SocialPageState extends State<SocialPage> {
           MaterialPageRoute(
             builder: (_) => FriendsShopDetailsPage(
               shop: shop,
+              mostDrinksUser: shop.mostDrinksUser,
             ),
           ),
         );
@@ -177,7 +178,7 @@ class _SocialPageState extends State<SocialPage> {
           ),
           const SizedBox(height: 5),
           Text(
-            'Ratings: ${shop.friendsRatings.length.toString()}',
+            'Ratings: ${shop.friendsInfo.length.toString()}',
             style: TextStyle(fontSize: 13, color: Colors.grey[700]),
           ),
         ],
