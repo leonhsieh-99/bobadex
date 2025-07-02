@@ -38,13 +38,13 @@ class ShopMedia {
   factory ShopMedia.fromJson(Map<String, dynamic> json) {
     return ShopMedia(
       id: json['id'],
-      shopId: json['shop_id'],
+      shopId: json['shop_id'] ?? '',
       userId: json['user_id'],
-      drinkId: json['drink_id'],
+      drinkId: json['drink_id'] ?? '',
       imagePath: json['image_path'],
       isBanner: json['is_banner'] ?? false,
       visibility: json['visibility'] ?? 'public', // change to private after testing
-      comment: json['comment'],
+      comment: json['comment'] ?? '',
       isPending: json['isPending'] ?? false,
     );
   }

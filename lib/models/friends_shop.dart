@@ -5,7 +5,6 @@ class FriendsShop {
   final String brandSlug;
   final String name;
   final double avgRating;
-  final List<String> gallery;
   final String iconPath;
   final String mostDrinksUser;
   final Map<String, FriendShopInfo> friendsInfo;
@@ -14,7 +13,6 @@ class FriendsShop {
     required this.brandSlug,
     required this.name,
     required this.avgRating,
-    this.gallery = const [],
     required this.iconPath,
     required this.mostDrinksUser,
     this.friendsInfo = const {},
@@ -24,10 +22,6 @@ class FriendsShop {
     brandSlug: json['brand_slug'] as String,
     name: json['display'] as String,
     avgRating: (json['avg_rating'] as num?)?.toDouble() ?? 0.0,
-    gallery: (json['gallery'] as List<dynamic>? ?? [])
-        .map((e) => e as String)
-        .where((s) => s.trim().isNotEmpty)
-        .toList(),
     iconPath: json['icon_path'] as String? ?? '',
     mostDrinksUser: json['most_drinks_user_id'] ?? '',
     friendsInfo: (json['friends_info'] as Map<String, dynamic>)
@@ -36,6 +30,7 @@ class FriendsShop {
 }
 
 class FriendShopInfo {
+  final id;
   final double rating;
   final String? note;
   final bool isFavorite;
@@ -44,6 +39,7 @@ class FriendShopInfo {
   final int drinksTried;
 
   FriendShopInfo({
+    required this.id,
     required this.rating,
     this.note,
     this.isFavorite = false,
@@ -60,6 +56,7 @@ class FriendShopInfo {
 
 
   factory FriendShopInfo.fromJson(Map<String, dynamic> json) => FriendShopInfo(
+    id: json['id'],
     rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
     note: json['note'] as String?,
     isFavorite: json['is_favorite'] as bool,

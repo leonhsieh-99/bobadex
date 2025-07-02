@@ -1,4 +1,6 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/friends_shop.dart';
+import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/user_state.dart';
@@ -28,6 +30,7 @@ class FriendsShopDetailsPage extends StatelessWidget {
     final friendState = context.read<FriendState>();
     final userState = context.read<UserState>();
     final brandState = context.read<BrandState>();
+    final themeColor = Constants.getThemeColor(userState.user.themeSlug);
 
     // Split crown/mostDrinks entry out
     final entries = shop.friendsInfo.entries.toList();
@@ -41,6 +44,30 @@ class FriendsShopDetailsPage extends StatelessWidget {
     } else {
       crownEntry = null;
       rest = entries;
+    }
+
+    Widget glowCard({required Widget child, double borderRadius = 12, double glowRadius = 10}) {
+      return Container(
+        clipBehavior: Clip.none,
+        margin: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(borderRadius),
+          // This gives you a bright golden/yellow glow
+          boxShadow: [
+            BoxShadow(
+              color: Colors.amber.withOpacity(0.6),
+              blurRadius: glowRadius,
+              spreadRadius: 2,
+            ),
+            BoxShadow(
+              color: Colors.orange.withOpacity(0.2),
+              blurRadius: glowRadius * 2,
+              spreadRadius: 4,
+            ),
+          ],
+        ),
+        child: child, // the Card itself
+      );
     }
 
     // Builder for each tile
@@ -63,18 +90,16 @@ class FriendsShopDetailsPage extends StatelessWidget {
         thumbUrl = friendState.getThumbUrl(userId);
       }
 
-      return Card(
-        elevation: isCrown ? 4 : 1,
+      Widget baseCard() => Card(
+        elevation: 1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: isCrown
-              ? BorderSide(color: Colors.amber, width: 2)
-              : BorderSide(color: Colors.grey.shade200, width: 1),
+          side: BorderSide(color: Colors.grey.shade200, width: 1),
         ),
-        margin: const EdgeInsets.symmetric(vertical: 4),
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
+            initiallyExpanded: isCrown,
             leading: Stack(
               alignment: Alignment.bottomRight,
               children: [
@@ -161,6 +186,9 @@ class FriendsShopDetailsPage extends StatelessWidget {
           ),
         ),
       );
+      return isCrown
+        ? glowCard(child: baseCard())
+        : baseCard();
     }
 
     // Build the list
@@ -168,7 +196,7 @@ class FriendsShopDetailsPage extends StatelessWidget {
     if (crownEntry != null) {
       friendTiles.add(
         Padding(
-          padding: const EdgeInsets.only(bottom: 14.0),
+          padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 12.0),
           child: buildFriendTile(crownEntry, isCrown: true),
         ),
       );
@@ -176,7 +204,10 @@ class FriendsShopDetailsPage extends StatelessWidget {
         friendTiles.add(const Divider(thickness: 1, height: 24));
       }
     }
-    friendTiles.addAll(rest.map((entry) => buildFriendTile(entry)));
+    friendTiles.addAll(rest.map((entry) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12.0),
+      child: buildFriendTile(entry),
+    )));
 
     return Scaffold(
       appBar: AppBar(),
@@ -185,20 +216,33 @@ class FriendsShopDetailsPage extends StatelessWidget {
         child: ListView(
           children: [
             Center(
-              child: ClipOval(
-                child: (shop.iconPath.isNotEmpty)
-                  ? CachedNetworkImage(
-                      imageUrl: brandState.getBrand(shop.brandSlug)!.thumbUrl,
-                      width: 150,
-                      height: 150,
-                      fit: BoxFit.cover,
-                    )
-                  : Image.asset(
-                      'lib/assets/default_icon.png',
-                      width: 150,
-                      height: 150,
-                      fit: BoxFit.cover,
-                    ),
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brandState.getBrand(shop.brandSlug)!)),
+                ),
+                child: Container(
+                  width: 150,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    color: themeColor.shade200,
+                    shape: BoxShape.circle,
+                  ),
+                  child: ClipOval(
+                    child: (shop.iconPath.isNotEmpty)
+                      ? CachedNetworkImage(
+                          imageUrl: brandState.getBrand(shop.brandSlug)!.thumbUrl,
+                          width: 150,
+                          height: 150,
+                          fit: BoxFit.cover,
+                        )
+                      : Image.asset(
+                          'lib/assets/default_icon.png',
+                          width: 150,
+                          height: 150,
+                          fit: BoxFit.cover,
+                        ),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -212,31 +256,6 @@ class FriendsShopDetailsPage extends StatelessWidget {
               'Average Rating: ${shop.avgRating.toStringAsFixed(1)}',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 24),
-            const Text('Gallery', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            SizedBox(
-              height: 100,
-              child: shop.gallery.isEmpty
-                ? const Center(child: Text('No photos yet'))
-                : ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: shop.gallery.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (context, i) {
-                      final img = shop.gallery[i];
-                      return ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: CachedNetworkImage(
-                          imageUrl: getThumbUrl(img),
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                        ),
-                      );
-                    },
-                  ),
             ),
             const SizedBox(height: 24),
             const Text('Friends Ratings', style: TextStyle(fontWeight: FontWeight.bold)),

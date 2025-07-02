@@ -1,8 +1,11 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/brand.dart';
 import 'package:bobadex/models/brand_stats.dart';
+import 'package:bobadex/models/shop_media.dart';
+import 'package:bobadex/pages/shop_gallery_page.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
+import 'package:bobadex/widgets/image_widgets/horizontal_photo_preview.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -20,7 +23,7 @@ class BrandDetailsPage extends StatefulWidget {
 
 class _BrandDetailsPageState extends State<BrandDetailsPage> {
   late Future<BrandStats> _statsFuture;
-  late Future<List<String>> _globalGalleryFuture;
+  late Future<List<ShopMedia>> _globalGalleryFuture;
 
   @override
   void initState() {
@@ -50,16 +53,13 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
     }
   }
 
-  Future<List<String>> fetchGallery() async {
+  Future<List<ShopMedia>> fetchGallery() async {
     try {
       final response = await Supabase.instance.client
         .rpc('get_brand_gallery', params: {'brand_slug': widget.brand.slug});
 
       return (response as List)
-        .map((item) => Supabase.instance.client.storage
-            .from('media-uploads')
-            .getPublicUrl(item['image_path']))
-        .toList();
+        .map((item) => ShopMedia.fromJson(item)).toList();
     } catch (e) {
       debugPrint('Error fetching gallery: $e');
       return [];
@@ -205,8 +205,8 @@ Widget _buildGlobalRatings(Brand brand, Future<BrandStats> statsFuture) {
   );
 }
 
-Widget _buildGlobalGallery(Brand brand, Future<List<String>> galleryFuture) {
-  return FutureBuilder<List<String>>(
+Widget _buildGlobalGallery(Brand brand, Future<List<ShopMedia>> galleryFuture) {
+  return FutureBuilder<List<ShopMedia>>(
     future: galleryFuture,
     builder: (context, snapshot) {
       if (snapshot.connectionState == ConnectionState.waiting) {
@@ -218,32 +218,25 @@ Widget _buildGlobalGallery(Brand brand, Future<List<String>> galleryFuture) {
       if (snapshot.hasError) {
         return Text('Failed to load gallery', style: TextStyle(color: Colors.red));
       }
-      final images = snapshot.data ?? [];
+      final medias = snapshot.data ?? [];
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Community Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           const SizedBox(height: 8),
           SizedBox(
+            width: MediaQuery.of(context).size.width,
             height: 100,
-            child: images.isEmpty
+            child: medias.isEmpty
               ? const Center(child: Text('No community photos yet'))
-              : ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: images.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: CachedNetworkImage(
-                        imageUrl: images[index],
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
-                      ),
-                    );
-                  },
-                ),
+              : HorizontalPhotoPreview(shopMediaList: medias, onViewAll: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) =>
+                  ShopGalleryPage(
+                    shopMediaList: medias,
+                    isCurrentUser: false
+                  )
+                )
+              ))
           ),
         ],
       );
