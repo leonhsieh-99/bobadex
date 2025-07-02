@@ -1,24 +1,33 @@
-import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/models/account_stats.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 class UserStatsCache extends ChangeNotifier {
-  final _cache = <String, Map<String, dynamic>> {};
+  final _cache = <String, AccountStats> {};
 
   Future<Map<String, dynamic>> fetchStatsFromServer(userId) async {
     final response = await Supabase.instance.client
       .rpc('get_user_stats', params: {'uid': userId})
       .single();
-    return response ?? Constants.emptyStats;
+    return response ?? {};
   }
 
-  Future<Map<String, dynamic>> getStats(String userId) async {
+  Future<Map<String, dynamic>> fetchTopShopFromServer(userId) async {
+    final response = await Supabase.instance.client
+      .rpc('get_user_top_shop_info', params: {'user_id': userId})
+      .single();
+    return response ?? {};
+  }
+
+  Future<AccountStats> getStats(String userId) async {
     if (_cache.containsKey(userId)) {
       return _cache[userId]!;
     }
     final stats = await fetchStatsFromServer(userId);
-    _cache[userId] = stats;
+    final topShop = await fetchTopShopFromServer(userId);
+    final accountStats = AccountStats.fromJson(stats, topShop);
+    _cache[userId] = accountStats;
     notifyListeners();
-    return stats;
+    return accountStats;
   }
 
   void clearCache() => _cache.clear();

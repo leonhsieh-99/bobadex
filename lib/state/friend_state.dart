@@ -38,6 +38,10 @@ class FriendState extends ChangeNotifier {
     return friends.firstWhere((f) => f.id == userId).thumbUrl;
   }
 
+  u.User getFriend(String userId) {
+    return friends.firstWhere((f) => f.id == userId);
+  }
+
   void removeByUsers(String requesterId, String addresseeId) {
     _friendships.removeWhere((f) =>
       f.requester.id == requesterId && f.addressee.id == addresseeId);

@@ -1,5 +1,6 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/friends_shop.dart';
+import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
@@ -103,12 +104,19 @@ class FriendsShopDetailsPage extends StatelessWidget {
             leading: Stack(
               alignment: Alignment.bottomRight,
               children: [
-                CircleAvatar(
-                  backgroundImage: thumbUrl.isNotEmpty
-                      ? CachedNetworkImageProvider(thumbUrl)
-                      : null,
-                  radius: isCrown ? 28 : 24,
-                  child: thumbUrl.isEmpty ? const Icon(Icons.person) : null,
+                GestureDetector(
+                  onTap: userId == Supabase.instance.client.auth.currentUser!.id
+                    ? null
+                    : () =>  Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => AccountViewPage(user: friendState.getFriend(userId)))
+                    ),
+                  child: CircleAvatar(
+                    backgroundImage: thumbUrl.isNotEmpty
+                        ? CachedNetworkImageProvider(thumbUrl)
+                        : null,
+                    radius: isCrown ? 28 : 24,
+                    child: thumbUrl.isEmpty ? const Icon(Icons.person) : null,
+                  ),
                 ),
                 if (isCrown)
                   Positioned(
