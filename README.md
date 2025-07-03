@@ -9,6 +9,13 @@ Allows users to add boba shops into their personal index, hence bobadex. Every e
 pass
 
 ### TODO
+[] Add admin panel
+    [] run OSM import
+    [] verify import
+    [] Ai image gen verification
+    [] user shop input validation
+
+
 [x] scaffold MVP
 [X] login auth
 [X] set up database
