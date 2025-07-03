@@ -1,3 +1,4 @@
+import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/drink_state.dart';
 import 'package:bobadex/state/friend_state.dart';
@@ -24,6 +25,7 @@ class BobadexApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FriendState()),
         ChangeNotifierProvider(create: (_) => UserStatsCache()),
         ChangeNotifierProvider(create: (_) => ShopMediaState()),
+        ChangeNotifierProvider(create: (_) => AchievementsState()),
       ],
       child: Consumer<UserState>(
         builder: (context, userState, _) {
@@ -38,6 +40,8 @@ class BobadexApp extends StatelessWidget {
               appBarTheme: AppBarTheme(
                 backgroundColor: themeColor.shade50,
                 foregroundColor: Colors.black,
+                elevation: 0,
+                scrolledUnderElevation: 0,
               ),
               elevatedButtonTheme: ElevatedButtonThemeData(
                 style: ButtonStyle(

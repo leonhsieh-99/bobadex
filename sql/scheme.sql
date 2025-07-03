@@ -68,21 +68,25 @@ CREATE TABLE friendships (
   UNIQUE (requester_id, addressee_id)
 );
 
--- Tea Rooms
-CREATE TABLE tea_rooms (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
+create table achievements (
+  id serial primary key,
+  name text not null,
   description text,
-  room_image_path text,
-  owner_id uuid REFERENCES users(id) ON DELETE CASCADE,
-  created_at timestamptz DEFAULT now()
+  icon_path text,        -- Path to the badge icon (local or remote)
+  criteria jsonb,        -- Optional: JSON to describe requirements
+  is_hidden boolean default false,
+  display_order int default 0
 );
 
-CREATE TABLE tea_room_members (
-  room_id uuid REFERENCES tea_rooms(id) ON DELETE CASCADE,
-  user_id uuid REFERENCES users(id) ON DELETE CASCADE,
-  joined_at timestamptz DEFAULT now(),
-  PRIMARY KEY (room_id, user_id)
+create table user_achievements (
+  id serial primary key,
+  user_id uuid not null references users(id),
+  achievement_id int not null references achievements(id),
+  unlocked boolean default false,
+  progress int default 0,         -- For achievements that require progress
+  unlocked_at timestamp,          -- When achievement was unlocked
+  pinned boolean default false,   -- For showing on profile
+  unique (user_id, achievement_id)
 );
 
 

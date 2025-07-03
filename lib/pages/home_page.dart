@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/pages/account_view_page.dart';
+import 'package:bobadex/pages/achievements_page.dart';
 import 'package:bobadex/pages/settings_page.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
 import 'package:bobadex/pages/social_page.dart';
 import 'package:bobadex/pages/splash_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
+import 'package:bobadex/state/shop_media_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider;
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -35,10 +37,25 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final supabase = Supabase.instance.client;
+  late Future<List<Shop>> _userShopsFuture;
   String _searchQuery = '';
   String _selectedSort = 'favorite-asc';
 
   bool get isCurrentUser => widget.user.id == Supabase.instance.client.auth.currentUser!.id;
+
+  @override
+  void initState() {
+    super.initState();
+    _userShopsFuture = fetchUserShops(widget.user.id);
+  }
+
+  @override
+  void didUpdateWidget(covariant HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.user.id != oldWidget.user.id) {
+      _userShopsFuture = fetchUserShops(widget.user.id);
+    }
+  }
 
   Future<List<Shop>> fetchUserShops(String userId) async {
     final response = await Supabase.instance.client
@@ -101,27 +118,17 @@ class _HomePageState extends State<HomePage> {
     final userState = context.watch<UserState>();
     final friendState = context.watch<FriendState>();
     final brandState = context.watch<BrandState>();
+    final shopMediaState = context.watch<ShopMediaState>();
     final user = isCurrentUser ? userState.user : widget.user;
 
-Widget shopGrid(List<Shop> shops) {
-  final visibleShops = getVisibleShops(shops);
-  if (shops.isEmpty) {
-    return const Center(child: Text("No shops added."));
-  } else if (visibleShops.isEmpty) {
-    return const Center(child: Text('No shops found.'));
-  }
-
-  final shopIds = visibleShops.map((s) => s.id).whereType<String>().toList();
-
-  return FutureBuilder<List<ShopMedia>>(
-    future: fetchBannersForShops(shopIds),
-    builder: (context, bannerSnapshot) {
-      if (bannerSnapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator());
-      }
-      final banners = bannerSnapshot.data ?? [];
+    Widget shopGrid(List<Shop> shops, List<ShopMedia> banners) {
+      final visibleShops = getVisibleShops(shops);
       final bannerByShop = { for (var b in banners) b.shopId: b };
-
+      if (shops.isEmpty) {
+        return const Center(child: Text("No shops added."));
+      } else if (visibleShops.isEmpty) {
+        return const Center(child: Text('No shops found.'));
+      }
       return Padding(
         padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
         child: GridView.builder(
@@ -152,6 +159,7 @@ Widget shopGrid(List<Shop> shops) {
               onTap: () async => _navigateToShop(shop, user),
               child: Card(
                 elevation: 2,
+                color: useIcons ? Constants.getThemeColor(userState.user.themeSlug).shade200 : Colors.grey.shade100,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: useIcons
                   ? Padding(
@@ -255,7 +263,7 @@ Widget shopGrid(List<Shop> shops) {
                         children: [
                           // Banner background
                           CachedNetworkImage(
-                            imageUrl: banner != null ? banner.imageUrl : brand!.thumbUrl, // implement getter if needed
+                            imageUrl: banner != null ? banner.imageUrl : brand!.thumbUrl,
                             fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,
@@ -343,10 +351,6 @@ Widget shopGrid(List<Shop> shops) {
         ),
       );
     }
-  );
-}
-
-
     if (!userState.isLoaded) {
       return SplashPage();
     }
@@ -370,6 +374,16 @@ Widget shopGrid(List<Shop> shops) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const SettingsPage())
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.badge),
+              title: const Text('Achievements'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => AchievementsPage(userId: widget.user.id))
                 );
               },
             ),
@@ -406,27 +420,42 @@ Widget shopGrid(List<Shop> shops) {
               ),
               Expanded(
                 child: isCurrentUser
-                  ? provider.Consumer<ShopState>(
-                      builder: (context, shopState, _) {
-                        return shopGrid(shopState.all);
-                      }
-                    )
-                  : FutureBuilder(
-                      future: fetchUserShops(widget.user.id),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return Center(child: SplashPage());
-                        }
-                        if (snapshot.hasError) {
-                          return Center(child: Text('Error: ${snapshot.error}'));
-                        }
-                        return shopGrid(snapshot.data ?? []);
-                      }
-                    )
+                    ? provider.Consumer<ShopState>(
+                        builder: (context, shopState, _) {
+                          return shopGrid(shopState.all, shopMediaState.all.where((sm) => sm.isBanner).toList());
+                        },
+                      )
+                    : FutureBuilder<List<Shop>>(
+                        future: _userShopsFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return Center(child: SplashPage());
+                          }
+                          if (snapshot.hasError) {
+                            return Center(child: Text('Error: ${snapshot.error}'));
+                          }
+                          final shops = snapshot.data ?? [];
+                          // Only filter here, don't search/refresh future
+                          final shopIds = getVisibleShops(shops).map((s) => s.id).whereType<String>().toList();
+                          return FutureBuilder<List<ShopMedia>>(
+                            future: fetchBannersForShops(shopIds),
+                            builder: (context, bannerSnapshot) {
+                              if (bannerSnapshot.connectionState == ConnectionState.waiting) {
+                                return Center(child: CircularProgressIndicator());
+                              }
+                              if (bannerSnapshot.hasError) {
+                                return Center(child: Text('Error: ${bannerSnapshot.error}'));
+                              }
+                              final banners = bannerSnapshot.data ?? [];
+                              return shopGrid(shops, banners);
+                            },
+                          );
+                        },
+                      ),
               ),
             ],
           ),
-          if (isCurrentUser)
+          if (isCurrentUser && MediaQuery.of(context).viewInsets.bottom == 0)
             Positioned(
               left: 16,
               right: 16,

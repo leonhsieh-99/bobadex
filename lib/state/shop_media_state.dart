@@ -122,6 +122,10 @@ void replacePendingMedia(String pendingId, ShopMedia realMedia) {
     }
   }
 
+  void reset() {
+    _shopMedia.clear();
+    notifyListeners();
+  }
 
   Future<void> loadFromSupabase() async {
     final supabase = Supabase.instance.client;

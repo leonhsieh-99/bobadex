@@ -15,7 +15,6 @@ pass
     [] Ai image gen verification
     [] user shop input validation
 
-
 [x] scaffold MVP
 [X] login auth
 [X] set up database
