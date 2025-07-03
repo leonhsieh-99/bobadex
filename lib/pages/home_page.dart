@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/settings_page.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
@@ -64,6 +65,18 @@ class _HomePageState extends State<HomePage> {
     return filtered;
   }
 
+  Future<List<ShopMedia>> fetchBannersForShops(List<String> shopIds) async {
+    final response = await Supabase.instance.client
+      .from('shop_media')
+      .select()
+      .in_('shop_id', shopIds)
+      .eq('is_banner', true);
+
+    return (response as List)
+      .map((json) => ShopMedia.fromJson(json))
+      .toList();
+  }
+
   Future<void> _navigateToShop(Shop shop, user) async {
     await Navigator.push(
       context,
@@ -90,13 +103,25 @@ class _HomePageState extends State<HomePage> {
     final brandState = context.watch<BrandState>();
     final user = isCurrentUser ? userState.user : widget.user;
 
-    Widget shopGrid(List<Shop> shops) {
-      final visibleShops = getVisibleShops(shops);
-      if (shops.isEmpty) {
-        return const Center(child: Text("No shops added."));
-      } else if (visibleShops.isEmpty) {
-        return const Center(child: Text('No shops found.'));
+Widget shopGrid(List<Shop> shops) {
+  final visibleShops = getVisibleShops(shops);
+  if (shops.isEmpty) {
+    return const Center(child: Text("No shops added."));
+  } else if (visibleShops.isEmpty) {
+    return const Center(child: Text('No shops found.'));
+  }
+
+  final shopIds = visibleShops.map((s) => s.id).whereType<String>().toList();
+
+  return FutureBuilder<List<ShopMedia>>(
+    future: fetchBannersForShops(shopIds),
+    builder: (context, bannerSnapshot) {
+      if (bannerSnapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
       }
+      final banners = bannerSnapshot.data ?? [];
+      final bannerByShop = { for (var b in banners) b.shopId: b };
+
       return Padding(
         padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
         child: GridView.builder(
@@ -110,10 +135,9 @@ class _HomePageState extends State<HomePage> {
           ),
           itemBuilder: (context, index) {
             final screenWidth = MediaQuery.of(context).size.width;
-            final columns = user.gridColumns; // e.g., 2 or 3
+            final columns = user.gridColumns;
             const spacing = 4.0;
             const baseTileWidth = 120.0;
-
             final itemWidth = (screenWidth - (spacing * (columns + 1))) / columns;
             final scaleFactor = itemWidth / baseTileWidth;
             final imageScale = columns == 2 ? scaleFactor * 1.2 : scaleFactor;
@@ -121,114 +145,210 @@ class _HomePageState extends State<HomePage> {
 
             final shop = visibleShops[index];
             final brand = brandState.getBrand(shop.brandSlug);
+            final useIcons = user.useIcons == true;
+            final banner = bannerByShop[shop.id];
+
             return GestureDetector(
               onTap: () async => _navigateToShop(shop, user),
               child: Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Stack(
-                    children: [
-                      Positioned(
-                        top: 4,
-                        left: 4,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: 85 * textScale),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                shop.name,
-                                style: TextStyle(
-                                  fontSize: 11 * textScale,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                textAlign: TextAlign.left,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                              Row(
+                child: useIcons
+                  ? Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            top: 4,
+                            left: 4,
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(maxWidth: 85 * textScale),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  SvgPicture.asset(
-                                    'lib/assets/icons/star.svg',
-                                    width: 12 * textScale,
-                                    height: 12 * textScale,
-                                  ),
-                                  SizedBox(width: 2),
                                   Text(
-                                    shop.rating.toStringAsFixed(1),
-                                    style: TextStyle(fontSize: 12 * textScale),
+                                    shop.name,
+                                    style: TextStyle(
+                                      fontSize: 11 * textScale,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                     textAlign: TextAlign.left,
                                     overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
                                   ),
-                                ]
-                              ),
-                              SizedBox(height: 2),
-                              Row(
-                                children: [
-                                  SvgPicture.asset(
-                                    'lib/assets/icons/boba1.svg',
-                                    width: 13 * textScale,
-                                    height: 13 * textScale,
+                                  Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        'lib/assets/icons/star.svg',
+                                        width: 12 * textScale,
+                                        height: 12 * textScale,
+                                      ),
+                                      SizedBox(width: 2),
+                                      Text(
+                                        shop.rating.toStringAsFixed(1),
+                                        style: TextStyle(fontSize: 12 * textScale),
+                                        textAlign: TextAlign.left,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ]
                                   ),
-                                  SizedBox(width: 2),
-                                  Text(
-                                    (context.watch<DrinkState>().drinksByShop[shop.id] ?? []).length.toString(),
-                                    style: TextStyle(fontSize: 12 * textScale),
-                                    textAlign: TextAlign.left,
-                                    overflow: TextOverflow.ellipsis,
-                                  )
+                                  SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                        'lib/assets/icons/boba1.svg',
+                                        width: 13 * textScale,
+                                        height: 13 * textScale,
+                                      ),
+                                      SizedBox(width: 2),
+                                      Text(
+                                        (context.watch<DrinkState>().drinksByShop[shop.id] ?? []).length.toString(),
+                                        style: TextStyle(fontSize: 12 * textScale),
+                                        textAlign: TextAlign.left,
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                    ],
+                                  ),
                                 ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 8,
-                        right: 8,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: SizedBox(
-                            width: 55 * imageScale,
-                            height: 60 * imageScale,
-                            child: (shop.brandSlug == null || shop.brandSlug!.isEmpty) || (brand!.iconPath == null || brand.iconPath!.isEmpty)
-                              ? Image.asset(
-                                'lib/assets/default_icon.png',
-                                fit: BoxFit.cover,
+                          Positioned(
+                            bottom: 8,
+                            right: 8,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: SizedBox(
+                                width: 55 * imageScale,
+                                height: 60 * imageScale,
+                                child: (shop.brandSlug == null || shop.brandSlug!.isEmpty) || (brand == null || brand.iconPath == null || brand.iconPath!.isEmpty)
+                                  ? Image.asset(
+                                    'lib/assets/default_icon.png',
+                                    fit: BoxFit.cover,
+                                  )
+                                  : CachedNetworkImage(
+                                    imageUrl: brand.thumbUrl,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => CircularProgressIndicator(),
+                                    errorWidget: (context, url, error) => Icon(Icons.broken_image, size: 50 * imageScale),
+                                  )
                               )
-                              : CachedNetworkImage(
-                                imageUrl: brand.thumbUrl,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => CircularProgressIndicator(),
-                                errorWidget: (context, url, error) => Icon(Icons.broken_image, size: 50 * imageScale),
-                              )
-                          )
-                        ),
+                            ),
+                          ),
+                          if (shop.isFavorite)
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: SvgPicture.asset(
+                              'lib/assets/icons/heart.svg',
+                              width: 14 * textScale,
+                              height: 14 * textScale,
+                            ),
+                          ),
+                        ],
                       ),
-                      if (shop.isFavorite)
-                      Positioned(
-                        top: 0,
-                        right: 0,
-                        child: SvgPicture.asset(
-                          'lib/assets/icons/heart.svg',
-                          width: 14 * textScale,
-                          height: 14 * textScale,
-                        ),
+                    )
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // Banner background
+                          CachedNetworkImage(
+                            imageUrl: banner != null ? banner.imageUrl : brand!.thumbUrl, // implement getter if needed
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
+                          // Gradient overlay for bottom
+                          Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                              width: double.infinity,
+                              padding: EdgeInsets.symmetric(vertical: 10 * textScale, horizontal: 8 * textScale),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.black.withOpacity(0.8),
+                                    Colors.transparent
+                                  ],
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    shop.name,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14 * textScale,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  SizedBox(height: 2 * textScale),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      SvgPicture.asset(
+                                        'lib/assets/icons/star.svg',
+                                        width: 12 * textScale,
+                                        height: 12 * textScale,
+                                        colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                                      ),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        shop.rating.toStringAsFixed(1),
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                      SizedBox(width: 10),
+                                      SvgPicture.asset(
+                                        'lib/assets/icons/boba1.svg',
+                                        width: 12 * textScale,
+                                        height: 12 * textScale,
+                                        colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                                      ),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        (context.watch<DrinkState>().drinksByShop[shop.id] ?? []).length.toString(),
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // Favorite heart
+                          if (shop.isFavorite)
+                          Positioned(
+                            top: 10,
+                            right: 10,
+                            child: SvgPicture.asset(
+                              'lib/assets/icons/heart.svg',
+                              width: 18 * textScale,
+                              height: 18 * textScale,
+                              colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
               ),
             );
           },
         ),
       );
     }
+  );
+}
+
 
     if (!userState.isLoaded) {
-      return const SplashPage();
+      return SplashPage();
     }
     return Scaffold(
       extendBody: true,
@@ -295,7 +415,7 @@ class _HomePageState extends State<HomePage> {
                       future: fetchUserShops(widget.user.id),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: SplashPage());
+                          return Center(child: SplashPage());
                         }
                         if (snapshot.hasError) {
                           return Center(child: Text('Error: ${snapshot.error}'));

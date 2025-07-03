@@ -2,8 +2,6 @@ import 'package:bobadex/models/brand_stats.dart';
 import 'package:bobadex/models/user_stats.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
-import 'package:bobadex/pages/splash_page.dart';
-// import 'package:bobadex/widgets/rating_picker.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -38,7 +36,7 @@ class _RankingsPageState extends State<RankingsPage> {
         (brandResponse as List).map((json) => BrandStats.fromJson(json)).toList(),
       ];
     } catch (e) {
-      print('Error loading rankings: $e');
+      debugPrint('Error loading rankings: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: const Text('Error loading rankings'))
       );
@@ -63,7 +61,7 @@ class _RankingsPageState extends State<RankingsPage> {
         body: FutureBuilder<List<List<dynamic>>>(
           future: _statsFuture,
           builder: (context, snapshot) {
-            if (!snapshot.hasData) return SplashPage();
+            if (!snapshot.hasData) return _buildSkeletonLoader();
             final rankings = snapshot.data!;
             final userRankings = rankings[0];
             final brandRankings = rankings[1];
@@ -145,4 +143,79 @@ class _RankingsPageState extends State<RankingsPage> {
       )
     );
   }
+}
+
+Widget _buildSkeletonLoader() {
+  // Shows a fake list with greyed out blocks
+  return TabBarView(
+    children: [
+      // Users skeleton
+      ListView.builder(
+        itemCount: 8,
+        itemBuilder: (_, __) => ListTile(
+          minTileHeight: 60,
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              shape: BoxShape.circle,
+            ),
+          ),
+          title: Container(
+            width: double.infinity,
+            height: 18,
+            color: Colors.grey.shade300,
+            margin: const EdgeInsets.only(right: 80),
+          ),
+          subtitle: Container(
+            width: 100,
+            height: 12,
+            color: Colors.grey.shade200,
+            margin: const EdgeInsets.only(top: 8),
+          ),
+          trailing: Container(
+            width: 28,
+            height: 18,
+            color: Colors.grey.shade300,
+          ),
+        ),
+      ),
+      // Brands skeleton
+      ListView.builder(
+        itemCount: 8,
+        itemBuilder: (_, __) => ListTile(
+          title: Row(
+            children: [
+              Expanded(
+                flex: 6,
+                child: Container(
+                  height: 18,
+                  color: Colors.grey.shade300,
+                  margin: const EdgeInsets.only(right: 16),
+                ),
+              ),
+              Container(
+                width: 28,
+                height: 18,
+                color: Colors.grey.shade300,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+              ),
+              Container(
+                width: 18,
+                height: 18,
+                color: Colors.grey.shade300,
+              ),
+            ],
+          ),
+          subtitle: Container(
+            width: 100,
+            height: 12,
+            color: Colors.grey.shade200,
+            margin: const EdgeInsets.only(top: 8),
+          ),
+        ),
+      ),
+    ]
+  );
 }

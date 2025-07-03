@@ -8,6 +8,7 @@ class User {
   String? profileImagePath;
   String? bio;
   int gridColumns;
+  bool useIcons;
 
   User ({
     required this.id,
@@ -17,6 +18,7 @@ class User {
     this.profileImagePath,
     this.bio,
     this.gridColumns = 2,
+    this.useIcons = true,
   });
 
   String get firstName => displayName.split(' ').first;
@@ -42,6 +44,7 @@ class User {
       bio: profile['bio'],
       themeSlug: settings?['theme_slug'] ?? 'grey',
       gridColumns: settings?['grid_columns'] ?? 2,
+      useIcons: settings?['use_icons'] ?? true,
     );
   }
 
@@ -63,6 +66,7 @@ class User {
     displayName: '',
     bio: '',
     gridColumns: 2,
+    useIcons: true,
   );
 
   User copyWith({
@@ -72,6 +76,7 @@ class User {
     String? profileImagePath,
     String? themeSlug,
     int? gridColumns,
+    bool? useIcons,
   }) {
     return User(
       id: id,
@@ -81,6 +86,7 @@ class User {
       profileImagePath: profileImagePath ?? this.profileImagePath,
       themeSlug: themeSlug ?? this.themeSlug,
       gridColumns: gridColumns ?? this.gridColumns,
+      useIcons: useIcons ?? this.useIcons,
     );
   }
 }

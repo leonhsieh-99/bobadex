@@ -145,7 +145,7 @@ class _AppInitializerState extends State<AppInitializer> {
   Widget build(BuildContext context) {
     return
       !_isReady
-        ? const SplashPage()
+        ? SplashPage()
         : (_session == null ? const AuthPage() : HomePage(user: user));
   }
 }

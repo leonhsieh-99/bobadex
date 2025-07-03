@@ -16,8 +16,6 @@ class AccountStats {
   });
 
   factory AccountStats.fromJson(Map<String, dynamic> stats, Map<String, dynamic> topShop) {
-    print('stats: $stats');
-    print('top: $topShop');
     return AccountStats(
       shopCount: stats['num_shops'] ?? 0,
       drinkCount: stats['num_drinks'] ?? 0,

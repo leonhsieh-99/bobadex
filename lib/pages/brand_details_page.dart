@@ -189,7 +189,7 @@ Widget _buildGlobalRatings(Brand brand, Future<BrandStats> statsFuture) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Community Ratings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text('Ratings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -222,7 +222,7 @@ Widget _buildGlobalGallery(Brand brand, Future<List<ShopMedia>> galleryFuture) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Community Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text('Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           const SizedBox(height: 8),
           SizedBox(
             width: MediaQuery.of(context).size.width,

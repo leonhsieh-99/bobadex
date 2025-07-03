@@ -14,7 +14,7 @@ class _SettingsLayoutPageState extends State<SettingsLayoutPage> {
   Widget build(BuildContext context) {
     final userState = context.read<UserState>();
     return PopScope(
-      onPopInvokedWithResult: (didPop, result) => userState.saveGridLayout(),
+      onPopInvokedWithResult: (didPop, result) => userState.saveLayout(),
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Manage Layout'),
@@ -28,6 +28,15 @@ class _SettingsLayoutPageState extends State<SettingsLayoutPage> {
                 value: userState.user.gridColumns == 3,
                 onChanged: (val) {
                   setState(() => userState.setGridLayout(val ? 3 : 2));
+                })
+            ),
+            ListTile(
+              title: const Text('Use Banner Photos'),
+              subtitle: const Text('Home page icons will use your banner photo instead of the icons'),
+              trailing: Switch(
+                value: !userState.user.useIcons,
+                onChanged: (val) {
+                  setState(() => userState.setUseIcon());
                 })
             )
           ],

@@ -24,9 +24,9 @@ class UserState extends ChangeNotifier {
         .from('user_settings')
         .update({'theme_slug': _user.themeSlug})
         .eq('user_id', _user.id);
-      print('Theme updated');
+      debugPrint('Theme updated');
     } catch (e) {
-      print('Failed to update theme: $e');
+      debugPrint('Failed to update theme: $e');
       rethrow;
     }
   }
@@ -36,15 +36,23 @@ class UserState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveGridLayout() async {
+  void setUseIcon() {
+    _user.useIcons = !_user.useIcons;
+    notifyListeners();
+  }
+
+  Future<void> saveLayout() async {
     try {
       await Supabase.instance.client
         .from('user_settings')
         .update({'grid_columns': _user.gridColumns})
         .eq('user_id', _user.id);
-      print('Grid layout updated');
+      await Supabase.instance.client
+        .from('user_settings')
+        .update({'use_icons': _user.useIcons})
+        .eq('user_id', _user.id);
     } catch (e) {
-      print('Failed to update grid layout');
+      debugPrint('Failed to update grid layout');
       rethrow;
     }
   }
