@@ -2,12 +2,12 @@ import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
 import 'package:bobadex/state/shop_media_state.dart';
+import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
+import 'package:bobadex/widgets/image_widgets/multiselect_image_picker_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:io';
 import '../models/shop.dart';
 import '../models/brand.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'rating_picker.dart';
 import '../helpers/image_uploader_helper.dart';
@@ -35,8 +35,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
   String ? _brandSlug;
   double _rating = 0;
   bool _isSubmitting = false;
-  final ImagePicker _picker = ImagePicker();
-  final List<File> _selectedImages = [];
+  final List<GalleryImage> _selectedImages = [];
 
   @override
   void initState() {
@@ -59,10 +58,13 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
   }
 
   Future<void> _pickImages() async {
-    final pickedImages = await _picker.pickMultiImage();
-    if (pickedImages.isNotEmpty) {
+    final pickedImages = await showDialog<List<GalleryImage>>(
+      context: context,
+      builder: (context) => MultiselectImagePickerDialog(),
+    );
+    if (pickedImages != null && pickedImages.isNotEmpty) {
       setState(() {
-        _selectedImages.addAll(pickedImages.map((f) => File(f.path)));
+        _selectedImages.addAll(pickedImages);
       });
     }
   }
@@ -95,10 +97,10 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
 
       await Future.wait(_selectedImages.asMap().entries.map((entry) async {
         final idx = entry.key;
-        final file = entry.value;
+        final img = entry.value;
 
         final imagePath = await ImageUploaderHelper.uploadImage(
-          file: file,
+          file: img.file!,
           folder: 'shop-gallery',
           generateThumbnail: true,
         );
@@ -110,6 +112,8 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
               shopId: submittedShop.id!,
               userId: Supabase.instance.client.auth.currentUser!.id,
               imagePath: imagePath,
+              comment: img.comment,
+              visibility: img.visibility,
               isBanner: idx == 0 && !bannerExists,  // first image is banner
             ),
           );
@@ -254,7 +258,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: Image.file(
-                                  image,
+                                  image.file!,
                                   width: 100,
                                   height: 100,
                                   fit: BoxFit.cover,

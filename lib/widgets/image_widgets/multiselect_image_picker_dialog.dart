@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -22,6 +23,20 @@ class _MultiselectImagePickerDialogState extends State<MultiselectImagePickerDia
       _selectedImages.clear();
       _selectedImages.addAll(picked.map((x) => File(x.path)));
     });
+  }
+
+  void _startDetailsFlow() async {
+    final images = _selectedImages.map((file) => GalleryImage.file(file)).toList();
+    final result = await Navigator.of(context).push<List<GalleryImage>>(
+      MaterialPageRoute(builder: (_) => FullscreenImageViewer(
+        images: images,
+        mode: FullscreenImageMode.upload,
+      )),
+    );
+    
+    if (result != null && result.isNotEmpty) {
+      Navigator.of(context).pop(result);
+    }
   }
 
   @override
@@ -81,9 +96,9 @@ class _MultiselectImagePickerDialogState extends State<MultiselectImagePickerDia
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: _selectedImages.isNotEmpty
-                      ? () => Navigator.of(context).pop(_selectedImages)
+                      ? _startDetailsFlow
                       : null,
-                  child: Text('Done'),
+                  child: Text('Next'),
                 ),
               ],
             )

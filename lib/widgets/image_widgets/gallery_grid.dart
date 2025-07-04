@@ -2,10 +2,12 @@ import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
 import 'package:bobadex/widgets/image_widgets/tappable_image.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class GalleryGrid extends StatefulWidget {
   final List<ShopMedia> mediaList;
   final bool selectable;
+  final bool isEditable;
   final bool isCurrentUser;
   final List<ShopMedia>? selected;
   final Future<void> Function(String mediaId)? onSetBanner;
@@ -14,7 +16,8 @@ class GalleryGrid extends StatefulWidget {
   const GalleryGrid({
     super.key,
     required this.mediaList,
-    required this.isCurrentUser,
+    this.isEditable = false,
+    this.isCurrentUser = false,
     this.selected,
     this.selectable = false,
     this.onSetBanner,
@@ -26,11 +29,9 @@ class GalleryGrid extends StatefulWidget {
 }
 
 class _GalleryGridState extends State<GalleryGrid> {
-
-  void _onTap(int idx) {
+  void _onTap(int idx) async {
     if (widget.selectable) {
       final media = widget.mediaList[idx];
-      // Compute new selection list
       List<ShopMedia> newSelected = List<ShopMedia>.from(widget.selected ?? []);
       if (newSelected.contains(media)) {
         newSelected.remove(media);
@@ -39,16 +40,56 @@ class _GalleryGridState extends State<GalleryGrid> {
       }
       widget.onSelectionChanged?.call(newSelected);
     } else {
-      // Open fullscreen viewer
-      Navigator.of(context).push(
+      // Build GalleryImage list
+      final galleryImages = widget.mediaList.map((media) => GalleryImage.network(
+        media.imageUrl,
+        id: media.id,
+        comment: media.comment ?? '',
+        visibility: media.visibility ?? 'private',
+      )).toList();
+
+      // Only if you want live edit, update the actual ShopMedia in the parent
+      await Navigator.of(context).push<List<GalleryImage>>(
         MaterialPageRoute(
           builder: (_) => FullscreenImageViewer(
-            images: widget.mediaList.map((m) =>
-              m.localFile != null
-                ? GalleryImage.file(m.localFile)
-                : GalleryImage.network(m.imageUrl)
-            ).toList(),
-            initialIndex: idx,
+            images: galleryImages,
+            initialIndex: idx, // start on tapped image
+            mode: widget.isEditable ? FullscreenImageMode.edit : FullscreenImageMode.view,
+            isCurrentUser: widget.isCurrentUser,
+            onEdit: widget.isEditable
+              ? (img, comment, visibility) async {
+                final mediaIdx = widget.mediaList.indexWhere((m) => m.id == img.id);
+                if (mediaIdx != -1) {
+                  setState(() {
+                    widget.mediaList[mediaIdx] = widget.mediaList[mediaIdx].copyWith(
+                      comment: comment,
+                      visibility: visibility,
+                    );
+                  });
+                  try {
+                    await Supabase.instance.client
+                      .from('shop_media')
+                      .update({
+                        'comment': comment,
+                        'visibility': visibility,
+                      })
+                      .eq('id', img.id);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Updated photo'))
+                        );
+                      }
+                  } catch (e) {
+                    debugPrint('Error updating comment: $e');
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error updating comment: $e'))
+                      );
+                    }
+                  }
+                }
+              }
+            : null,
           ),
         ),
       );
@@ -59,6 +100,8 @@ class _GalleryGridState extends State<GalleryGrid> {
   Widget build(BuildContext context) {
     final selected = widget.selected ?? [];
     return GridView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
       itemCount: widget.mediaList.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3, mainAxisSpacing: 8, crossAxisSpacing: 8
@@ -76,7 +119,7 @@ class _GalleryGridState extends State<GalleryGrid> {
                 selected: isSelected,
                 selectable: widget.selectable,
               ),
-              if (media.isBanner && widget.isCurrentUser)
+              if (media.isBanner && widget.isEditable)
                 Positioned(
                   bottom: 4,
                   left: 4,
@@ -86,7 +129,7 @@ class _GalleryGridState extends State<GalleryGrid> {
                     child: Text('Banner', style: TextStyle(color: Colors.white, fontSize: 11)),
                   ),
                 ),
-              if (widget.isCurrentUser && !media.isBanner)
+              if (widget.isEditable && !media.isBanner)
                 Positioned(
                   top: 0,
                   right: 0,
@@ -106,7 +149,7 @@ class _GalleryGridState extends State<GalleryGrid> {
                   ),
                 ),
             ],
-          )
+          ),
         );
       },
     );

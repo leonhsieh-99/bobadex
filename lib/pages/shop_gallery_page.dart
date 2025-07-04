@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/helpers/image_uploader_helper.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/state/shop_media_state.dart';
+import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
 import 'package:bobadex/widgets/image_widgets/gallery_grid.dart';
 import 'package:bobadex/widgets/image_widgets/multiselect_image_picker_dialog.dart';
 import 'package:flutter/material.dart';
@@ -71,7 +71,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
   }
 
   void _addPhotos(ShopMediaState shopMediaState) async {
-    final images = await showDialog<List<File>>(
+    final images = await showDialog<List<GalleryImage>>(
       context: context,
       builder: (context) => MultiselectImagePickerDialog(),
     );
@@ -79,7 +79,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
     final bannerExists = shopMediaState.getBannerId(widget.shopId!) != null;
 
     for (int idx = 0; idx < images.length; idx++) {
-      final file = images[idx];
+      final img = images[idx];
       final tempId = UniqueKey().toString();
 
       // Add placeholder/pending media
@@ -88,15 +88,17 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
         shopId: widget.shopId!,
         userId: Supabase.instance.client.auth.currentUser!.id,
         imagePath: '',
+        comment: img.comment,
+        visibility: img.visibility,
         isBanner: idx == 0 && !bannerExists,
-        localFile: file,
+        localFile: img.file,
         isPending: true,
       );
       shopMediaState.addPendingMedia(pendingMedia);
 
       // Upload and replace pending with real
       ImageUploaderHelper.uploadImage(
-        file: file,
+        file: img.file!,
         folder: 'shop-gallery',
         generateThumbnail: true,
       ).then((imagePath) async {
@@ -107,6 +109,8 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
             shopId: widget.shopId!,
             userId: Supabase.instance.client.auth.currentUser!.id,
             imagePath: imagePath,
+            comment: img.comment,
+            visibility: img.visibility,
             isBanner: idx == 0 && !bannerExists,
           );
           final insertedMedia = await shopMediaState.addMedia(realMedia);
@@ -171,6 +175,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
                   mediaList: shopMedia,
                   selectable: _selecting,
                   selected: _selected,
+                  isEditable: widget.isCurrentUser,
                   isCurrentUser: widget.isCurrentUser,
                   onSelectionChanged: _onSelectionChanged,
                   onSetBanner: widget.onSetBanner,

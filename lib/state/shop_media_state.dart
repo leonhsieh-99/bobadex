@@ -73,6 +73,7 @@ class ShopMediaState extends ChangeNotifier {
   }
 
   Future<ShopMedia> addMedia(ShopMedia media) async {
+    print(media.comment);
     final response = await Supabase.instance.client
       .from('shop_media')
       .insert({
