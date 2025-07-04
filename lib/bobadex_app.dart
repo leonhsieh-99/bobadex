@@ -1,4 +1,3 @@
-import 'package:bobadex/models/achievement.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/drink_state.dart';
@@ -31,66 +30,43 @@ class BobadexApp extends StatelessWidget {
       child: Consumer<UserState>(
         builder: (context, userState, _) {
           final themeColor = Constants.getThemeColor(userState.user.themeSlug);
-          final achievementState = Provider.of<AchievementsState>(context, listen: false);
-          return StreamBuilder<Achievement>(
-            stream: achievementState.unlockedAchievementsStream,
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Row(
-                        children: [
-                          Icon(Icons.emoji_events, color: Colors.amberAccent),
-                          SizedBox(width: 8),
-                          Text('Achievement unlocked: ${snapshot.data!.name}!'),
-                        ],
-                      ),
-                      behavior: SnackBarBehavior.floating,
-                      duration: Duration(seconds: 3),
-                    )
-                  );
-                });
-              }
-              return MaterialApp(
-                title: 'Bobadex',
-                theme: ThemeData(
-                  scaffoldBackgroundColor: themeColor.shade50,
-                  dialogTheme: DialogTheme(
-                    backgroundColor: themeColor.shade50,
-                  ),
-                  appBarTheme: AppBarTheme(
-                    backgroundColor: themeColor.shade50,
-                    foregroundColor: Colors.black,
-                    elevation: 0,
-                    scrolledUnderElevation: 0,
-                  ),
-                  elevatedButtonTheme: ElevatedButtonThemeData(
-                    style: ButtonStyle(
-                      foregroundColor: WidgetStatePropertyAll<Color>(Colors.black),
-                      textStyle: WidgetStatePropertyAll<TextStyle>(
-                        TextStyle(fontWeight: FontWeight.w500)
-                      )
-                    )
-                  ),
-                  cardTheme: CardTheme(color: themeColor.shade100),
-                  textButtonTheme: TextButtonThemeData(
-                    style: ButtonStyle(
-                      foregroundColor: WidgetStatePropertyAll<Color>(Colors.black),
-                      textStyle: WidgetStatePropertyAll<TextStyle>(
-                        TextStyle(fontWeight: FontWeight.w500)
-                      )
-                    )
+          return MaterialApp(
+            title: 'Bobadex',
+            theme: ThemeData(
+              scaffoldBackgroundColor: themeColor.shade50,
+              dialogTheme: DialogTheme(
+                backgroundColor: themeColor.shade50,
+              ),
+              appBarTheme: AppBarTheme(
+                backgroundColor: themeColor.shade50,
+                foregroundColor: Colors.black,
+                elevation: 0,
+                scrolledUnderElevation: 0,
+              ),
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ButtonStyle(
+                  foregroundColor: WidgetStatePropertyAll<Color>(Colors.black),
+                  textStyle: WidgetStatePropertyAll<TextStyle>(
+                    TextStyle(fontWeight: FontWeight.w500)
                   )
-                ),
-                builder: (context, child) => GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: () => FocusScope.of(context).unfocus(),
-                  child: child!,
-                ),
-                home: const AppInitializer(),
-              );
-            },
+                )
+              ),
+              cardTheme: CardTheme(color: themeColor.shade100),
+              textButtonTheme: TextButtonThemeData(
+                style: ButtonStyle(
+                  foregroundColor: WidgetStatePropertyAll<Color>(Colors.black),
+                  textStyle: WidgetStatePropertyAll<TextStyle>(
+                    TextStyle(fontWeight: FontWeight.w500)
+                  )
+                )
+              )
+            ),
+            builder: (context, child) => GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: child!,
+            ),
+            home: const AppInitializer(),
           );
         },
       ),

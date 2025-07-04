@@ -3,6 +3,7 @@ import 'package:bobadex/models/brand.dart';
 import 'package:bobadex/models/brand_stats.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/pages/shop_gallery_page.dart';
+import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/image_widgets/horizontal_photo_preview.dart';
@@ -69,6 +70,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
   @override
   Widget build(BuildContext context) {
     final shopState = context.watch<ShopState>();
+    final achievementState = context.read<AchievementsState>();
     final userState = context.watch<UserState>();
     final hasVisit = shopState.all.map((s) => s.brandSlug).contains(widget.brand.slug);
     final userShop = shopState.getShopByBrand(widget.brand.slug);
@@ -134,6 +136,8 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                                   return persistedShop;
                                 } else {
                                   final persistedShop = await shopState.add(submittedShop);
+                                  await achievementState.checkAndUnlockShopAchievement(shopState);
+                                  await achievementState.checkAndUnlockBrandAchievement(shopState);
                                   return persistedShop;
                                 }
                               } catch (e) {

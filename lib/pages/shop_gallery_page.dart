@@ -1,6 +1,7 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/helpers/image_uploader_helper.dart';
 import 'package:bobadex/models/shop_media.dart';
+import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
 import 'package:bobadex/widgets/image_widgets/gallery_grid.dart';
@@ -70,7 +71,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
     }
   }
 
-  void _addPhotos(ShopMediaState shopMediaState) async {
+  void _addPhotos(ShopMediaState shopMediaState, AchievementsState achievementState) async {
     final images = await showDialog<List<GalleryImage>>(
       context: context,
       builder: (context) => MultiselectImagePickerDialog(),
@@ -114,6 +115,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
             isBanner: idx == 0 && !bannerExists,
           );
           final insertedMedia = await shopMediaState.addMedia(realMedia);
+          await achievementState.checkAndUnlockMediaUploadAchievement(shopMediaState);
           shopMediaState.replacePendingMedia(tempId, insertedMedia);
         } catch (e) {
           shopMediaState.removePendingMedia(tempId);
@@ -130,6 +132,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
   @override
   Widget build(BuildContext context) {
     final shopMediaState = context.watch<ShopMediaState>();
+    final achievementState = context.watch<AchievementsState>();
     final shopMedia = (widget.isCurrentUser && widget.shopId != null)
       ? shopMediaState.getByShop(widget.shopId!)
       : widget.shopMediaList;
@@ -143,7 +146,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
               if (widget.isCurrentUser && !_selecting)
                 IconButton(
                   icon: Icon(Icons.add),
-                  onPressed: () => _addPhotos(shopMediaState),
+                  onPressed: () => _addPhotos(shopMediaState, achievementState),
                 ),
               if (widget.isCurrentUser && !_selecting)
                 IconButton(

@@ -75,7 +75,7 @@ class AchievementsPage extends StatelessWidget {
               final brands = dependsOn['brands'];
               final normalBrands = shopState.all.map((s) => normalizer(s.name));
               for (var brand in brands) {
-                if (normalBrands.contains(brand)) {
+                if (normalBrands.contains(normalizer(brand))) {
                   count += 1;
                 }
               }

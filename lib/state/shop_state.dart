@@ -51,7 +51,7 @@ class ShopState extends ChangeNotifier {
       throw StateError('Error with temp id');
     } catch (e) {
       debugPrint('Insert failed: $e');
-      _shops.remove(shop);
+      _shops.removeWhere((s) => s.id == tempId);
       notifyListeners();
       rethrow;
     }

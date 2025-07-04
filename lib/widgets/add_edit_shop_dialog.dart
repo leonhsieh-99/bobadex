@@ -1,4 +1,5 @@
 import 'package:bobadex/models/shop_media.dart';
+import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
 import 'package:bobadex/state/shop_media_state.dart';
@@ -6,6 +7,7 @@ import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
 import 'package:bobadex/widgets/image_widgets/multiselect_image_picker_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 import '../models/shop.dart';
 import '../models/brand.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -64,12 +66,13 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
     );
     if (pickedImages != null && pickedImages.isNotEmpty) {
       setState(() {
+        _selectedImages.clear();
         _selectedImages.addAll(pickedImages);
       });
     }
   }
 
-  void _handleSubmit(ShopMediaState shopMediaState, user) async {
+  void _handleSubmit(ShopMediaState shopMediaState, AchievementsState achievementState, user) async {
     final isValid = _formkey.currentState?.validate() ?? false;
     if (!isValid) return;
 
@@ -105,19 +108,24 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
           generateThumbnail: true,
         );
 
-        try {
-          await shopMediaState.addMedia(
-            ShopMedia(
-              id: '',
-              shopId: submittedShop.id!,
-              userId: Supabase.instance.client.auth.currentUser!.id,
-              imagePath: imagePath,
-              comment: img.comment,
-              visibility: img.visibility,
-              isBanner: idx == 0 && !bannerExists,  // first image is banner
-            ),
+        final tempId = Uuid().v4();
+        final media = ShopMedia(
+            id: tempId,
+            shopId: submittedShop.id!,
+            userId: Supabase.instance.client.auth.currentUser!.id,
+            imagePath: imagePath,
+            comment: img.comment,
+            visibility: img.visibility,
+            isBanner: idx == 0 && !bannerExists,  // first image is banner
           );
+        shopMediaState.addPendingMedia(media);
+
+        try {
+          final insertedMedia = await shopMediaState.addMedia(media);
+          await achievementState.checkAndUnlockMediaUploadAchievement(shopMediaState);
+          shopMediaState.replacePendingMedia(tempId, insertedMedia);
         } catch (e) {
+          shopMediaState.removePendingMedia(tempId);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: const Text('Error uploading images'))
           );
@@ -151,6 +159,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
   @override
   Widget build(BuildContext context) {
     final shopMediaState = context.read<ShopMediaState>();
+    final achievementState = context.read<AchievementsState>();
     final user = context.read<UserState>().user;
     final isNewShop = widget.shop == null;
 
@@ -298,15 +307,15 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                       const SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: _isSubmitting
-                            ? null
-                            : () => _handleSubmit(shopMediaState, user),
+                          ? null
+                          : () => _handleSubmit(shopMediaState, achievementState, user),
                         child: _isSubmitting
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : (isNewShop ? Text('Add Shop') : Text('Save')),
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : (isNewShop ? Text('Add Shop') : Text('Save')),
                       ),
                     ],
                   ),

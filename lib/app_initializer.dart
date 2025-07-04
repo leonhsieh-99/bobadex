@@ -30,22 +30,43 @@ class _AppInitializerState extends State<AppInitializer> {
   void initState() {
     super.initState();
     _initializeSession();
+    final achievementState = p.Provider.of<AchievementsState>(context, listen: false);
+    achievementState.unlockedAchievementsStream.listen((achievement) {
+      // Use the mounted context in a post frame callback
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.emoji_events, color: Colors.amberAccent),
+                  SizedBox(width: 8),
+                  Text('Achievement unlocked: ${achievement.name}!'),
+                ],
+              ),
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      });
+    });
   }
 
-    void _resetAllStates() {
-      if (!mounted) return;
+  void _resetAllStates() {
+    if (!mounted) return;
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        p.Provider.of<UserState>(context, listen: false).reset();
-        p.Provider.of<DrinkState>(context, listen: false).reset();
-        p.Provider.of<ShopState>(context, listen: false).reset();
-        p.Provider.of<BrandState>(context, listen: false).reset();
-        p.Provider.of<FriendState>(context, listen: false).reset();
-        p.Provider.of<UserStatsCache>(context, listen: false).clearCache();
-        p.Provider.of<ShopMediaState>(context, listen: false).reset();
-        p.Provider.of<AchievementsState>(context, listen: false).reset();
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      p.Provider.of<UserState>(context, listen: false).reset();
+      p.Provider.of<DrinkState>(context, listen: false).reset();
+      p.Provider.of<ShopState>(context, listen: false).reset();
+      p.Provider.of<BrandState>(context, listen: false).reset();
+      p.Provider.of<FriendState>(context, listen: false).reset();
+      p.Provider.of<UserStatsCache>(context, listen: false).clearCache();
+      p.Provider.of<ShopMediaState>(context, listen: false).reset();
+      p.Provider.of<AchievementsState>(context, listen: false).reset();
+    });
+  }
 
   Future<void> _initializeSession() async {
     try {
@@ -125,6 +146,7 @@ class _AppInitializerState extends State<AppInitializer> {
             await achievementsState.checkAndUnlockMaxDrinksShopAchievement(drinkState);
             await achievementsState.checkAndUnlockMediaUploadAchievement(shopMediaState);
             await achievementsState.checkAndUnlockBrandAchievement(shopState);
+            await achievementsState.checkAndUpdateAllAchievement();
             debugPrint('Loaded ${achievementsState.userAchievements.length} user achievements');
           } catch (e) {
             debugPrint('Error loading achievements state: $e');

@@ -1,4 +1,5 @@
 import 'package:bobadex/pages/brand_details_page.dart';
+import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/state/shop_state.dart';
@@ -87,6 +88,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
     final shopState = context.read<ShopState>();
     final brandState = context.read<BrandState>();
     final drinkState = context.read<DrinkState>();
+    final achievementState = context.read<AchievementsState>();
     final userState = context.watch<UserState>();
     final shopMediaState = context.watch<ShopMediaState>();
     final user = isCurrentUser ? userState.user : widget.user;
@@ -276,6 +278,8 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                       onSubmit: (drink) async {
                                         try {
                                           await drinkState.add(drink.toDrink(shopId: shopRead.id), shopRead.id!);
+                                          await achievementState.checkAndUnlockDrinkAchievement(drinkState);
+                                          await achievementState.checkAndUnlockNotesAchievement(drinkState);
                                           if (context.mounted) {
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(content: Text('Drink added.')),
@@ -431,6 +435,8 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                                 onSubmit: (updatedDrink) async {
                                                                   try {
                                                                     await drinkState.update(updatedDrink.toDrink(id: drink.id, shopId: drink.shopId));
+                                                                    await achievementState.checkAndUnlockDrinkAchievement(drinkState);
+                                                                    await achievementState.checkAndUnlockNotesAchievement(drinkState);
                                                                   } catch (_) {
                                                                     ScaffoldMessenger.of(context).showSnackBar(
                                                                       SnackBar(content: Text('Failed to update drink.')),

@@ -33,7 +33,6 @@ class _MultiselectImagePickerDialogState extends State<MultiselectImagePickerDia
         mode: FullscreenImageMode.upload,
       )),
     );
-    
     if (result != null && result.isNotEmpty) {
       Navigator.of(context).pop(result);
     }

@@ -23,10 +23,11 @@ class HorizontalPhotoPreview extends StatelessWidget {
         builder: (_) => FullscreenImageViewer(
           images: shopMediaList.map((m) =>
             m.localFile != null
-              ? GalleryImage.file(m.localFile)
-              : GalleryImage.network(m.imageUrl)
+              ? GalleryImage.file(m.localFile, comment: m.comment ?? '')
+              : GalleryImage.network(m.imageUrl, comment: m.comment ?? '')
           ).toList(),
           initialIndex: idx,
+          isCurrentUser: false,
         ),
       ),
     );
