@@ -1,13 +1,17 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/account_stats.dart';
+import 'package:bobadex/models/achievement.dart';
 import 'package:bobadex/models/user.dart' as u;
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/pages/home_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_account_page.dart';
+import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/drink_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/user_stats_cache.dart';
+import 'package:bobadex/widgets/badge_picker_dialog.dart';
 import 'package:bobadex/widgets/stat_box.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -30,6 +34,7 @@ class AccountViewPage extends StatefulWidget {
 class _AccountViewPageState extends State<AccountViewPage> {
   bool _isLoading = false;
   AccountStats stats = AccountStats.emptyStats();
+  List<Achievement> readOnlyBadges  = [];
 
   @override
   void initState() {
@@ -44,9 +49,21 @@ class _AccountViewPageState extends State<AccountViewPage> {
     : '';
 
   Future<void> _fetchData() async {
+    final supabase = Supabase.instance.client;
     setState(() => _isLoading = true);
     try {
       final stats = await context.read<UserStatsCache>().getStats(widget.user.id);
+      if (widget.user.id != supabase.auth.currentUser!.id) {
+        final response = await supabase
+          .from('user_achievements')
+          .select('achievement:achievement_id(*)')
+          .eq('user_id', widget.user.id)
+          .eq('pinned', true);
+
+        readOnlyBadges = (response as List)
+            .map((row) => Achievement.fromJson(row['achievement']))
+            .toList();
+      }
       setState(() {
         this.stats = stats;
         _isLoading = false;
@@ -67,14 +84,30 @@ class _AccountViewPageState extends State<AccountViewPage> {
     final brand = brandState.getBrand(stats.topShopSlug);
     final drink = drinkState.getDrink(stats.topDrinkId);
     final currentUser = userState.user;
-    final user = currentUser.id == widget.user.id ? currentUser : widget.user;
+    final isCurrentUser = currentUser.id == widget.user.id;
+    final user = isCurrentUser ? currentUser : widget.user;
+    final achievementState = context.watch<AchievementsState>();
+    final unlockedBadges = achievementState.achievements
+        .where((a) => achievementState.progressMap[a.id]?.unlocked == true)
+        .toList();
+    final pinnedBadges = isCurrentUser 
+      ? unlockedBadges.where((a) => achievementState.progressMap[a.id]?.pinned == true).toList()
+      : readOnlyBadges;
+
     return Scaffold(
       appBar: AppBar(),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
         child: Column(
           children: [
-            ThumbPic(url: user.thumbUrl, size: 140),
+            ThumbPic(
+              url: user.thumbUrl,
+              size: 140, 
+              onTap: () => isCurrentUser 
+                ?  Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => SettingsAccountPage()))
+                : null
+              ),
             SizedBox(height: 12),
             Text(user.displayName, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             Text('@${user.username}', style: TextStyle(color: Colors.grey[700])),
@@ -95,36 +128,91 @@ class _AccountViewPageState extends State<AccountViewPage> {
                   MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand)
                 ))
                 : null,
-              child: ListTile(
-                leading: (brandThumbUrl.isNotEmpty)
-                  ? CachedNetworkImage(
-                    imageUrl: brandThumbUrl,
-                    width: 50,
-                    height: 50,
-                    placeholder: (context, url) => CircularProgressIndicator(),
-                  )
-                  : Image.asset(
-                    'lib/assets/default_icon.png',
-                    fit: BoxFit.cover,
-                  ),
-                title: Text(shop?.name ?? ''),
-                subtitle: Text(drink?.name ?? ''),
-              ),
+              child: SizedBox(
+                height: 60,
+                child: (shop != null)
+                  ? ListTile(
+                      leading: (brandThumbUrl.isNotEmpty)
+                        ? CachedNetworkImage(
+                          imageUrl: brandThumbUrl,
+                          width: 50,
+                          height: 50,
+                          placeholder: (context, url) => CircularProgressIndicator(),
+                        )
+                        : Image.asset(
+                          'lib/assets/default_icon.png',
+                          fit: BoxFit.cover,
+                        ),
+                      title: Text(shop.name),
+                      subtitle: Text(drink?.name ?? ''),
+                    )
+                  : Center( child: Text( isCurrentUser ? 'No shops yet, add in home page' : 'User has no shops yet', style: Constants.emptyListTextStyle))
+              )
             ),
             SizedBox(height: 6),
             Text('Badges', style: TextStyle(fontWeight: FontWeight.bold)),
             SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildBadge(icon: Icons.star, label: 'Starter', color: Colors.amber),
-                SizedBox(width: 12),
-                _buildBadge(icon: Icons.coffee, label: 'First Drink', color: Colors.brown),
-                SizedBox(width: 12),
-                _buildBadge(icon: Icons.group, label: 'Friend', color: Colors.blue),
-                SizedBox(width: 12),
-                _buildBadge(icon: Icons.photo_camera, label: 'Photographer', color: Colors.deepPurple),
-              ],
+            GestureDetector(
+              onTap: user.id == currentUser.id
+                ? () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => BadgePickerDialog(
+                      badges: unlockedBadges,
+                      pinnedBadges: pinnedBadges,
+                      onSave: (selected) async {
+                        for (final a in unlockedBadges) {
+                          final shouldPin = selected.contains(a.id);
+                          if (achievementState.progressMap[a.id]?.pinned != shouldPin) {
+                            await achievementState.setPinned(a.id);
+                          }
+                        }
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  );
+                }
+                : null,
+              child: SizedBox(
+                width: double.infinity,
+                height: 60,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: pinnedBadges.isNotEmpty
+                    ? pinnedBadges
+                      .map((a) => Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Tooltip(
+                          message: a.description,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircleAvatar(
+                                  backgroundImage: AssetImage(
+                                    // achievementState.getBadgeAssetPath(a.iconPath),
+                                    'lib/assets/default_badge.png'
+                                  ),
+                                  radius: 22,
+                                ),
+                                Text(
+                                  a.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w300,
+                                    fontSize: 9,
+                                  ),
+                                )
+                              ]
+                            )
+                        )
+                      ))
+                      .toList()
+                    : [
+                        Text( isCurrentUser ? 'No badges yet, tap to pin your badges' : 'User has no badges yet', style: Constants.emptyListTextStyle),
+                      ],
+                ),
+              ),
             ),
             SizedBox(height: 16),
             const SizedBox(height: 24),
@@ -156,18 +244,4 @@ class _AccountViewPageState extends State<AccountViewPage> {
       )
     );
   }
-}
-
-Widget _buildBadge({required IconData icon, required String label, required Color color}) {
-  return Column(
-    children: [
-      CircleAvatar(
-        backgroundColor: color.withOpacity(0.15),
-        radius: 22,
-        child: Icon(icon, color: color, size: 28),
-      ),
-      SizedBox(height: 4),
-      Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-    ],
-  );
 }

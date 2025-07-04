@@ -21,14 +21,13 @@ class ShopMediaState extends ChangeNotifier {
     notifyListeners();
   }
 
-void replacePendingMedia(String pendingId, ShopMedia realMedia) {
-  final idx = _shopMedia.indexWhere((m) => m.id == pendingId);
-  if (idx != -1) {
-    _shopMedia[idx] = realMedia;
-    notifyListeners();
+  void replacePendingMedia(String pendingId, ShopMedia realMedia) {
+    final idx = _shopMedia.indexWhere((m) => m.id == pendingId);
+    if (idx != -1) {
+      _shopMedia[idx] = realMedia;
+      notifyListeners();
+    }
   }
-}
-
 
   void removePendingMedia(String mediaId) {
     _shopMedia.removeWhere((m) => m.id == mediaId);

@@ -1,5 +1,6 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/pages/account_view_page.dart';
+import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
@@ -19,6 +20,7 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> {
   @override
   Widget build(BuildContext context) {
     final friendState = context.watch<FriendState>();
+    final achievementState = context.watch<AchievementsState>();
     final user = context.watch<UserState>().user;
     final themeColor = Constants.getThemeColor(user.themeSlug);
     final incomingRequests = friendState.incomingRequests;
@@ -64,6 +66,7 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> {
                             onPressed: () {
                               try {
                                 friendState.acceptUser(requester.id);
+                                achievementState.checkAndUnlockFriendAchievement(friendState);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('Friend added'))
                                 );

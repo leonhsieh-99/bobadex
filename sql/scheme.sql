@@ -84,7 +84,7 @@ create table user_achievements (
   achievement_id int not null references achievements(id),
   unlocked boolean default false,
   progress int default 0,         -- For achievements that require progress
-  unlocked_at timestamp,          -- When achievement was unlocked
+  unlocked_at timestamptz,          -- When achievement was unlocked
   pinned boolean default false,   -- For showing on profile
   unique (user_id, achievement_id)
 );

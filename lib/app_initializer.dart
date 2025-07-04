@@ -118,6 +118,14 @@ class _AppInitializerState extends State<AppInitializer> {
           try {
             await achievementsState.loadFromSupabase();
             debugPrint('Loaded ${achievementsState.achievements.length} achievements');
+            await achievementsState.checkAndUnlockShopAchievement(shopState);
+            await achievementsState.checkAndUnlockDrinkAchievement(drinkState);
+            await achievementsState.checkAndUnlockFriendAchievement(friendState);
+            await achievementsState.checkAndUnlockNotesAchievement(drinkState);
+            await achievementsState.checkAndUnlockMaxDrinksShopAchievement(drinkState);
+            await achievementsState.checkAndUnlockMediaUploadAchievement(shopMediaState);
+            await achievementsState.checkAndUnlockBrandAchievement(shopState);
+            debugPrint('Loaded ${achievementsState.userAchievements.length} user achievements');
           } catch (e) {
             debugPrint('Error loading achievements state: $e');
           }
