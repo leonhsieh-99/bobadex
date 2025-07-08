@@ -148,7 +148,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
             userId: user.id,
             objectId: submittedShop.id ?? '',
             eventType: 'shop_add',
-            slug: submittedShop.brandSlug == null && submittedShop.brandSlug!.isEmpty ? submittedShop.brandSlug : null,
+            brandSlug: submittedShop.brandSlug == null && submittedShop.brandSlug!.isEmpty ? submittedShop.brandSlug : null,
             payload: {
               "user_avatar": user.thumbUrl,
               "user_name": user.displayName,

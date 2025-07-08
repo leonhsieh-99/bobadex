@@ -78,7 +78,7 @@ class FeedEventCard extends StatelessWidget {
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             onPressed: () {
-                              final brand = brandState.getBrand(payload['slug']);
+                              final brand = brandState.getBrand(event.brandSlug);
                               if (brand != null) {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand))

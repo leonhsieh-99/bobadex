@@ -95,6 +95,7 @@ create table feed_events (
   object_id uuid,   
   event_type text,  -- 'shop_add', 'drink_add', 'achievement', etc.
   created_at timestamptz default now(),
+  brand_slug text,
   payload jsonb,       -- flexible, stores extra event data
   is_backfill boolean default false
 );
