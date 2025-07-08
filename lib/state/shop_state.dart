@@ -34,6 +34,7 @@ class ShopState extends ChangeNotifier {
           'user_id': userId,
           'name': shop.name,
           'rating': shop.rating,
+          'notes': shop.notes,
           'is_favorite': shop.isFavorite,
           'brand_slug': shop.brandSlug,
         })

@@ -49,6 +49,19 @@ class ShopMedia {
     );
   }
 
+  static ShopMedia galleryViewMedia({
+    required String imagePath,
+    required String comment,
+  }) {
+    return ShopMedia(
+      id: '',
+      shopId: '',
+      userId: '',
+      imagePath: imagePath,
+      comment: comment
+    );
+  }
+
   ShopMedia copyWith({
     String? id,
     String? shopId,

@@ -1,5 +1,7 @@
+import 'package:bobadex/models/feed_event.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/state/achievements_state.dart';
+import 'package:bobadex/state/feed_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
 import 'package:bobadex/state/shop_media_state.dart';
@@ -72,7 +74,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
     }
   }
 
-  void _handleSubmit(ShopMediaState shopMediaState, AchievementsState achievementState, user) async {
+  void _handleSubmit(ShopMediaState shopMediaState, AchievementsState achievementState, FeedState feedState, user) async {
     final isValid = _formkey.currentState?.validate() ?? false;
     if (!isValid) return;
 
@@ -98,6 +100,8 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
       );
       final submittedShop = await widget.onSubmit(newShop);
 
+      List<Map<String, dynamic>> uploadedImages = [];
+
       await Future.wait(_selectedImages.asMap().entries.map((entry) async {
         final idx = entry.key;
         final img = entry.value;
@@ -107,6 +111,11 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
           folder: 'shop-gallery',
           generateThumbnail: true,
         );
+
+        uploadedImages.add({
+          "path": imagePath,
+          "comment": img.comment,
+        });
 
         final tempId = Uuid().v4();
         final media = ShopMedia(
@@ -131,6 +140,29 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
           );
         }
       }));
+
+      try {
+        await feedState.addFeedEvent(
+          FeedEvent(
+            id: '',
+            userId: user.id,
+            objectId: submittedShop.id ?? '',
+            eventType: 'shop_add',
+            payload: {
+              "user_avatar": user.thumbUrl,
+              "user_name": user.displayName,
+              "shop_name": submittedShop.name,
+              "notes": submittedShop.notes,
+              "images": uploadedImages,
+              "rating": submittedShop.rating,
+              "slug": submittedShop.brandSlug,
+            },
+            isBackfill: false,
+          ),
+        );
+      } catch (e) {
+        debugPrint('Error adding feed event: $e');
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(widget.shop == null ? 'Shop added successfully' : 'Shop saved successfully')),
@@ -160,6 +192,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
   Widget build(BuildContext context) {
     final shopMediaState = context.read<ShopMediaState>();
     final achievementState = context.read<AchievementsState>();
+    final feedState = context.read<FeedState>();
     final user = context.read<UserState>().user;
     final isNewShop = widget.shop == null;
 
@@ -308,7 +341,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                       ElevatedButton(
                         onPressed: _isSubmitting
                           ? null
-                          : () => _handleSubmit(shopMediaState, achievementState, user),
+                          : () => _handleSubmit(shopMediaState, achievementState, feedState, user),
                         child: _isSubmitting
                           ? const SizedBox(
                               width: 16,

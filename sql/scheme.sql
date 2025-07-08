@@ -89,7 +89,15 @@ create table user_achievements (
   unique (user_id, achievement_id)
 );
 
-
+create table feed_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id),
+  object_id uuid,   
+  event_type text,  -- 'shop_add', 'drink_add', 'achievement', etc.
+  created_at timestamptz default now(),
+  payload jsonb,       -- flexible, stores extra event data
+  is_backfill boolean default false
+);
 
 -- Common filter/join targets
 create index on drinks(shop_id);
@@ -102,6 +110,8 @@ create index on shop_media(user_id);
 create index on shop_media(visibility);
 create index on drinks(visibility);
 
+-- Index for fast querying
+create index on feed_events(user_id, created_at desc);
 
 ----------READ ONLY TABLES------------
 

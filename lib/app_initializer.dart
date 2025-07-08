@@ -1,4 +1,5 @@
 import 'package:bobadex/state/achievements_state.dart';
+import 'package:bobadex/state/feed_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:flutter/material.dart';
@@ -65,6 +66,7 @@ class _AppInitializerState extends State<AppInitializer> {
       p.Provider.of<UserStatsCache>(context, listen: false).clearCache();
       p.Provider.of<ShopMediaState>(context, listen: false).reset();
       p.Provider.of<AchievementsState>(context, listen: false).reset();
+      p.Provider.of<FeedState>(context, listen: false).reset();
     });
   }
 
@@ -87,6 +89,7 @@ class _AppInitializerState extends State<AppInitializer> {
           final friendState = context.read<FriendState>();
           final shopMediaState = context.read<ShopMediaState>();
           final achievementsState = context.read<AchievementsState>();
+          final feedState = context.read<FeedState>();
 
           try {
             await userState.loadFromSupabase();
@@ -150,6 +153,13 @@ class _AppInitializerState extends State<AppInitializer> {
             debugPrint('Loaded ${achievementsState.userAchievements.length} user achievements');
           } catch (e) {
             debugPrint('Error loading achievements state: $e');
+          }
+
+          try {
+            await feedState.fetchFeed();
+            debugPrint('Loaded ${feedState.feed.length} feed events');
+          } catch (e) {
+            debugPrint('Error loading feed state: $e');
           }
 
           if (mounted) {

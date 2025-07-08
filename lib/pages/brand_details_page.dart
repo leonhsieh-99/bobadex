@@ -74,7 +74,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
     final userState = context.watch<UserState>();
     final hasVisit = shopState.all.map((s) => s.brandSlug).contains(widget.brand.slug);
     final userShop = shopState.getShopByBrand(widget.brand.slug);
-    final themColor = Constants.getThemeColor(userState.user.themeSlug);
+    final themeColor = Constants.getThemeColor(userState.user.themeSlug);
     return Scaffold(
       appBar: AppBar(),
       body: ListView(
@@ -111,7 +111,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                     right: 0,
                     child: TextButton(
                       style: TextButton.styleFrom(
-                        backgroundColor: themColor.shade200,
+                        backgroundColor: themeColor.shade200,
                         shape: const StadiumBorder(),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         elevation: 3,

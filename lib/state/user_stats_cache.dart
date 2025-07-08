@@ -6,16 +6,20 @@ class UserStatsCache extends ChangeNotifier {
 
   Future<Map<String, dynamic>> fetchStatsFromServer(userId) async {
     final response = await Supabase.instance.client
-      .rpc('get_user_stats', params: {'uid': userId})
-      .single();
-    return response ?? {};
+      .rpc('get_user_stats', params: {'uid': userId});
+    if (response is List && response.isNotEmpty) {
+      return response.first;
+    }
+    return {};
   }
 
   Future<Map<String, dynamic>> fetchTopShopFromServer(userId) async {
     final response = await Supabase.instance.client
-      .rpc('get_user_top_shop_info', params: {'user_id': userId})
-      .single();
-    return response ?? {};
+      .rpc('get_user_top_shop_info', params: {'user_id': userId});
+    if (response is List && response.isNotEmpty) {
+      return response.first;
+    }
+    return {};
   }
 
   Future<AccountStats> getStats(String userId) async {
