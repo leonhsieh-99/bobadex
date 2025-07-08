@@ -4,6 +4,7 @@ class FeedEvent {
   final String objectId;
   final String eventType;
   final DateTime? createdAt;
+  final String? slug;
   final Map<String, dynamic> payload;
   final bool isBackfill;
 
@@ -13,6 +14,7 @@ class FeedEvent {
     required this.objectId,
     required this.eventType,
     this.createdAt,
+    this.slug,
     required this.payload,
     required this.isBackfill,
   });
@@ -23,24 +25,13 @@ class FeedEvent {
       userId: json['user_id'] as String,
       objectId: json['object_id'] as String,
       eventType: json['event_type'] as String,
+      slug: json['slug'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       payload: json['payload'] is Map
           ? Map<String, dynamic>.from(json['payload'])
           : {},
       isBackfill: json['is_backfill'] == true,
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'user_id': userId,
-      'object_id': objectId,
-      'event_type': eventType,
-      'created_at': createdAt,
-      'payload': payload,
-      'is_backfill': isBackfill,
-    };
   }
 
   FeedEvent copyWith({
@@ -50,6 +41,7 @@ class FeedEvent {
     String? eventType,
     DateTime? createdAt,
     Map<String, dynamic>? payload,
+    String? slug,
     bool? isBackfill,
   }) {
     return FeedEvent(
@@ -59,6 +51,7 @@ class FeedEvent {
       eventType: eventType ?? this.eventType,
       createdAt: createdAt ?? this.createdAt,
       payload: payload ?? this.payload,
+      slug: slug ?? this.slug,
       isBackfill: isBackfill ?? this.isBackfill
     );
   }

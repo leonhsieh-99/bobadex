@@ -7,7 +7,8 @@ class TappableImage extends StatelessWidget {
   final VoidCallback? onTap;
   final bool selected;
   final bool selectable;
-  final double thumbSize;
+  final double height;
+  final double width;
 
   const TappableImage({
     super.key,
@@ -15,20 +16,21 @@ class TappableImage extends StatelessWidget {
     this.onTap,
     this.selected = false,
     this.selectable = false,
-    this.thumbSize = 100,
+    this.height = 100,
+    this.width = 100,
   });
 
   @override
   Widget build(BuildContext context) {
     Widget image;
     if (media.isPending && media.localFile != null) {
-      image = Image.file(media.localFile!, fit: BoxFit.cover, width: thumbSize, height: thumbSize);
+      image = Image.file(media.localFile!, fit: BoxFit.cover, width: width, height: height);
     } else {
       image = CachedNetworkImage(
         imageUrl: media.thumbUrl,
         fit: BoxFit.cover,
-        width: thumbSize,
-        height: thumbSize,
+        width: width,
+        height: height,
         placeholder: (c, url) => Center(child: CircularProgressIndicator(strokeWidth: 2)),
         errorWidget: (c, url, err) => Icon(Icons.broken_image),
       );

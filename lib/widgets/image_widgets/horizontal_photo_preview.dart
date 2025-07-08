@@ -7,14 +7,16 @@ class HorizontalPhotoPreview extends StatelessWidget {
   final List<ShopMedia> shopMediaList;
   final int maxPreview;
   final VoidCallback? onViewAll;
-  final double thumbSize;
+  final double height;
+  final double width;
 
   const HorizontalPhotoPreview ({
     super.key,
     required this.shopMediaList,
     this.maxPreview = 5,
     this.onViewAll,
-    this.thumbSize = 100,
+    this.height = 100,
+    this.width = 100,
   });
 
   void _onTap(context, int idx) {
@@ -39,7 +41,7 @@ class HorizontalPhotoPreview extends StatelessWidget {
     final visibleMedia = showViewAll ? shopMediaList.take(maxPreview - 1).toList() : shopMediaList;
 
     return SizedBox(
-      height: thumbSize,
+      height: height,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: visibleMedia.length + (showViewAll ? 1 : 0),
@@ -49,8 +51,8 @@ class HorizontalPhotoPreview extends StatelessWidget {
             return GestureDetector(
               onTap: onViewAll,
               child: Container(
-                width: thumbSize,
-                height: thumbSize,
+                width: width,
+                height: height,
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
@@ -70,7 +72,7 @@ class HorizontalPhotoPreview extends StatelessWidget {
           }
           return GestureDetector(
             onTap: () => _onTap(context, index),
-            child: TappableImage(media: visibleMedia[index])
+            child: TappableImage(height: height, width: width, media: visibleMedia[index])
           );
         }
       ),

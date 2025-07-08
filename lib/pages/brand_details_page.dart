@@ -230,10 +230,10 @@ Widget _buildGlobalGallery(Brand brand, Future<List<ShopMedia>> galleryFuture) {
           const SizedBox(height: 8),
           SizedBox(
             width: MediaQuery.of(context).size.width,
-            height: 100,
+            height: 150,
             child: medias.isEmpty
               ? const Center(child: Text('No community photos yet'))
-              : HorizontalPhotoPreview(shopMediaList: medias, onViewAll: () => Navigator.of(context).push(
+              : HorizontalPhotoPreview(height: 150, width: 100, shopMediaList: medias, onViewAll: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) =>
                   ShopGalleryPage(
                     shopMediaList: medias,
