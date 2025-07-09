@@ -7,6 +7,7 @@ import 'package:bobadex/pages/shop_gallery_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
+import 'package:bobadex/widgets/brand_feed_view.dart';
 import 'package:bobadex/widgets/image_widgets/horizontal_photo_preview.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -93,17 +94,17 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                     child: ClipOval(
                       child: widget.brand.iconPath != null && widget.brand.iconPath!.isNotEmpty
                         ? CachedNetworkImage(
-                            imageUrl: widget.brand.thumbUrl,
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          )
+                          imageUrl: widget.brand.thumbUrl,
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        )
                         : Image.asset(
-                            'lib/assets/default_icon.png',
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
+                          'lib/assets/default_icon.png',
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
                     ),
                   ),
                   // Add button
@@ -157,16 +158,30 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            widget.brand.display,
-            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  widget.brand.display,
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 12),
+              _buildGlobalRatings(widget.brand, _statsFuture),
+            ],
           ),
           const SizedBox(height: 8),
-          _buildGlobalRatings(widget.brand, _statsFuture),
-          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 8),
           _buildGlobalGallery(widget.brand, _globalGalleryFuture),
           const SizedBox(height: 24),
+          Text("Recent Activity", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          const SizedBox(height: 8),
+          BrandFeedView(brandSlug: widget.brand.slug),
+
         ],
       ),
     );
@@ -178,28 +193,25 @@ Widget _buildGlobalRatings(Brand brand, Future<BrandStats> statsFuture) {
     future: statsFuture,
     builder: (context, snapshot) {
       if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8),
-          child: LinearProgressIndicator(minHeight: 2),
+        return Container(
+          width: 100,
+          height: 18,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(6),
+          ),
         );
       }
       if (snapshot.hasError) {
         return Text('Failed to load stats', style: TextStyle(color: Colors.red));
       }
       final stats = snapshot.data!;
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      return Row(
         children: [
-          Text('Ratings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(Icons.star, color: Colors.orangeAccent),
-              const SizedBox(width: 8),
-              Text('${stats.avgRating.toStringAsFixed(1)} (${stats.shopCount} ratings)',
-                  style: const TextStyle(fontSize: 16)),
-            ],
-          ),
+          const Icon(Icons.star, color: Colors.orangeAccent),
+          const SizedBox(width: 2),
+          Text('${stats.avgRating.toStringAsFixed(1)} (${stats.shopCount} ratings)',
+              style: const TextStyle(fontSize: 16)),
         ],
       );
     }
@@ -211,9 +223,13 @@ Widget _buildGlobalGallery(Brand brand, Future<List<ShopMedia>> galleryFuture) {
     future: galleryFuture,
     builder: (context, snapshot) {
       if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8),
-          child: LinearProgressIndicator(minHeight: 2),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const SizedBox(height: 8),
+            HorizontalPreviewSkeleton(count: 3, height: 200, width: 150),
+          ],
         );
       }
       if (snapshot.hasError) {
@@ -227,10 +243,10 @@ Widget _buildGlobalGallery(Brand brand, Future<List<ShopMedia>> galleryFuture) {
           const SizedBox(height: 8),
           SizedBox(
             width: MediaQuery.of(context).size.width,
-            height: 150,
+            height: 200,
             child: medias.isEmpty
               ? const Center(child: Text('No community photos yet'))
-              : HorizontalPhotoPreview(height: 150, width: 100, shopMediaList: medias, onViewAll: () => Navigator.of(context).push(
+              : HorizontalPhotoPreview(height: 200, width: 150, shopMediaList: medias, onViewAll: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) =>
                   ShopGalleryPage(
                     shopMediaList: medias,

@@ -167,7 +167,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
                             await achievementState.setPinned(a.id);
                           }
                         }
-                        Navigator.of(context).pop();
+                        if(context.mounted) Navigator.of(context).pop();
                       },
                     ),
                   );
@@ -231,9 +231,11 @@ class _AccountViewPageState extends State<AccountViewPage> {
                   ),
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => HomePage(user: user))
-                    );
+                    isCurrentUser
+                      ? Navigator.of(context).pop()
+                      : Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => HomePage(user: user))
+                      );
                   },
                   child: const Text('View Bobadex')
                 ),

@@ -79,3 +79,33 @@ class HorizontalPhotoPreview extends StatelessWidget {
     );
   }
 }
+
+class HorizontalPreviewSkeleton extends StatelessWidget {
+  final int count;
+  final double height;
+  final double width;
+  const HorizontalPreviewSkeleton({super.key, this.count = 6, this.height = 100, this.width = 75});
+  
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: count,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          return Container(
+            width: width,
+            height: height,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(10),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
