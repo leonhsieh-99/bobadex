@@ -1,3 +1,4 @@
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/brand_stats.dart';
 import 'package:bobadex/models/user_stats.dart';
 import 'package:bobadex/pages/account_view_page.dart';
@@ -37,9 +38,7 @@ class _RankingsPageState extends State<RankingsPage> {
       ];
     } catch (e) {
       debugPrint('Error loading rankings: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: const Text('Error loading rankings'))
-      );
+      if (mounted) { showAppSnackBar(context, 'Error loading rankings', type: SnackType.error); }
     }
     return [[],[]];
   }

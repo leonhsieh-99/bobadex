@@ -1,3 +1,4 @@
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/utils/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -82,15 +83,14 @@ Future<void> changePasswordDialog(BuildContext context) async {
                       UserAttributes(password: newPass),
                     );
 
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Password changed successfully'))
-                    );
+                    if (context.mounted) {
+                      showAppSnackBar(context, 'Password changed successfully', type: SnackType.success);
+                      Navigator.pop(context);
+                    }
                   } catch (e) {
-                    print(e);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to change password'))
-                    );
+                    if (context.mounted) {
+                      showAppSnackBar(context, 'Error changing password', type: SnackType.error);
+                    }
                   } finally {
                     setState(() => _isLoading = false);
                   }

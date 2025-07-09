@@ -1,3 +1,4 @@
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/feed_state.dart';
 import 'package:bobadex/state/friend_state.dart';
@@ -35,21 +36,7 @@ class _AppInitializerState extends State<AppInitializer> {
     achievementState.unlockedAchievementsStream.listen((achievement) {
       // Use the mounted context in a post frame callback
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.emoji_events, color: Colors.amberAccent),
-                  SizedBox(width: 8),
-                  Text('Achievement unlocked: ${achievement.name}!'),
-                ],
-              ),
-              behavior: SnackBarBehavior.floating,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
+        if (mounted) { showAppSnackBar(context, 'Achievement unlocked ${achievement.name}', type: SnackType.achievement); }
       });
     });
   }

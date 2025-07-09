@@ -35,13 +35,16 @@ class FeedEventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final brandState = context.read<BrandState>();
     final payload = event.payload;
-    final avatarUrl = payload['user_avatar'] ?? '';
-    final userName = payload['user_name'] ?? 'Unknown user';
+    final avatarUrl = (payload['user_avatar'] ?? '') as String;
+    final userName = (payload['user_name'] ?? 'Unknown user').toString();
     final name = event.eventType == 'shop_add'
       ? payload['shop_name']
       : event.eventType == 'achievement'
         ? payload['achievement_name']
         : 'Uknown';
+    final images = (payload['images'] as List?) ?? [];
+    final rating = double.tryParse('${payload['rating'] ?? ''}') ?? 0.0;
+    final createdAt = event.createdAt ?? DateTime.now();
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -58,7 +61,7 @@ class FeedEventCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(userName ?? 'Unknown user', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(userName, style: TextStyle(fontWeight: FontWeight.bold)),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
@@ -78,11 +81,14 @@ class FeedEventCard extends StatelessWidget {
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             onPressed: () {
-                              final brand = brandState.getBrand(event.brandSlug);
-                              if (brand != null) {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand))
-                                );
+                              final slug = payload['slug']?.toString() ?? '';
+                              if (slug.isNotEmpty) {
+                                final brand = brandState.getBrand(slug);
+                                if (brand != null) {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand))
+                                  );
+                                }
                               }
                             },
                             child: Text(
@@ -96,7 +102,7 @@ class FeedEventCard extends StatelessWidget {
                 ),
                 Spacer(),
                 if (event.eventType == 'shop_add')
-                  NumberRating(rating: payload['rating'].toString())
+                  NumberRating(rating: rating.toString())
               ],
             ),
             const SizedBox(height: 10),
@@ -110,15 +116,19 @@ class FeedEventCard extends StatelessWidget {
                   style: TextStyle(fontSize: 15),
                 ),
               ),
-
-            if ((payload['images'] as List ?)?.isNotEmpty ?? false)
-              HorizontalPhotoPreview(shopMediaList: (payload['images'] as List).map((img) => ShopMedia.galleryViewMedia(imagePath: img['path'] ?? '', comment: img['comment'] ?? '')).toList()),
-            
+            if (images.isNotEmpty)
+              HorizontalPhotoPreview(
+                shopMediaList: images.map((img) {
+                  final path = img['path']?.toString() ?? '';
+                  final comment = img['comment']?.toString() ?? '';
+                  return ShopMedia.galleryViewMedia(imagePath: path, comment: comment);
+                }).toList(),
+              ),
             Row(
               children: [
                 Spacer(),
                 Text(
-                  _formatTimeAgo(event.createdAt!),
+                  _formatTimeAgo(createdAt),
                   style: TextStyle(fontSize: 12, color: Colors.green.shade500),
                 ),
               ],

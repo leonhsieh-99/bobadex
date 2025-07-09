@@ -1,3 +1,4 @@
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
 import 'package:bobadex/widgets/image_widgets/tappable_image.dart';
@@ -74,18 +75,10 @@ class _GalleryGridState extends State<GalleryGrid> {
                         'visibility': visibility,
                       })
                       .eq('id', img.id);
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Updated photo'))
-                        );
-                      }
+                      if (mounted) showAppSnackBar(context, 'Updated photo', type: SnackType.success);
                   } catch (e) {
                     debugPrint('Error updating comment: $e');
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error updating comment: $e'))
-                      );
-                    }
+                    if (mounted) showAppSnackBar(context, 'Error updating comment: $e', type: SnackType.error);
                   }
                 }
               }

@@ -1,5 +1,6 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/helpers/image_uploader_helper.dart';
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
@@ -55,17 +56,9 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
         _selecting = false;
         _selected = [];
       });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: const Text('Photos deleted'))
-        );
-      }
+      if (mounted) showAppSnackBar(context, 'Photos deleted', type: SnackType.success);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: const Text('Failed to delete some photos'))
-        );
-      }
+      if (mounted) showAppSnackBar(context, 'Error deleting photos', type: SnackType.error);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -119,11 +112,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
           shopMediaState.replacePendingMedia(tempId, insertedMedia);
         } catch (e) {
           shopMediaState.removePendingMedia(tempId);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Upload failed')),
-            );
-          }
+          if (mounted) showAppSnackBar(context, 'Upload failed', type: SnackType.error);
         }
       });
     }

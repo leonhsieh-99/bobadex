@@ -25,8 +25,10 @@ class FeedEvent {
       userId: json['user_id'] as String,
       objectId: json['object_id'] as String,
       eventType: json['event_type'] as String,
-      brandSlug: json['brand_slug'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      brandSlug: json['brand_slug'] as String?,
+      createdAt: json['created_at'] != null
+        ? DateTime.tryParse(json['created_at'].toString())
+        : null,
       payload: json['payload'] is Map
           ? Map<String, dynamic>.from(json['payload'])
           : {},

@@ -1,4 +1,5 @@
 import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/brand.dart';
 import 'package:bobadex/models/brand_stats.dart';
 import 'package:bobadex/models/shop_media.dart';
@@ -141,11 +142,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                                   return persistedShop;
                                 }
                               } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Failed to update shop.')),
-                                  );
-                                }
+                                if (context.mounted) { showAppSnackBar(context, 'Failed to update shop.', type: SnackType.error); }
                                 rethrow;
                               }
                             },

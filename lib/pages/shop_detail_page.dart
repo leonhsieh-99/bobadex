@@ -1,3 +1,4 @@
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
@@ -110,7 +111,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
           final bannerHeight = screenHeight * bannerRatio;
           final initialSheetSize = (1.0 - bannerRatio) + 0.03; // slightly overlap image
 
-          void _openGalleryPage(BuildContext context) {
+          void openGalleryPage(BuildContext context) {
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => ShopGalleryPage(
@@ -119,16 +120,10 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                   onSetBanner: (mediaId) async {
                     try {
                       await shopMediaState.setBanner(shopRead.id!, mediaId);
-                      if(context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: const Text('New banner set'))
-                        );
+                      if(context.mounted) { showAppSnackBar(context, 'New banner set', type: SnackType.success);
                       }
                     } catch (e) {
-                      if(context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: const Text('Banner update failed'))
-                        );
+                      if(context.mounted) { showAppSnackBar(context, 'Banner update failed', type: SnackType.error);
                       }
                     }
                     setState(() {}); // refresh
@@ -159,7 +154,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                     height: bannerHeight,
                     width: double.infinity,
                     child: GestureDetector(
-                      onTap: () => _openGalleryPage(context),
+                      onTap: () => openGalleryPage(context),
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
@@ -207,7 +202,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                     bottom: bannerHeight * 0.15,
                     right: 16,
                     child: GestureDetector(
-                      onTap: () => _openGalleryPage(context),
+                      onTap: () => openGalleryPage(context),
                       child: Container(
                         padding: EdgeInsets.all(4),
                         decoration: BoxDecoration(
@@ -280,16 +275,10 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                           await drinkState.add(drink.toDrink(shopId: shopRead.id), shopRead.id!);
                                           await achievementState.checkAndUnlockDrinkAchievement(drinkState);
                                           await achievementState.checkAndUnlockNotesAchievement(drinkState);
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('Drink added.')),
-                                            );
+                                          if (context.mounted) { showAppSnackBar(context, 'Drink added.', type: SnackType.success);
                                           }
                                         } catch (e) {
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('Failed to add drink.')),
-                                            );
+                                          if (context.mounted) { showAppSnackBar(context, 'Error adding drink.', type: SnackType.error);
                                           }
                                         }
                                       },
@@ -386,10 +375,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                           try {
                                                             await drinkState.update(updated);
                                                           } catch (_) {
-                                                            if (context.mounted) {
-                                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                                SnackBar(content: Text('Failed to update favorite status.')),
-                                                              );
+                                                            if (context.mounted) { showAppSnackBar(context, 'Error updating favorite status.', type: SnackType.error);
                                                             }
                                                           }
                                                         }
@@ -417,9 +403,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                                 await shopState.update(shop!.copyWith(pinnedDrinkId: drink.id));
                                                               }
                                                             } catch (_) {
-                                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                                SnackBar(content: const Text('Pin failed'))
-                                                              );
+                                                              if (context.mounted) { showAppSnackBar(context, 'Error pinning drink', type: SnackType.error); }
                                                             }
                                                             break;
                                                           case 'edit':
@@ -438,9 +422,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                                     await achievementState.checkAndUnlockDrinkAchievement(drinkState);
                                                                     await achievementState.checkAndUnlockNotesAchievement(drinkState);
                                                                   } catch (_) {
-                                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                                      SnackBar(content: Text('Failed to update drink.')),
-                                                                    );
+                                                                    if (context.mounted) showAppSnackBar(context, 'Error updating drink.', type: SnackType.error);
                                                                   }
                                                                 },
                                                               ),
@@ -462,9 +444,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                               try {
                                                                 await drinkState.remove(drink.id!);
                                                               } catch (_) {
-                                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                                  SnackBar(content: const Text('Remove failed'))
-                                                                );
+                                                                if (context.mounted) showAppSnackBar(context, 'Error removing drink', type: SnackType.error);
                                                               }
                                                             }
                                                             break;
@@ -576,10 +556,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                           try {
                             await shopState.update(updated);
                           } catch (_) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Failed to update favorite status.')),
-                              );
+                            if (context.mounted) { showAppSnackBar(context, 'Error updating favorite status.', type: SnackType.error);
                             }
                           }
                         },
@@ -633,10 +610,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                       final persistedShop = await shopState.update(submittedShop);
                                       return persistedShop;
                                     } catch (e) {
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Failed to update shop.')),
-                                        );
+                                      if (context.mounted) { showAppSnackBar(context, 'Error updating shop.', type: SnackType.error);
                                       }
                                       rethrow;
                                     }
@@ -649,7 +623,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                 context: context,
                                 builder: (context) => AlertDialog(
                                   title: const Text('Delete shop'),
-                                  content: const Text('Are you sure you want to remove this shop ?'),
+                                  content: const Text('Are you sure you want to delete this shop ?'),
                                   actions: [
                                     TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
                                     TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
@@ -661,13 +635,10 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                 try {
                                   Navigator.pop(context);
                                   await shopState.remove(widget.shop.id!);
+                                  if (context.mounted) showAppSnackBar(context, 'Shop deleted', type: SnackType.success);
                                 } catch (e) {
-                                  debugPrint("Failed to remove shop: $e");
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Failed to remove shop'))
-                                    );
-                                  }
+                                  debugPrint("Error deleting shop");
+                                  if (context.mounted) showAppSnackBar(context, 'Error deleting shop', type: SnackType.error);
                                 }
                               }
                               break;

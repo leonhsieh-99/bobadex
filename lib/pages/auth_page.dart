@@ -1,3 +1,4 @@
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/utils/validators.dart';
@@ -30,38 +31,34 @@ class _AuthPageState extends State<AuthPage> {
     final brandState = context.read<BrandState>();
 
     try {
-      print('📦 Starting auth process...');
+      debugPrint('📦 Starting auth process...');
       
       if (_isSigningUp) {
-        print('📦 Signing up...');
+        debugPrint('📦 Signing up...');
         if (username.isEmpty || displayName.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Username and name are required')),
-          );
+        showAppSnackBar(context, 'Username and name are required', type: SnackType.error);
           return;
         }
 
         final usernameExists = await supabase.rpc('username_exists', params: {'input_username': username});
         if (usernameExists) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Username already taken'))
-          );
+        showAppSnackBar(context, 'Username already taken', type: SnackType.error);
           return;
         }
 
         final response = await supabase.auth.signUp(email: email, password: password);
-        print('📦 Sign up response: ${response.session}');
+        debugPrint('📦 Sign up response: ${response.session}');
       } else {
-        print('📦 Signing in...');
+        debugPrint('📦 Signing in...');
         final response = await supabase.auth.signInWithPassword(email: email, password: password);
-        print('📦 Sign in response: ${response.session}');
+        debugPrint('📦 Sign in response: ${response.session}');
       }
 
       // Wait a bit for the session to be properly set
       await Future.delayed(const Duration(milliseconds: 500));
       
       final session = supabase.auth.currentSession;
-      print('📦 Current session after auth: $session');
+      debugPrint('📦 Current session after auth: $session');
       
       if (session == null) {
         throw Exception('No session available after authentication');
@@ -70,7 +67,7 @@ class _AuthPageState extends State<AuthPage> {
       final user = supabase.auth.currentUser;
       if (user == null) throw Exception('No user found after auth');
       final userId = user.id;
-      print('📦 User ID: $userId');
+      debugPrint('📦 User ID: $userId');
 
       if (_isSigningUp && username.isNotEmpty) {
         final existing = await supabase
@@ -99,21 +96,15 @@ class _AuthPageState extends State<AuthPage> {
       if (!mounted) return; // back to app initializer
     } on AuthException catch(e) {
       if (e.message.contains('User already registered')) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email already taken'))
-        );
+        showAppSnackBar(context, 'Email already taken', type: SnackType.error);
       } else {
-        print('📦 Auth error: ${e.message}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message))
-        );
+        debugPrint('📦 Auth error: ${e.message}');
+        showAppSnackBar(context, 'Error ${e.message}', type: SnackType.error);
       }
     } catch (e) {
-      print('email: $email');
-      print('📦 Unexpected error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('An unexpected error occurred'))
-      );
+      debugPrint('email: $email');
+      debugPrint('📦 Unexpected error: $e');
+        showAppSnackBar(context, 'An unexpected error occurred', type: SnackType.error);
     }
   }
 

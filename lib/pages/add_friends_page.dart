@@ -1,4 +1,5 @@
 import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/user_state.dart';
@@ -99,11 +100,7 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
                       try {
                         friendState.addUser(addressee);
                       } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: const Text('Error adding friend'))
-                          );
-                        }
+                        if (mounted) { showAppSnackBar(context, 'Error adding friend', type: SnackType.error); }
                       }
                     },
                     style: ElevatedButton.styleFrom(

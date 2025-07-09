@@ -1,4 +1,5 @@
 import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/friends_shop.dart';
 import 'package:bobadex/pages/friends_shop_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
@@ -34,11 +35,7 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
       shopsData = data.map((json) => FriendsShop.fromJson(json)).toList();
     } catch (e) {
       debugPrint('Error loading shops $e');
-      if(mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading shops'))
-        );
-      }
+      if(mounted) showAppSnackBar(context, 'Error loading shops', type: SnackType.error);
     }
     shopsData ??= [];
     if (mounted) setState(() => _loading = false);

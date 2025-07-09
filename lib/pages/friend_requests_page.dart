@@ -1,4 +1,5 @@
 import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/friend_state.dart';
@@ -67,13 +68,9 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> {
                               try {
                                 friendState.acceptUser(requester.id);
                                 achievementState.checkAndUnlockFriendAchievement(friendState);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Friend added'))
-                                );
+                                showAppSnackBar(context, 'Friend added', type: SnackType.info);
                               } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Error adding friend'))
-                                );
+                                showAppSnackBar(context, 'Error adding friend', type: SnackType.error);
                               }
                             },
                             icon: Icon(
@@ -95,13 +92,8 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> {
                             onPressed: () {
                               try {
                                 friendState.rejectUser(requester.id);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('User rejected'))
-                                );
                               } catch (e) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Error rejecting user'))
-                                );
+                                showAppSnackBar(context, 'Error rejecting user', type: SnackType.error);
                               }
                             },
                             icon: Icon(

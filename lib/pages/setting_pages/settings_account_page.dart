@@ -1,4 +1,5 @@
 import 'package:bobadex/helpers/image_uploader_helper.dart';
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/utils/validators.dart';
 import 'package:bobadex/widgets/change_password_dialong.dart';
 import 'package:flutter/material.dart';
@@ -68,14 +69,12 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
             generateThumbnail: true,
           );
         } catch (e) {
-          print('Image upload failed: $e');
+          debugPrint('Image upload failed: $e');
         }
 
         userState.setProfileImagePath(path);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: const Text('Image uploaded')),
-        );
+        if (mounted) showAppSnackBar(context, 'Image uploaded', type: SnackType.success);
       }
       if (_removeExistingImage && oldImagePath != null && oldImagePath.isNotEmpty) {
         try {
@@ -84,7 +83,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
           );
         }
         catch (e) {
-          print('Error deleting image: $e');
+          debugPrint('Error deleting image: $e');
         }
       }
       await Supabase.instance.client
@@ -92,9 +91,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
         .update({'profile_image_path': path})
         .eq('id', userState.user.id);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: const Text('Failed to update profile picture')),
-      );
+      if (mounted) showAppSnackBar(context, 'Error updating profile picture', type: SnackType.error);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -155,9 +152,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                         try { 
                           await userState.setDisplayName(newName);
                         } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to update name.'))
-                          );
+                          if (context.mounted) showAppSnackBar(context, 'Error updating name.', type: SnackType.error);
                         }
                       },
                       validator: Validators.validateDisplayName,
@@ -185,9 +180,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                         try { 
                           await userState.setUsername(newUsername);
                         } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to update username.'))
-                          );
+                          if (context.mounted) showAppSnackBar(context, 'Erro updating username.', type: SnackType.error);
                         }
                       },
                       validator: Validators.validateUsername,
@@ -222,9 +215,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                         try { 
                           await userState.setBio(newBio);
                         } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to update username.'))
-                          );
+                          if (context.mounted) showAppSnackBar(context, 'Error updating username.', type: SnackType.error);
                         }
                       },
                     ),

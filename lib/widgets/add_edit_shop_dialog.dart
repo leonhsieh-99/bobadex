@@ -1,3 +1,4 @@
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/feed_event.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/state/achievements_state.dart';
@@ -135,9 +136,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
           shopMediaState.replacePendingMedia(tempId, insertedMedia);
         } catch (e) {
           shopMediaState.removePendingMedia(tempId);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: const Text('Error uploading images'))
-          );
+          if (mounted) { showAppSnackBar(context, 'Error uploading images', type: SnackType.error); }
         }
       }));
 
@@ -164,11 +163,8 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
         debugPrint('Error adding feed event: $e');
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(widget.shop == null ? 'Shop added successfully' : 'Shop saved successfully')),
-      );
-
-      if (context.mounted) {
+      if (mounted) {
+        showAppSnackBar(context, widget.shop == null ? 'Shop added successfully' : 'Shop saved successfully', type: SnackType.success);
         Navigator.of(context).popUntil((route) => route.isFirst);
         if (!isNewShop) {
           Navigator.of(context).push(
@@ -179,10 +175,11 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to submit: ${e.toString()}')),
-      );
-      if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
+      if (mounted) {
+        showAppSnackBar(context, 'Failed to submit', type: SnackType.error);
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
