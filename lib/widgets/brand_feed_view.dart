@@ -38,24 +38,18 @@ class _BrandFeedViewState extends State<BrandFeedView> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return ListView.builder(
-        shrinkWrap: true,
-        physics: NeverScrollableScrollPhysics(),
-        itemCount: 3,
-        itemBuilder: (context, i) => FeedEventCardSkeleton(),
+      return Column(
+        children: List.generate(3, (_) => FeedEventCardSkeleton()),
       );
     }
     if (feed.isEmpty) {
       return Center(child: Text("No activity yet!", style: Constants.emptyListTextStyle));
     }
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: feed.length,
-      itemBuilder: (context, index) {
+    return Column(
+      children: List.generate(feed.length, (index) {
         final event = feed[index];
         return FeedEventCard(event: event);
-      },
+      }),
     );
   }
 }

@@ -11,8 +11,11 @@ class ShopMedia {
   bool isBanner;
   final String? visibility;
   final String? comment;
-    final File? localFile;
+  final File? localFile;
   final bool isPending;
+  // for feeds
+  final String? userDisplayName;
+  final String? profileImagePath;
 
   ShopMedia({
     required this.id,
@@ -25,6 +28,8 @@ class ShopMedia {
     this.comment,
     this.localFile,
     this.isPending = false,
+    this.userDisplayName,
+    this.profileImagePath,
   });
 
   String get imageUrl => imagePath.isNotEmpty
@@ -34,6 +39,11 @@ class ShopMedia {
   String get thumbUrl => imagePath.isNotEmpty
     ? Supabase.instance.client.storage.from('media-uploads').getPublicUrl('thumbs/${imagePath.trim()}')
     : '';
+
+  String get userThumbUrl => (profileImagePath != null && profileImagePath!.isNotEmpty)
+    ? Supabase.instance.client.storage.from('media-uploads').getPublicUrl('thumbs/${profileImagePath!.trim()}')
+    : '';
+
 
   factory ShopMedia.fromJson(Map<String, dynamic> json) {
     return ShopMedia(
@@ -45,7 +55,9 @@ class ShopMedia {
       isBanner: json['is_banner'] ?? false,
       visibility: json['visibility'] ?? 'public', // change to private after testing
       comment: json['comment'] ?? '',
-      isPending: json['isPending'] ?? false,
+      isPending: json['is_pending'] ?? false,
+      userDisplayName: json['user_display_name'],
+      profileImagePath: json['profile_image_path']
     );
   }
 

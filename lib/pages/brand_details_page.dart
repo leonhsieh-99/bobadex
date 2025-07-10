@@ -78,112 +78,78 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
     final userShop = shopState.getShopByBrand(widget.brand.slug);
     final themeColor = Constants.getThemeColor(userState.user.themeSlug);
     return Scaffold(
-      appBar: AppBar(),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: Column(
         children: [
-          Center(
-            child: SizedBox(
-              width: 120,
-              height: 120,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // Brand avatar
-                  Center(
-                    child: ClipOval(
-                      child: widget.brand.iconPath != null && widget.brand.iconPath!.isNotEmpty
-                        ? CachedNetworkImage(
-                          imageUrl: widget.brand.thumbUrl,
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                        )
-                        : Image.asset(
-                          'lib/assets/default_icon.png',
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                        ),
-                    ),
-                  ),
-                  // Add button
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: TextButton(
-                      style: TextButton.styleFrom(
-                        backgroundColor: themeColor.shade200,
-                        shape: const StadiumBorder(),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        elevation: 3,
-                        minimumSize: Size(0,0)
-                      ),
-                      child: Text(
-                        hasVisit ? "Edit Visit" : "Add Visit",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                        ),
-                      ),
-                      onPressed: () async {
-                        await showDialog(
-                          context: context,
-                          builder: (context) => AddOrEditShopDialog(
-                            shop: hasVisit ? userShop : null,
-                            onSubmit: (submittedShop) async {
-                              try {
-                                if (hasVisit) {
-                                  final persistedShop = await shopState.update(submittedShop);
-                                  return persistedShop;
-                                } else {
-                                  final persistedShop = await shopState.add(submittedShop);
-                                  await achievementState.checkAndUnlockShopAchievement(shopState);
-                                  await achievementState.checkAndUnlockBrandAchievement(shopState);
-                                  return persistedShop;
-                                }
-                              } catch (e) {
-                                if (context.mounted) { showAppSnackBar(context, 'Failed to update shop.', type: SnackType.error); }
-                                rethrow;
-                              }
-                            },
-                            brand: widget.brand,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          Stack(
             children: [
-              Expanded(
-                child: Text(
-                  widget.brand.display,
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              _buildBrandBanner(
+                context,
+                widget.brand,
+                _globalGalleryFuture,
+                buildBannerContent(context, widget.brand, _statsFuture),
+              ),
+              Positioned(
+                bottom: 20,
+                right: 20,
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: themeColor == Colors.grey ? themeColor.shade500 : themeColor.shade200,
+                    shape: const StadiumBorder(),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    elevation: 3,
+                    minimumSize: Size(0,0)
+                  ),
+                  child: Text(
+                    hasVisit ? "Edit Visit" : "Add Visit",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ),
+                  onPressed: () async {
+                    await showDialog(
+                      context: context,
+                      builder: (context) => AddOrEditShopDialog(
+                        shop: hasVisit ? userShop : null,
+                        onSubmit: (submittedShop) async {
+                          try {
+                            if (hasVisit) {
+                              final persistedShop = await shopState.update(submittedShop);
+                              return persistedShop;
+                            } else {
+                              final persistedShop = await shopState.add(submittedShop);
+                              await achievementState.checkAndUnlockShopAchievement(shopState);
+                              await achievementState.checkAndUnlockBrandAchievement(shopState);
+                              return persistedShop;
+                            }
+                          } catch (e) {
+                            debugPrint('error: $e');
+                            if (context.mounted) { showAppSnackBar(context, 'Failed to update shop.', type: SnackType.error); }
+                            rethrow;
+                          }
+                        },
+                        brand: widget.brand,
+                      ),
+                    );
+                  },
                 ),
               ),
-              const SizedBox(width: 12),
-              _buildGlobalRatings(widget.brand, _statsFuture),
-            ],
+            ]
           ),
-          const SizedBox(height: 8),
-          const Divider(),
-          const SizedBox(height: 8),
-          _buildGlobalGallery(widget.brand, _globalGalleryFuture),
-          const SizedBox(height: 24),
-          Text("Recent Activity", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          const SizedBox(height: 8),
-          BrandFeedView(brandSlug: widget.brand.slug),
-
-        ],
-      ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              children: [
+                _buildGlobalGallery(widget.brand, _globalGalleryFuture),
+                const SizedBox(height: 24),
+                Text("Recent Activity", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                const SizedBox(height: 8),
+                BrandFeedView(brandSlug: widget.brand.slug),
+              ],
+            ),
+          )
+        ]
+      )
     );
   }
 }
@@ -210,8 +176,13 @@ Widget _buildGlobalRatings(Brand brand, Future<BrandStats> statsFuture) {
         children: [
           const Icon(Icons.star, color: Colors.orangeAccent),
           const SizedBox(width: 2),
-          Text('${stats.avgRating.toStringAsFixed(1)} (${stats.shopCount} ratings)',
-              style: const TextStyle(fontSize: 16)),
+          Text(
+            '${stats.avgRating.toStringAsFixed(1)} (${stats.shopCount} ratings)',
+            style: const TextStyle(
+              fontSize: 16,
+              color: Colors.white,
+            )
+          ),
         ],
       );
     }
@@ -258,5 +229,119 @@ Widget _buildGlobalGallery(Brand brand, Future<List<ShopMedia>> galleryFuture) {
         ],
       );
     },
+  );
+}
+
+Widget _buildBrandBanner(
+  BuildContext context,
+  Brand brand,
+  Future<List<ShopMedia>> galleryFuture,
+  Widget childContent,
+) {
+  return FutureBuilder(
+    future: galleryFuture,
+    builder: (context, snapshot) {
+      String? bgUrl;
+      if (snapshot.hasData && (snapshot.data?.isNotEmpty ?? false)) {
+        final images = snapshot.data!;
+        bgUrl = (images..shuffle()).first.imageUrl;
+      }
+
+      return Container(
+        height: 250,
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.grey,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // banner
+            if (bgUrl != null)
+              CachedNetworkImage(
+                imageUrl: bgUrl,
+                fit: BoxFit.cover,
+                color: Colors.black.withOpacity(0.35),
+                colorBlendMode: BlendMode.darken,
+              ),
+            // gradient
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                height: 100,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black54,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(16),
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: childContent,
+              ),
+            )
+          ],
+        ),
+      );
+    }
+  );
+}
+
+Widget buildBannerContent(BuildContext context, Brand brand, Future<BrandStats> statsFuture) {
+  return IntrinsicHeight(
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.end, // bottom align children
+      children: [
+        ClipOval(
+          child: brand.iconPath != null && brand.iconPath!.isNotEmpty
+            ? CachedNetworkImage(
+              imageUrl: brand.thumbUrl,
+              width: 70,
+              height: 70,
+              fit: BoxFit.cover,
+            )
+            : Image.asset(
+              'lib/assets/default_icon.png',
+              width: 70,
+              height: 70,
+              fit: BoxFit.cover,
+            ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                brand.display,
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(blurRadius: 10, color: Colors.black54, offset: Offset(0, 2)),
+                  ],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 0),
+              _buildGlobalRatings(brand, statsFuture),
+            ],
+          ),
+        ),
+      ],
+    ),
   );
 }

@@ -633,9 +633,11 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                               
                               if (confirm == true && context.mounted) {
                                 try {
-                                  Navigator.pop(context);
                                   await shopState.remove(widget.shop.id!);
-                                  if (context.mounted) showAppSnackBar(context, 'Shop deleted', type: SnackType.success);
+                                  if (context.mounted) {
+                                    showAppSnackBar(context, 'Shop deleted', type: SnackType.success);
+                                    Navigator.pop(context);
+                                  }
                                 } catch (e) {
                                   debugPrint("Error deleting shop");
                                   if (context.mounted) showAppSnackBar(context, 'Error deleting shop', type: SnackType.error);

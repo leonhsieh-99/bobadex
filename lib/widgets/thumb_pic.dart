@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class ThumbPic extends StatelessWidget {
-  final String url;
+  final String? url;
   final double size;
   final VoidCallback? onTap;
 
@@ -17,18 +17,9 @@ class ThumbPic extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: (url.isEmpty)
-        ? Container(
-          width: size,
-          height: size,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.grey,
-          ),
-          child: Icon(Icons.person, size: size * 0.5, color: Colors.white),
-        )
-        : CachedNetworkImage(
-          imageUrl: url,
+      child: (url != null && url!.isNotEmpty)
+        ? CachedNetworkImage(
+          imageUrl: url!,
           imageBuilder: (context, imageProvider) => Container(
             width: size,
             height: size,
@@ -58,6 +49,15 @@ class ThumbPic extends StatelessWidget {
             ),
             child: Icon(Icons.person, size: size * 0.5, color: Colors.white),
           ),
+        )
+      : Container(
+          width: size,
+          height: size,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.grey,
+          ),
+          child: Icon(Icons.person, size: size * 0.5, color: Colors.white),
         )
     );
   }

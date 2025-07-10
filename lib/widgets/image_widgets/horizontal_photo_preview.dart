@@ -25,8 +25,8 @@ class HorizontalPhotoPreview extends StatelessWidget {
         builder: (_) => FullscreenImageViewer(
           images: shopMediaList.map((m) =>
             m.localFile != null
-              ? GalleryImage.file(m.localFile, comment: m.comment ?? '')
-              : GalleryImage.network(m.imageUrl, comment: m.comment ?? '')
+              ? GalleryImage.file(m.localFile, comment: m.comment ?? '', userThumbUrl: m.userThumbUrl, userName: m.userDisplayName)
+              : GalleryImage.network(m.imageUrl, comment: m.comment ?? '', userThumbUrl: m.userThumbUrl, userName: m.userDisplayName)
           ).toList(),
           initialIndex: idx,
           isCurrentUser: false,

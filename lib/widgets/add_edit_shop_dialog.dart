@@ -63,10 +63,12 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
   }
 
   Future<void> _pickImages() async {
+    FocusScope.of(context).unfocus();
     final pickedImages = await showDialog<List<GalleryImage>>(
       context: context,
       builder: (context) => MultiselectImagePickerDialog(),
     );
+    if (mounted) FocusScope.of(context).unfocus();
     if (pickedImages != null && pickedImages.isNotEmpty) {
       setState(() {
         _selectedImages.clear();
@@ -147,7 +149,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
             userId: user.id,
             objectId: submittedShop.id ?? '',
             eventType: 'shop_add',
-            brandSlug: submittedShop.brandSlug == null && submittedShop.brandSlug!.isEmpty ? submittedShop.brandSlug : null,
+            brandSlug: widget.brand?.slug != null && widget.brand!.slug.isNotEmpty ? widget.brand!.slug : null,
             payload: {
               "user_avatar": user.thumbUrl,
               "user_name": user.displayName,

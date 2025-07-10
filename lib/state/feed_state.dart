@@ -37,6 +37,7 @@ class FeedState extends ChangeNotifier {
           'object_id': event.objectId,
           'event_type': event.eventType,
           'payload': event.payload,
+          'brand_slug': event.brandSlug,
           'is_backfill': event.isBackfill,
         })
         .select()
