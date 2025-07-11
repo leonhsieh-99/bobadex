@@ -4,7 +4,7 @@ class Achievement {
   final int id;
   final String name;
   final String description;
-  final String iconPath;
+  final String? iconPath;
   final int displayOrder;
   final bool isHidden;
   final Map<String, dynamic> dependsOn;
@@ -36,7 +36,7 @@ class Achievement {
       id: json['id'],
       name: json['name'],
       description: json['description'] ?? '',
-      iconPath: json['icon_path'] ?? '',
+      iconPath: json['icon_path'],
       displayOrder: json['display_order'] ?? 0,
       isHidden: json['is_hidden'] ?? false,
       dependsOn: dependsOn,

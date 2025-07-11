@@ -83,7 +83,7 @@ flutter:
     - lib/assets/icons/tapioca_pearls/pearl_half.svg
     - lib/assets/icons/tapioca_pearls/pearl_full.svg
     - lib/assets/default_icon.png
-    - lib/assets/default_badge.png
+    - lib/assets/badges/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

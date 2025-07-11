@@ -33,7 +33,7 @@ class FeedState extends ChangeNotifier {
       final response = await Supabase.instance.client
         .from('feed_events')
         .insert({
-          'user_id': event.userId,
+          'user_id': event.feedUser.id,
           'object_id': event.objectId,
           'event_type': event.eventType,
           'payload': event.payload,

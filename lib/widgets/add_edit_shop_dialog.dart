@@ -145,14 +145,12 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
       try {
         await feedState.addFeedEvent(
           FeedEvent(
+            feedUser: user,
             id: '',
-            userId: user.id,
             objectId: submittedShop.id ?? '',
             eventType: 'shop_add',
             brandSlug: widget.brand?.slug != null && widget.brand!.slug.isNotEmpty ? widget.brand!.slug : null,
             payload: {
-              "user_avatar": user.thumbUrl,
-              "user_name": user.displayName,
               "shop_name": submittedShop.name,
               "notes": submittedShop.notes,
               "images": uploadedImages,

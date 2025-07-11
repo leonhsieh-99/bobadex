@@ -1,4 +1,5 @@
 import 'package:bobadex/helpers/show_snackbar.dart';
+import 'package:bobadex/models/feed_event.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/feed_state.dart';
 import 'package:bobadex/state/friend_state.dart';
@@ -32,11 +33,32 @@ class _AppInitializerState extends State<AppInitializer> {
   void initState() {
     super.initState();
     _initializeSession();
-    final achievementState = p.Provider.of<AchievementsState>(context, listen: false);
+    final achievementState = context.read<AchievementsState>();
+    final feedState = context.read<FeedState>();
     achievementState.unlockedAchievementsStream.listen((achievement) {
       // Use the mounted context in a post frame callback
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (mounted) { showAppSnackBar(context, 'Achievement unlocked ${achievement.name}', type: SnackType.achievement); }
+
+        try {
+          await feedState.addFeedEvent(
+            FeedEvent(
+              feedUser: user,
+              id: '',
+              objectId: achievement.id.toString(),
+              eventType: 'achievement',
+              payload: {
+                'achievement_name': achievement.name,
+                'achievement_desc': achievement.description,
+                'achievement_badge_path': achievement.iconPath,
+                'is_hidden': achievement.isHidden,
+              },
+              isBackfill: false
+            )
+          );
+        } catch (e) {
+          debugPrint('Error adding achievement feed event: $e');
+        }
       });
     });
   }
@@ -45,15 +67,15 @@ class _AppInitializerState extends State<AppInitializer> {
     if (!mounted) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      p.Provider.of<UserState>(context, listen: false).reset();
-      p.Provider.of<DrinkState>(context, listen: false).reset();
-      p.Provider.of<ShopState>(context, listen: false).reset();
-      p.Provider.of<BrandState>(context, listen: false).reset();
-      p.Provider.of<FriendState>(context, listen: false).reset();
-      p.Provider.of<UserStatsCache>(context, listen: false).clearCache();
-      p.Provider.of<ShopMediaState>(context, listen: false).reset();
-      p.Provider.of<AchievementsState>(context, listen: false).reset();
-      p.Provider.of<FeedState>(context, listen: false).reset();
+      context.read<UserState>().reset();
+      context.read<DrinkState>().reset();
+      context.read<ShopState>().reset();
+      context.read<BrandState>().reset();
+      context.read<FriendState>().reset();
+      context.read<UserStatsCache>().clearCache();
+      context.read<ShopMediaState>().reset();
+      context.read<AchievementsState>().reset();
+      context.read<FeedState>().reset();
     });
   }
 

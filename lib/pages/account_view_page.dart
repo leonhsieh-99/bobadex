@@ -189,8 +189,9 @@ class _AccountViewPageState extends State<AccountViewPage> {
                               children: [
                                 CircleAvatar(
                                   backgroundImage: AssetImage(
-                                    // achievementState.getBadgeAssetPath(a.iconPath),
-                                    'lib/assets/default_badge.png'
+                                    (a.iconPath != null && a.iconPath!.isNotEmpty)
+                                      ? a.iconPath!
+                                      : 'lib/assets/badges/default_badge.png'
                                   ),
                                   radius: 22,
                                 ),

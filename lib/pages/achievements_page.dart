@@ -92,7 +92,9 @@ class AchievementsPage extends StatelessWidget {
 
           return ListTile(
             leading: CircleAvatar(
-              backgroundImage: AssetImage('lib/assets/default_badge.png'),
+              backgroundImage: (a.iconPath != null && a.iconPath!.isNotEmpty)
+                ? AssetImage(a.iconPath!)
+                : AssetImage('lib/assets/badges/default_badge.png'),
               backgroundColor: count == min ? Colors.amber : Colors.grey[300],
             ),
             title: Text(a.isHidden && (count != min) ? 'Hidden' : a.name),

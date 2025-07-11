@@ -1,5 +1,6 @@
 import 'package:bobadex/models/feed_event.dart';
 import 'package:bobadex/models/shop_media.dart';
+import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/widgets/image_widgets/horizontal_photo_preview.dart';
@@ -13,11 +14,15 @@ class FeedEventCard extends StatelessWidget {
 
   const FeedEventCard({super.key, required this.event});
 
-  String _eventTypeToText(String eventType) {
+  String _eventTypeToText(String eventType, bool? isHidden) {
     switch (eventType) {
       case 'shop_add': return 'added a shop ';
       case 'drink_add': return 'added a drink ';
-      case 'achievement': return 'earned a badge ';
+      case 'achievement':
+        if (isHidden != null && isHidden == true) {
+          return 'unlocked a hidden achievement ';
+        }
+        return 'unlocked an achievement ';
       default: return eventType;
     }
   }
@@ -35,13 +40,12 @@ class FeedEventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final brandState = context.read<BrandState>();
     final payload = event.payload;
-    final avatarUrl = (payload['user_avatar'] ?? '') as String;
-    final userName = (payload['user_name'] ?? 'Unknown user').toString();
+    final user = event.feedUser;
     final name = event.eventType == 'shop_add'
       ? payload['shop_name']
       : event.eventType == 'achievement'
         ? payload['achievement_name']
-        : 'Uknown';
+        : 'Unknown';
     final images = (payload['images'] as List?) ?? [];
     final rating = double.tryParse('${payload['rating'] ?? ''}') ?? 0.0;
     final createdAt = event.createdAt ?? DateTime.now();
@@ -56,17 +60,24 @@ class FeedEventCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                ThumbPic(url: avatarUrl),
+                ThumbPic(
+                  url: user.thumbUrl,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => AccountViewPage(user: event.feedUser))
+                    );
+                  },
+                ),
                 const SizedBox(width: 10),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(userName, style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(user.username, style: TextStyle(fontWeight: FontWeight.bold)),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         Text(
-                          _eventTypeToText(event.eventType),
+                          _eventTypeToText(event.eventType, payload['is_hidden']),
                           style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                         ),
                         (event.eventType != 'shop_add')
@@ -108,21 +119,44 @@ class FeedEventCard extends StatelessWidget {
             const SizedBox(height: 10),
 
             // Main content
-            if (payload['shop_name'] != null && payload['notes'].toString().isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text(
-                  payload['notes'] ?? '',
-                  style: TextStyle(fontSize: 15),
+            if (event.eventType == 'shop_add')
+              if (payload['shop_name'] != null && payload['notes'].toString().isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Text(
+                    payload['notes'] ?? '',
+                    style: TextStyle(fontSize: 15),
+                  ),
                 ),
-              ),
-            if (images.isNotEmpty)
-              HorizontalPhotoPreview(
-                shopMediaList: images.map((img) {
-                  final path = img['path']?.toString() ?? '';
-                  final comment = img['comment']?.toString() ?? '';
-                  return ShopMedia.galleryViewMedia(imagePath: path, comment: comment);
-                }).toList(),
+            if (event.eventType == 'shop_add')
+              if (images.isNotEmpty)
+                HorizontalPhotoPreview(
+                  shopMediaList: images.map((img) {
+                    final path = img['path']?.toString() ?? '';
+                    final comment = img['comment']?.toString() ?? '';
+                    return ShopMedia.galleryViewMedia(imagePath: path, comment: comment);
+                  }).toList(),
+                ),
+            if (event.eventType == 'achievement')
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    backgroundImage: (payload['achievement_badge_path'] != null && payload['achievement_badge_path'].isNotEmpty)
+                      ? AssetImage(payload['achievement_badge_path'])
+                      : AssetImage('lib/assets/badges/default_badge.png'),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    (payload['is_hidden'] != null && payload['is_hidden'] == true)
+                      ? '? ? ?'
+                      : payload['achievement_desc'] ?? '',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w400,
+                      fontSize: 16,
+                    ),
+                  )
+                ],
               ),
             Row(
               children: [
