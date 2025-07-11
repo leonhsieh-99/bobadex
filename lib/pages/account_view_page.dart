@@ -1,6 +1,7 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/account_stats.dart';
 import 'package:bobadex/models/achievement.dart';
+import 'package:bobadex/models/friendship.dart';
 import 'package:bobadex/models/user.dart' as u;
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/pages/home_page.dart';
@@ -8,6 +9,7 @@ import 'package:bobadex/pages/setting_pages/settings_account_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/drink_state.dart';
+import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/user_stats_cache.dart';
@@ -15,6 +17,7 @@ import 'package:bobadex/widgets/badge_picker_dialog.dart';
 import 'package:bobadex/widgets/stat_box.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -81,11 +84,13 @@ class _AccountViewPageState extends State<AccountViewPage> {
     final shop = shopState.getShop(stats.topShopId);
     final drinkState = context.watch<DrinkState>();
     final brandState = context.read<BrandState>();
+    final friendState = context.watch<FriendState>();
     final brand = brandState.getBrand(stats.topShopSlug);
     final drink = drinkState.getDrink(stats.topDrinkId);
     final currentUser = userState.user;
     final isCurrentUser = currentUser.id == widget.user.id;
     final user = isCurrentUser ? currentUser : widget.user;
+    final friendStatus = friendState.allFriendships.firstWhereOrNull((f) => f.requester.id == user.id || f.addressee.id == user.id);
     final achievementState = context.watch<AchievementsState>();
     final unlockedBadges = achievementState.achievements
         .where((a) => achievementState.progressMap[a.id]?.unlocked == true)
@@ -93,6 +98,36 @@ class _AccountViewPageState extends State<AccountViewPage> {
     final pinnedBadges = isCurrentUser 
       ? unlockedBadges.where((a) => achievementState.progressMap[a.id]?.pinned == true).toList()
       : readOnlyBadges;
+
+    String getFriendButtonText(Friendship? friendStatus, String currentUserId, String targetUserId) {
+      if (friendStatus == null) {
+        return 'Add friend';
+      }
+      if (friendStatus.status == 'pending') {
+        if (friendStatus.requester.id == targetUserId) {
+          return 'Accept friend';
+        }
+        if (friendStatus.addressee.id == targetUserId) {
+          return 'Pending';
+        }
+      }
+      if (friendStatus.status == 'accepted') {
+        return 'Friend';
+      }
+      return '';
+    }
+
+    bool isFriendButtonEnabled(Friendship? friendStatus, String currentUserId, String targetUserId) {
+      if (friendStatus == null) {
+        return true;
+      }
+      // Only enable accept if current user is the addressee
+      if (friendStatus.status == 'pending' && friendStatus.requester.id == targetUserId) {
+        return true;
+      }
+      // Otherwise, button should be disabled
+      return false;
+    }
 
     return Scaffold(
       appBar: AppBar(),
@@ -111,6 +146,57 @@ class _AccountViewPageState extends State<AccountViewPage> {
             SizedBox(height: 12),
             Text(user.displayName, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             Text('@${user.username}', style: TextStyle(color: Colors.grey[700])),
+            SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (user.id != currentUser.id)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: ElevatedButton(
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStatePropertyAll(
+                          !isFriendButtonEnabled(friendStatus, currentUser.id, user.id)
+                            ? Colors.grey
+                            : Constants.getThemeColor(userState.user.themeSlug).shade300
+                        ),
+                        foregroundColor: WidgetStatePropertyAll(Colors.white)
+                      ),
+                      onPressed: isFriendButtonEnabled(friendStatus, currentUser.id, user.id)
+                        ? () async {
+                          if (friendStatus == null) {
+                            await friendState.addUser(widget.user);
+                          } else if (friendStatus.status == 'pending' && friendStatus.requester.id == user.id) {
+                            await friendState.acceptUser(widget.user.id);
+                          }
+                        }
+                        : null,
+                      child: Text(getFriendButtonText(friendStatus, currentUser.id, user.id)),
+                    ),
+                  ),
+                if (user.id == currentUser.id)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => SettingsAccountPage())
+                      ),
+                      child: Text('Edit Profile')
+                    ),
+                  ),
+                if (user.id != currentUser.id)
+                ElevatedButton(
+                  onPressed: () {
+                    isCurrentUser
+                      ? Navigator.of(context).pop()
+                      : Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => HomePage(user: user))
+                      );
+                  },
+                  child: const Text('View Bobadex')
+                ),
+              ],
+            ),
             SizedBox(height: 16),
             Text(user.bio ?? 'No bio set', textAlign: TextAlign.center),
             Row(
@@ -215,33 +301,6 @@ class _AccountViewPageState extends State<AccountViewPage> {
                 ),
               ),
             ),
-            SizedBox(height: 16),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (user.id == currentUser.id)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => SettingsAccountPage())
-                      ),
-                      child: Text('Edit Profile')
-                    ),
-                  ),
-                ElevatedButton(
-                  onPressed: () {
-                    isCurrentUser
-                      ? Navigator.of(context).pop()
-                      : Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => HomePage(user: user))
-                      );
-                  },
-                  child: const Text('View Bobadex')
-                ),
-              ],
-            )
           ],
         ),
       )
