@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/feed_event.dart';
 import 'package:bobadex/state/achievements_state.dart';
@@ -27,40 +29,19 @@ class AppInitializer extends StatefulWidget {
 class _AppInitializerState extends State<AppInitializer> {
   bool _isReady = false;
   Session? _session;
+  StreamSubscription? _achievementListener;
   late u.User user;
 
   @override
   void initState() {
     super.initState();
     _initializeSession();
-    final achievementState = context.read<AchievementsState>();
-    final feedState = context.read<FeedState>();
-    achievementState.unlockedAchievementsStream.listen((achievement) {
-      // Use the mounted context in a post frame callback
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (mounted) { showAppSnackBar(context, 'Achievement unlocked ${achievement.name}', type: SnackType.achievement); }
+  }
 
-        try {
-          await feedState.addFeedEvent(
-            FeedEvent(
-              feedUser: user,
-              id: '',
-              objectId: achievement.id.toString(),
-              eventType: 'achievement',
-              payload: {
-                'achievement_name': achievement.name,
-                'achievement_desc': achievement.description,
-                'achievement_badge_path': achievement.iconPath,
-                'is_hidden': achievement.isHidden,
-              },
-              isBackfill: false
-            )
-          );
-        } catch (e) {
-          debugPrint('Error adding achievement feed event: $e');
-        }
-      });
-    });
+  @override
+  void dispose() {
+    _achievementListener?.cancel();
+    super.dispose();
   }
 
   void _resetAllStates() {
@@ -112,6 +93,7 @@ class _AppInitializerState extends State<AppInitializer> {
             debugPrint('No valid user loaded — skipping rest');
             return;
           }
+          this.user = user;
 
           try {
             await drinkState.loadFromSupabase();
@@ -148,6 +130,36 @@ class _AppInitializerState extends State<AppInitializer> {
             debugPrint('Error loading shop media state: $e');
           }
 
+          if (_achievementListener != null) {
+            await _achievementListener!.cancel();
+            _achievementListener = null;
+          }
+          _achievementListener = achievementsState.unlockedAchievementsStream.listen((achievement) {
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              if (!mounted) return;
+              showAppSnackBar(context, 'Achievement unlocked ${achievement.name}', type: SnackType.achievement);
+              try {
+                await feedState.addFeedEvent(
+                  FeedEvent(
+                    feedUser: this.user, // Use class field
+                    id: '',
+                    objectId: achievement.id,
+                    eventType: 'achievement',
+                    payload: {
+                      'achievement_name': achievement.name,
+                      'achievement_desc': achievement.description,
+                      'achievement_badge_path': achievement.iconPath,
+                      'is_hidden': achievement.isHidden,
+                    },
+                    isBackfill: false
+                  )
+                );
+              } catch (e) {
+                debugPrint('Error adding achievement feed event: $e');
+              }
+            });
+          });
+          
           try {
             await achievementsState.loadFromSupabase();
             debugPrint('Loaded ${achievementsState.achievements.length} achievements');

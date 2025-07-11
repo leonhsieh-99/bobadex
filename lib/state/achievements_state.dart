@@ -11,12 +11,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class AchievementsState extends ChangeNotifier {
   final List<Achievement> _achievements = [];
   final List<UserAchievement> _userAchievements = [];
-  final Map<int, UserAchievement> _progressMap = {};
+  final Map<String, UserAchievement> _progressMap = {};
   final _unlockedAchievementController = StreamController<Achievement>.broadcast();
 
   List<Achievement> get achievements => _achievements;
   List<UserAchievement> get userAchievements => _userAchievements;
-  Map<int, UserAchievement> get progressMap => _progressMap;
+  Map<String, UserAchievement> get progressMap => _progressMap;
   Stream<Achievement> get unlockedAchievementsStream => _unlockedAchievementController.stream;
 
   String normalizer(String name) {
@@ -37,7 +37,7 @@ class AchievementsState extends ChangeNotifier {
     return _achievements.where((a) => a.dependsOn['type'] == type).toList();
   }
 
-  Future<void> setPinned(int achievementId) async {
+  Future<void> setPinned(String achievementId) async {
     final ua = _progressMap[achievementId];
     if (ua?.unlocked == true) {
       final newPin = !ua!.pinned;

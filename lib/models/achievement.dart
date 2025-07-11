@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 class Achievement {
-  final int id;
+  final String id;
   final String name;
   final String description;
   final String? iconPath;
@@ -46,7 +46,7 @@ class Achievement {
 
 
 class UserAchievement {
-  final int achievementId;
+  final String achievementId;
   bool unlocked;
   final int progress;
   bool pinned;

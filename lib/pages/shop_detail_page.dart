@@ -2,6 +2,7 @@ import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
+import 'package:bobadex/state/feed_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
@@ -91,6 +92,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
     final drinkState = context.read<DrinkState>();
     final achievementState = context.read<AchievementsState>();
     final userState = context.watch<UserState>();
+    final feedState = context.watch<FeedState>();
     final shopMediaState = context.watch<ShopMediaState>();
     final user = isCurrentUser ? userState.user : widget.user;
 
@@ -634,6 +636,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                               if (confirm == true && context.mounted) {
                                 try {
                                   await shopState.remove(widget.shop.id!);
+                                  await feedState.removeFeedEvent(widget.shop.id!);
                                   if (context.mounted) {
                                     showAppSnackBar(context, 'Shop deleted', type: SnackType.success);
                                     Navigator.pop(context);

@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 class BadgePickerDialog extends StatefulWidget {
   final List<Achievement> badges;
   final List<Achievement> pinnedBadges;
-  final Function(List<int> selectedIds) onSave;
+  final Function(List<String> selectedIds) onSave;
   final int maxSelect;
 
   const BadgePickerDialog({
@@ -22,7 +22,7 @@ class BadgePickerDialog extends StatefulWidget {
 }
 
 class _BadgePickerDialogState extends State<BadgePickerDialog> {
-  late Set<int> selected;
+  late Set<String> selected;
 
   @override
   void initState() {
@@ -73,8 +73,9 @@ Widget build(BuildContext context) {
                       shape: BoxShape.circle,
                     ),
                     child: CircleAvatar(
-                      backgroundImage: AssetImage(
-                        'lib/assets/default_badge.png'
+                      backgroundImage: AssetImage((a.iconPath != null && a.iconPath!.isNotEmpty)
+                        ? a.iconPath!
+                        : 'lib/assets/badges/default_badge.png'
                       ),
                       radius: 36,
                       child: isSelected

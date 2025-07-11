@@ -68,26 +68,27 @@ CREATE TABLE friendships (
   UNIQUE (requester_id, addressee_id)
 );
 
-create table achievements (
-  id serial primary key,
-  name text not null,
-  description text,
-  icon_path text,        -- Path to the badge icon (local or remote)
-  criteria jsonb,        -- Optional: JSON to describe requirements
-  is_hidden boolean default false,
-  display_order int default 0
+CREATE TABLE achievements (
+    uuid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    description TEXT,
+    icon_path TEXT,
+    depends_on jsonb,
+    is_hidden BOOLEAN DEFAULT FALSE,
+    display_order int default 0
 );
 
-create table user_achievements (
-  id serial primary key,
-  user_id uuid not null references users(id),
-  achievement_id int not null references achievements(id),
-  unlocked boolean default false,
-  progress int default 0,         -- For achievements that require progress
-  unlocked_at timestamptz,          -- When achievement was unlocked
-  pinned boolean default false,   -- For showing on profile
-  unique (user_id, achievement_id)
+-- User Achievements: reference achievements.uuid
+CREATE TABLE user_achievements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    achievement_uuid UUID NOT NULL REFERENCES achievements(uuid),
+    unlocked BOOLEAN DEFAULT FALSE,
+    unlocked_at TIMESTAMPTZ,
+    pinned BOOLEAN DEFAULT FALSE,
+    progress INTEGER DEFAULT 0
 );
+
 
 create table feed_events (
   id uuid primary key default gen_random_uuid(),

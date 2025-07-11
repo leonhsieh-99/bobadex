@@ -59,6 +59,27 @@ class FeedState extends ChangeNotifier {
     }
   }
 
+  Future<void> removeFeedEvent(String objectId) async {
+    final index = _feed.indexWhere((f) => f.objectId == objectId);
+    if (index != -1) {
+      final feedEvenet = _feed[index];
+      _feed.removeAt(index);
+      notifyListeners();
+
+      try {
+        await Supabase.instance.client
+          .from('feed_events')
+          .delete()
+          .eq('object_id', objectId);
+      } catch (e) {
+        debugPrint('Error removing feed event: $e');
+        _feed.insert(index, feedEvenet);
+        notifyListeners();
+        rethrow;
+      }
+    }
+  }
+
   void reset() {
     _feed.clear();
   }
