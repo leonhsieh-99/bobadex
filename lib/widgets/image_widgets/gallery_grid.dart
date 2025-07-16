@@ -12,7 +12,9 @@ class GalleryGrid extends StatefulWidget {
   final bool isCurrentUser;
   final List<ShopMedia>? selected;
   final Future<void> Function(String mediaId)? onSetBanner;
+  final VoidCallback? onEndReached;
   final ValueChanged<List<ShopMedia>>? onSelectionChanged;
+  final bool? isLoadingMore;
 
   const GalleryGrid({
     super.key,
@@ -22,7 +24,9 @@ class GalleryGrid extends StatefulWidget {
     this.selected,
     this.selectable = false,
     this.onSetBanner,
+    this.onEndReached,
     this.onSelectionChanged,
+    this.isLoadingMore,
   });
 
   @override
@@ -42,8 +46,11 @@ class _GalleryGridState extends State<GalleryGrid> {
       widget.onSelectionChanged?.call(newSelected);
     } else {
       // Build GalleryImage list
-      final galleryImages = widget.mediaList.map((media) => GalleryImage.network(
-        media.imageUrl,
+      final galleryImages = widget.mediaList.map((media) => GalleryImage(
+        url: media.imageUrl,
+        thumbUrl: media.thumbUrl,
+        userThumbUrl: media.userThumbUrl,
+        userName: media.userDisplayName,
         id: media.id,
         comment: media.comment ?? '',
         visibility: media.visibility ?? 'private',
@@ -91,60 +98,78 @@ class _GalleryGridState extends State<GalleryGrid> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     final selected = widget.selected ?? [];
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: widget.mediaList.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3, mainAxisSpacing: 8, crossAxisSpacing: 8
-      ),
-      itemBuilder: (context, idx) {
-        final media = widget.mediaList[idx];
-        final isSelected = selected.contains(media);
-        return GestureDetector(
-          onTap: () => _onTap(idx),
-          onLongPress: () => _onTap(idx), // Optionally, allow long-press for selection too
-          child: Stack(
-            children: [
-              TappableImage(
-                media: media,
-                selected: isSelected,
-                selectable: widget.selectable,
-              ),
-              if (media.isBanner && widget.isEditable)
-                Positioned(
-                  bottom: 4,
-                  left: 4,
-                  child: Container(
-                    color: Colors.black54,
-                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    child: Text('Banner', style: TextStyle(color: Colors.white, fontSize: 11)),
-                  ),
-                ),
-              if (widget.isEditable && !media.isBanner)
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert, color: Colors.white, size: 18),
-                    itemBuilder: (_) => [
-                      PopupMenuItem(
-                        value: 'set_banner',
-                        child: Text('Set as Banner'),
-                      ),
-                    ],
-                    onSelected: (value) async {
-                      if (value == 'set_banner' && widget.onSetBanner != null) {
-                        await widget.onSetBanner!(media.id);
-                      }
-                    },
-                  ),
-                ),
-            ],
-          ),
-        );
+    return NotificationListener<ScrollNotification>(
+      onNotification: (scrollInfo) {
+        if (widget.onEndReached != null
+          && scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
+            widget.onEndReached!();
+          }
+          return false;
       },
+      child: GridView.builder(
+        itemCount: widget.mediaList.length + (widget.isLoadingMore == true ? 1 : 0),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12
+        ),
+        itemBuilder: (context, idx) {
+          if (widget.isLoadingMore == true && idx == widget.mediaList.length) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+          final media = widget.mediaList[idx];
+          final isSelected = selected.contains(media);
+          return GestureDetector(
+            onTap: () => _onTap(idx),
+            onLongPress: () => _onTap(idx),
+            child: Stack(
+              children: [
+                TappableImage(
+                  media: media,
+                  width: size.width/2,
+                  height: size.width/2,
+                  selected: isSelected,
+                  selectable: widget.selectable,
+                ),
+                if (media.isBanner && widget.isEditable)
+                  Positioned(
+                    bottom: 4,
+                    left: 4,
+                    child: Container(
+                      color: Colors.black54,
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      child: Text('Banner', style: TextStyle(color: Colors.white, fontSize: 11)),
+                    ),
+                  ),
+                if (widget.isEditable && !media.isBanner)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: PopupMenuButton<String>(
+                      icon: Icon(Icons.more_vert, color: Colors.white, size: 18),
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'set_banner',
+                          child: Text('Set as Banner'),
+                        ),
+                      ],
+                      onSelected: (value) async {
+                        if (value == 'set_banner' && widget.onSetBanner != null) {
+                          await widget.onSetBanner!(media.id);
+                        }
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      )
     );
   }
 }

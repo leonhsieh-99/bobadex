@@ -26,7 +26,7 @@ class _MultiselectImagePickerDialogState extends State<MultiselectImagePickerDia
   }
 
   void _startDetailsFlow() async {
-    final images = _selectedImages.map((file) => GalleryImage.file(file)).toList();
+    final images = _selectedImages.map((file) => GalleryImage(file: file)).toList();
     final result = await Navigator.of(context).push<List<GalleryImage>>(
       MaterialPageRoute(builder: (_) => FullscreenImageViewer(
         images: images,
@@ -34,7 +34,7 @@ class _MultiselectImagePickerDialogState extends State<MultiselectImagePickerDia
       )),
     );
     if (result != null && result.isNotEmpty) {
-      Navigator.of(context).pop(result);
+      if (mounted)Navigator.of(context).pop(result);
     }
   }
 

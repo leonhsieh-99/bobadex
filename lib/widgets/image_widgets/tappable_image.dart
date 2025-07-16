@@ -1,6 +1,5 @@
 import 'package:bobadex/models/shop_media.dart';
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class TappableImage extends StatelessWidget {
   final ShopMedia media;
@@ -9,6 +8,7 @@ class TappableImage extends StatelessWidget {
   final bool selectable;
   final double height;
   final double width;
+  final bool useHero;
 
   const TappableImage({
     super.key,
@@ -18,6 +18,7 @@ class TappableImage extends StatelessWidget {
     this.selectable = false,
     this.height = 100,
     this.width = 100,
+    this.useHero = true,
   });
 
   @override
@@ -26,14 +27,24 @@ class TappableImage extends StatelessWidget {
     if (media.isPending && media.localFile != null) {
       image = Image.file(media.localFile!, fit: BoxFit.cover, width: width, height: height);
     } else {
-      image = CachedNetworkImage(
-        imageUrl: media.thumbUrl,
-        fit: BoxFit.cover,
-        width: width,
-        height: height,
-        placeholder: (c, url) => Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        errorWidget: (c, url, err) => Icon(Icons.broken_image),
-      );
+      if (useHero) {
+        image = Hero(
+          tag: media.id,
+          child: Image.network(
+            media.thumbUrl,
+            fit: BoxFit.cover,
+            width: width,
+            height: height,
+          ),
+        );
+      } else {
+        image = Image.network(
+          media.thumbUrl,
+          fit: BoxFit.cover,
+          width: width,
+          height: height,
+        );
+      }
     }
 
     return GestureDetector(

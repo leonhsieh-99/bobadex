@@ -56,10 +56,14 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
     }
   }
 
-  Future<List<ShopMedia>> fetchGallery() async {
+  Future<List<ShopMedia>> fetchGallery({int offset = 0, limit = 20}) async {
     try {
       final response = await Supabase.instance.client
-        .rpc('get_brand_gallery', params: {'brand_slug': widget.brand.slug});
+        .rpc('get_brand_gallery', params: {
+          'brand_slug': widget.brand.slug,
+          'offset_count': offset,
+          'limit_count': limit,
+        });
 
       return (response as List)
         .map((item) => ShopMedia.fromJson(item)).toList();
@@ -77,6 +81,51 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
     final hasVisit = shopState.all.map((s) => s.brandSlug).contains(widget.brand.slug);
     final userShop = shopState.getShopByBrand(widget.brand.slug);
     final themeColor = Constants.getThemeColor(userState.user.themeSlug);
+
+    Widget buildGlobalGallery(Brand brand, Future<List<ShopMedia>> galleryFuture) {
+      return FutureBuilder<List<ShopMedia>>(
+        future: galleryFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                const SizedBox(height: 8),
+                HorizontalPreviewSkeleton(count: 3, height: 200, width: 150),
+              ],
+            );
+          }
+          if (snapshot.hasError) {
+            return Text('Failed to load gallery', style: TextStyle(color: Colors.red));
+          }
+          final medias = snapshot.data ?? [];
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: MediaQuery.of(context).size.width,
+                height: 200,
+                child: medias.isEmpty
+                  ? const Center(child: Text('No community photos yet'))
+                  : HorizontalPhotoPreview(maxPreview: 3, height: 200, width: 150, shopMediaList: medias, onViewAll: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) =>
+                      ShopGalleryPage(
+                        shopMediaList: medias,
+                        isCurrentUser: false,
+                        onFetchMore: (offset, limit) => fetchGallery(offset: offset, limit: limit),
+                      )
+                    )
+                  ))
+              ),
+            ],
+          );
+        },
+      );
+    }
+
     return Scaffold(
       body: Column(
         children: [
@@ -140,7 +189,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               children: [
-                _buildGlobalGallery(widget.brand, _globalGalleryFuture),
+                buildGlobalGallery(widget.brand, _globalGalleryFuture),
                 const SizedBox(height: 24),
                 Text("Recent Activity", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                 const SizedBox(height: 8),
@@ -186,49 +235,6 @@ Widget _buildGlobalRatings(Brand brand, Future<BrandStats> statsFuture) {
         ],
       );
     }
-  );
-}
-
-Widget _buildGlobalGallery(Brand brand, Future<List<ShopMedia>> galleryFuture) {
-  return FutureBuilder<List<ShopMedia>>(
-    future: galleryFuture,
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            const SizedBox(height: 8),
-            HorizontalPreviewSkeleton(count: 3, height: 200, width: 150),
-          ],
-        );
-      }
-      if (snapshot.hasError) {
-        return Text('Failed to load gallery', style: TextStyle(color: Colors.red));
-      }
-      final medias = snapshot.data ?? [];
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: MediaQuery.of(context).size.width,
-            height: 200,
-            child: medias.isEmpty
-              ? const Center(child: Text('No community photos yet'))
-              : HorizontalPhotoPreview(height: 200, width: 150, shopMediaList: medias, onViewAll: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) =>
-                  ShopGalleryPage(
-                    shopMediaList: medias,
-                    isCurrentUser: false
-                  )
-                )
-              ))
-          ),
-        ],
-      );
-    },
   );
 }
 

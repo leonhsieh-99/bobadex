@@ -112,7 +112,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
         }
       }
       if (friendStatus.status == 'accepted') {
-        return 'Friend';
+        return 'Friends';
       }
       return '';
     }

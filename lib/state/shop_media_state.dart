@@ -73,22 +73,27 @@ class ShopMediaState extends ChangeNotifier {
   }
 
   Future<ShopMedia> addMedia(ShopMedia media) async {
-    final response = await Supabase.instance.client
-      .from('shop_media')
-      .insert({
-        'shop_id': media.shopId,
-        'user_id': media.userId,
-        'drink_id': media.drinkId,
-        'image_path': media.imagePath,
-        'is_banner': media.isBanner,
-        'visibility': media.visibility,
-        'comment': media.comment,
-      })
-      .select()
-      .single();
+    try {
+      final response = await Supabase.instance.client
+        .from('shop_media')
+        .insert({
+          'shop_id': media.shopId,
+          'user_id': media.userId,
+          'drink_id': media.drinkId,
+          'image_path': media.imagePath,
+          'is_banner': media.isBanner,
+          'visibility': media.visibility,
+          'comment': media.comment,
+        })
+        .select()
+        .single();
 
-    final insertedMedia = ShopMedia.fromJson(response);
-    return insertedMedia;
+      final insertedMedia = ShopMedia.fromJson(response);
+      return insertedMedia;
+    } catch (e) {
+      debugPrint('Error inserting media: $e');
+      rethrow;
+    }
   }
 
   Future<void> removeMedia(String id) async {

@@ -4,7 +4,6 @@ import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/feed_state.dart';
 import 'package:bobadex/state/user_state.dart';
-import 'package:bobadex/pages/shop_detail_page.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
 import 'package:bobadex/widgets/image_widgets/multiselect_image_picker_dialog.dart';
@@ -122,14 +121,14 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
 
         final tempId = Uuid().v4();
         final media = ShopMedia(
-            id: tempId,
-            shopId: submittedShop.id!,
-            userId: Supabase.instance.client.auth.currentUser!.id,
-            imagePath: imagePath,
-            comment: img.comment,
-            visibility: img.visibility,
-            isBanner: idx == 0 && !bannerExists,  // first image is banner
-          );
+          id: tempId,
+          shopId: submittedShop.id!,
+          userId: Supabase.instance.client.auth.currentUser!.id,
+          imagePath: imagePath,
+          comment: img.comment,
+          visibility: img.visibility,
+          isBanner: idx == 0 && !bannerExists,  // first image is banner
+        );
         shopMediaState.addPendingMedia(media);
 
         try {
@@ -142,36 +141,36 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
         }
       }));
 
-      try {
-        await feedState.addFeedEvent(
-          FeedEvent(
-            feedUser: user,
-            id: '',
-            objectId: submittedShop.id ?? '',
-            eventType: 'shop_add',
-            brandSlug: widget.brand?.slug != null && widget.brand!.slug.isNotEmpty ? widget.brand!.slug : null,
-            payload: {
-              "shop_name": submittedShop.name,
-              "notes": submittedShop.notes,
-              "images": uploadedImages,
-              "rating": submittedShop.rating,
-            },
-            isBackfill: false,
-          ),
-        );
-      } catch (e) {
-        debugPrint('Error adding feed event: $e');
+       if (isNewShop) {
+        try {
+          await feedState.addFeedEvent(
+            FeedEvent(
+              feedUser: user,
+              id: '',
+              objectId: submittedShop.id ?? '',
+              eventType: 'shop_add',
+              brandSlug: widget.brand?.slug != null && widget.brand!.slug.isNotEmpty ? widget.brand!.slug : null,
+              payload: {
+                "shop_name": submittedShop.name,
+                "notes": submittedShop.notes,
+                "images": uploadedImages,
+                "rating": submittedShop.rating,
+              },
+              isBackfill: false,
+            ),
+          );
+        } catch (e) {
+          debugPrint('Error adding feed event: $e');
+        }
       }
 
       if (mounted) {
         showAppSnackBar(context, widget.shop == null ? 'Shop added successfully' : 'Shop saved successfully', type: SnackType.success);
-        Navigator.of(context).popUntil((route) => route.isFirst);
+
         if (!isNewShop) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ShopDetailPage(user: user, shop: submittedShop),
-            ),
-          );
+          Navigator.of(context).pop();
+        } else {
+          Navigator.of(context).popUntil((route) => route.isFirst);
         }
       }
     } catch (e) {

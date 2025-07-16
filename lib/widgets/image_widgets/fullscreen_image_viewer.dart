@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
@@ -11,30 +12,23 @@ enum FullscreenImageMode { upload, edit, view }
 class GalleryImage {
   final String? id; // DB id (nullable for new uploads)
   final String? url; // For network images
-  final File? file;  // For local images
-
+  final String? thumbUrl; // palceholder
+  final File? file;
   String comment;
   String visibility;
   String? userThumbUrl;
   String? userName;
 
-  GalleryImage.network(
-    this.url, {
+  GalleryImage({
+    this.url,
+    this. thumbUrl,
     this.id,
+    this.file,
     this.comment = '',
     this.visibility = 'private',
     this.userThumbUrl,
     this.userName,
-  }) : file = null;
-
-  GalleryImage.file(
-    this.file, {
-    this.comment = '',
-    this.visibility = 'private',
-    this.userThumbUrl,
-    this.userName,
-  })  : url = null,
-        id = null;
+  });
 }
 
 // --- MAIN WIDGET ---
@@ -139,18 +133,21 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                 },
                 builder: (context, index) {
                   final img = widget.images[index];
-                  return PhotoViewGalleryPageOptions(
-                    imageProvider: img.file != null
-                        ? FileImage(img.file!)
-                        : NetworkImage(img.url!) as ImageProvider,
+                  return PhotoViewGalleryPageOptions.customChild(
                     minScale: PhotoViewComputedScale.contained,
                     maxScale: PhotoViewComputedScale.covered * 2,
                     heroAttributes: PhotoViewHeroAttributes(
-                        tag: img.url ?? img.file?.path ?? ''),
+                      tag: img.id ?? img.url ?? '',
+                    ),
+                    child: uploadMode
+                    ? Image.file(img.file!)
+                    : Image.network(
+                        img.thumbUrl!,
+                        fit: BoxFit.contain,
+                      )
                   );
                 },
-                loadingBuilder: (context, _) =>
-                    Center(child: CircularProgressIndicator()),
+                loadingBuilder: (context, _) => Center(child: CircularProgressIndicator()),
               ),
             ),
             // INFO/EDIT AREA
@@ -204,7 +201,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                       children: [
                         Row(
                           children: [
-                            if (img.userThumbUrl != null) ThumbPic(url: img.userThumbUrl, size: 40),
+                            if (img.userThumbUrl != null && img.userThumbUrl!.isNotEmpty) ThumbPic(url: img.userThumbUrl, size: 40),
                             SizedBox(width: 12),
                             Text(
                               img.userName ?? '',
