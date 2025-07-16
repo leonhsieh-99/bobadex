@@ -356,7 +356,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                           child: Theme(
                                             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                                             child: ExpansionTile(
-                                              initiallyExpanded: _expandedDrinkIds.contains(drink.id),
+                                              initiallyExpanded: drink.notes != null && drink.notes!.isNotEmpty,
                                               onExpansionChanged: (isExpanded) { 
                                                 setState(() {
                                                   if (isExpanded) {
