@@ -42,7 +42,7 @@ dependencies:
   app_links: ^3.5.1
   photo_view: ^0.15.0
   google_fonts: ^6.2.1
-  transparent_image: ^2.0.1
+  extended_image: ^10.0.1
 
 
   # The following adds the Cupertino Icons font to your application.

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:bobadex/widgets/thumb_pic.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
@@ -58,6 +59,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
   late int currentIndex;
   int? editingIndex;
   late PageController _pageController;
+  late ExtendedPageController _extendedPageController;
   late List<TextEditingController> _commentControllers;
   late List<String> _visibilityOptions;
 
@@ -66,6 +68,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
     super.initState();
     currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: currentIndex);
+    _extendedPageController = ExtendedPageController(initialPage: currentIndex);
     _commentControllers = widget.images
         .map((img) => TextEditingController(text: img.comment))
         .toList();
@@ -113,6 +116,92 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
     final editMode = widget.mode == FullscreenImageMode.edit;
     final canEdit = widget.isCurrentUser && (editMode || uploadMode);
 
+    final infoEditArea = Container(
+      width: double.infinity,
+      color: Colors.white.withOpacity(0.97),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 18,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16),
+      child: Builder(builder: (context) {
+        // --- UPLOAD/EDIT MODES ---
+        if (uploadMode) {
+          return _UploadOrEditFields(
+            commentController: _commentControllers[currentIndex],
+            visibility: _visibilityOptions[currentIndex],
+            onVisibilityChanged: (v) =>
+                setState(() => _visibilityOptions[currentIndex] = v),
+            onPrev: currentIndex > 0
+                ? () => _pageController.previousPage(
+                    duration: Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  )
+                : null,
+            onNext: currentIndex < widget.images.length - 1
+                ? () => _pageController.nextPage(
+                    duration: Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  )
+                : null,
+            onUpload: _submitUploads,
+          );
+        }
+        if (editMode && isEditing) {
+          return _UploadOrEditFields(
+            commentController: _commentControllers[currentIndex],
+            visibility: _visibilityOptions[currentIndex],
+            onVisibilityChanged: (v) =>
+                setState(() => _visibilityOptions[currentIndex] = v),
+            onSave: () => _saveEdit(currentIndex),
+            onCancel: _cancelEdit,
+          );
+        }
+        // --- VIEW MODE ---
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Avatar + name
+            Column(
+              children: [
+                Row(
+                  children: [
+                    if (img.userThumbUrl != null && img.userThumbUrl!.isNotEmpty) ThumbPic(url: img.userThumbUrl, size: 40),
+                    SizedBox(width: 12),
+                    Text(
+                      img.userName ?? '',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 20),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(top: 6.0, bottom: 2.0),
+                  child: Text(
+                    img.comment,
+                    style: TextStyle(
+                        fontSize: 16, color: Colors.grey[800]),
+                  ),
+                ),
+              ],
+            ),
+            // Action buttons
+            Spacer(),
+            if (canEdit && widget.mode == FullscreenImageMode.edit)
+              IconButton(
+                icon: Icon(Icons.edit, color: Colors.grey[800]),
+                onPressed: () => _startEdit(currentIndex),
+              ),
+            IconButton(
+              icon: Icon(Icons.close, color: Colors.grey[700]),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        );
+      }),
+    );
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       resizeToAvoidBottomInset: true,
@@ -121,121 +210,61 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
           children: [
             // IMAGE GALLERY
             Expanded(
-              child: PhotoViewGallery.builder(
-                backgroundDecoration: BoxDecoration(color: Colors.grey[50]),
-                itemCount: widget.images.length,
-                pageController: _pageController,
-                onPageChanged: (index) {
-                  setState(() {
-                    currentIndex = index;
-                    editingIndex = null;
-                  });
-                },
-                builder: (context, index) {
-                  final img = widget.images[index];
-                  return PhotoViewGalleryPageOptions.customChild(
-                    minScale: PhotoViewComputedScale.contained,
-                    maxScale: PhotoViewComputedScale.covered * 2,
-                    heroAttributes: PhotoViewHeroAttributes(
-                      tag: img.id ?? img.url ?? '',
-                    ),
-                    child: uploadMode
-                    ? Image.file(img.file!)
-                    : Image.network(
-                        img.thumbUrl!,
-                        fit: BoxFit.contain,
-                      )
-                  );
-                },
-                loadingBuilder: (context, _) => Center(child: CircularProgressIndicator()),
-              ),
-            ),
-            // INFO/EDIT AREA
-            Container(
-              width: double.infinity,
-              color: Colors.white.withOpacity(0.97),
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 18,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16),
-              child: Builder(builder: (context) {
-                // --- UPLOAD/EDIT MODES ---
-                if (uploadMode) {
-                  return _UploadOrEditFields(
-                    commentController: _commentControllers[currentIndex],
-                    visibility: _visibilityOptions[currentIndex],
-                    onVisibilityChanged: (v) =>
-                        setState(() => _visibilityOptions[currentIndex] = v),
-                    onPrev: currentIndex > 0
-                        ? () => _pageController.previousPage(
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          )
-                        : null,
-                    onNext: currentIndex < widget.images.length - 1
-                        ? () => _pageController.nextPage(
-                            duration: Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          )
-                        : null,
-                    onUpload: _submitUploads,
-                  );
-                }
-                if (editMode && isEditing) {
-                  return _UploadOrEditFields(
-                    commentController: _commentControllers[currentIndex],
-                    visibility: _visibilityOptions[currentIndex],
-                    onVisibilityChanged: (v) =>
-                        setState(() => _visibilityOptions[currentIndex] = v),
-                    onSave: () => _saveEdit(currentIndex),
-                    onCancel: _cancelEdit,
-                  );
-                }
-                // --- VIEW MODE ---
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Avatar + name
-                    Column(
-                      children: [
-                        Row(
-                          children: [
-                            if (img.userThumbUrl != null && img.userThumbUrl!.isNotEmpty) ThumbPic(url: img.userThumbUrl, size: 40),
-                            SizedBox(width: 12),
-                            Text(
-                              img.userName ?? '',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 20),
-                            ),
-                          ],
-                        ),
-                        Padding(
-                          padding:
-                              const EdgeInsets.only(top: 6.0, bottom: 2.0),
-                          child: Text(
-                            img.comment,
-                            style: TextStyle(
-                                fontSize: 16, color: Colors.grey[800]),
+              child: uploadMode
+                ? PhotoViewGallery.builder(
+                    backgroundDecoration: BoxDecoration(color: Colors.grey[50]),
+                    itemCount: widget.images.length,
+                    pageController: _pageController,
+                    onPageChanged: (index) {
+                      setState(() {
+                        currentIndex = index;
+                        editingIndex = null;
+                      });
+                    },
+                    builder: (context, index) {
+                      final img = widget.images[index];
+                      return PhotoViewGalleryPageOptions.customChild(
+                        minScale: PhotoViewComputedScale.contained,
+                        maxScale: PhotoViewComputedScale.covered * 2,
+                        child: Image.file(img.file!)
+                      );
+                    },
+                    loadingBuilder: (context, _) => Center(child: CircularProgressIndicator()),
+                  )
+                : ExtendedImageSlidePage(
+                  child: ExtendedImageGesturePageView.builder(
+                    itemCount: widget.images.length,
+                    controller: _extendedPageController,
+                    itemBuilder: (context, index) {
+                      final img = widget.images[index];
+                      return Hero(
+                        tag: img.id!,
+                        child: ExtendedImage.network(
+                          img.url!,
+                          fit: BoxFit.contain,
+                          mode: ExtendedImageMode.gesture,
+                          initGestureConfigHandler: (state) => GestureConfig(
+                            inPageView: true,
+                            initialScale: 1.0,
+                            cacheGesture: true,
                           ),
-                        ),
-                      ],
-                    ),
-                    // Action buttons
-                    Spacer(),
-                    if (canEdit && widget.mode == FullscreenImageMode.edit)
-                      IconButton(
-                        icon: Icon(Icons.edit, color: Colors.grey[800]),
-                        onPressed: () => _startEdit(currentIndex),
-                      ),
-                    IconButton(
-                      icon: Icon(Icons.close, color: Colors.grey[700]),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                );
-              }),
-            )
+                          loadStateChanged: (state) {
+                            if (state.extendedImageLoadState == LoadState.loading) {
+                              return Image.network(img.thumbUrl!, fit: BoxFit.contain);
+                            }
+                            return null;
+                          },
+                          enableSlideOutPage: true,
+                        )
+                      ); 
+                    },
+                    onPageChanged: (int index) {
+                      setState(() => currentIndex = index);
+                    },
+                  )
+                )
+            ),
+            infoEditArea,
           ],
         ),
       ),
