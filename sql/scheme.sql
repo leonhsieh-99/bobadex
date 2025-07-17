@@ -127,6 +127,20 @@ create table brands (
   icon_path text,
 );
 
+create table brand_staging (
+  id uuid primary key default gen_random_uuid(),
+  suggested_name text not null,
+  location text,
+  submitted_by uuid,
+  created_at timestamp with time zone default timezone('utc', now()),
+  status text default 'pending',
+  merged_slug text,  -- slug in brands if merged/approved
+  raw_payload jsonb,
+  source text default 'user',
+  duplicates int default 1
+);
+
+
 -- Brand Locations Table
 create table ref.brand_locations (
   brand_slug text references ref.brands(slug) on delete cascade,

@@ -1,6 +1,7 @@
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/shop_state.dart';
+import 'package:bobadex/widgets/add_new_brand_dialog.dart';
 import 'package:bobadex/widgets/custom_search_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -52,15 +53,21 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
     super.dispose();
   }
 
-  void _handleBrandTap(Brand? brand) {
+  void _handleBrandTap(Brand brand) {
     if (widget.onBrandSelected != null) {
-      widget.onBrandSelected!(brand!);
+      widget.onBrandSelected!(brand);
       Navigator.pop(context);
     } else {
       Navigator.push(context, MaterialPageRoute(
-        builder: (_) => BrandDetailsPage(brand: brand!)
+        builder: (_) => BrandDetailsPage(brand: brand)
       ));
     }
+  }
+
+  void _handleAddNewBrand() {
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => AddNewBrandDialog()
+    ));
   }
 
   @override
@@ -80,10 +87,11 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
               itemBuilder: (context, i) {
                 if (i == 0) {
                   return ListTile(
-                    title: Text('Add custom shop/brand',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    title: Text('Submit new brand',
+                      style: TextStyle(fontWeight: FontWeight.bold)
+                    ),
                     leading: Icon(Icons.add),
-                    onTap: () => _handleBrandTap(null)
+                    onTap: () => _handleAddNewBrand()
                   );
                 }
                 final brand = _filteredBrands[i - 1];
