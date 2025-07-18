@@ -1,3 +1,4 @@
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/shop_state.dart';
@@ -5,6 +6,7 @@ import 'package:bobadex/widgets/add_new_brand_dialog.dart';
 import 'package:bobadex/widgets/custom_search_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/brand.dart';
 
 class AddShopSearchPage extends StatefulWidget {
@@ -64,10 +66,26 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
     }
   }
 
-  void _handleAddNewBrand() {
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => AddNewBrandDialog()
-    ));
+  void _handleAddNewBrand() async {
+    await showDialog(
+      context: context,
+      builder: (_) => AddNewBrandDialog(onSubmit: (name, location) async {
+        try {
+          await Supabase.instance.client
+            .from('brand_staging')
+            .insert({
+              'suggested_name': name,
+              'location': location,
+              'submitted_by': Supabase.instance.client.auth.currentUser!.id,
+              'status': 'pending',
+            });
+          if (mounted) showAppSnackBar(context, 'Brand pending for review');
+        } catch (e) {
+          debugPrint('Error submitting new shop $e');
+          if (mounted) showAppSnackBar(context, 'Error submitting new shop', type: SnackType.error);
+        }
+      })
+    );
   }
 
   @override

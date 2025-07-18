@@ -1,5 +1,6 @@
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
+import 'package:bobadex/state/city_data_provider.dart';
 import 'package:bobadex/state/drink_state.dart';
 import 'package:bobadex/state/feed_state.dart';
 import 'package:bobadex/state/friend_state.dart';
@@ -28,6 +29,7 @@ class BobadexApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ShopMediaState()),
         ChangeNotifierProvider(create: (_) => AchievementsState()),
         ChangeNotifierProvider(create: (_) => FeedState()),
+        ChangeNotifierProvider(create: (_) => CityDataProvider()),
       ],
       child: Consumer<UserState>(
         builder: (context, userState, _) {
