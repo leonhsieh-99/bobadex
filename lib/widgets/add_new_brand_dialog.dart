@@ -5,7 +5,7 @@ import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:provider/provider.dart';
 
 class AddNewBrandDialog extends StatefulWidget {
-  final void Function(String name, String location) onSubmit;
+  final Future<String?> Function(String name, City city) onSubmit;
   const AddNewBrandDialog ({
     super.key,
     required this.onSubmit,
@@ -18,8 +18,10 @@ class AddNewBrandDialog extends StatefulWidget {
 class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _locationController = TextEditingController();
+  City? _selectedCity;
   List<City>? _cities;
+  TextEditingController? _cityFieldController;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -48,6 +50,7 @@ class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (_isSubmitting) LinearProgressIndicator(),
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
@@ -70,11 +73,15 @@ class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
                     );
                   },
                   onSelected: (City city) {
-                    _locationController.text = '${city.name}, ${city.state}';
+                    setState(() {
+                      _selectedCity = city;
+                      _cityFieldController?.text = '${city.name}, ${city.state}';
+                    });
                   },
                   builder: (context, controller, focusNode) {
+                    _cityFieldController = controller;
                     return TextField(
-                      controller: _locationController,
+                      controller: controller,
                       focusNode: focusNode,
                       decoration: InputDecoration(labelText: 'City, State'),
                     );
@@ -83,11 +90,14 @@ class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
                 ),
                 SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      widget.onSubmit(_nameController.text, _locationController.text);
+                  onPressed: _isSubmitting ? null : () async {
+                    if (_formKey.currentState?.validate() != true || _selectedCity == null) return;
+                    setState(() => _isSubmitting = true);
+                    final error = await widget.onSubmit(_nameController.text, _selectedCity!);
+                    setState(() => _isSubmitting = false);
+                    if (context.mounted) {
+                      Navigator.of(context).pop(error);
                     }
-                    if (mounted) Navigator.of(context).pop();
                   },
                   child: Text('Submit'),
                 ),

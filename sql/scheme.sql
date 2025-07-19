@@ -127,6 +127,12 @@ create table brands (
   icon_path text,
 );
 
+CREATE TABLE brand_aliases (
+  id serial PRIMARY KEY,
+  brand_slug text REFERENCES brands(slug) ON DELETE CASCADE,
+  normalized_name text NOT NULL UNIQUE    -- e.g. 'gongcha', 'gong-cha', '贡茶'
+);
+
 create table brand_staging (
   id uuid primary key default gen_random_uuid(),
   suggested_name text not null,

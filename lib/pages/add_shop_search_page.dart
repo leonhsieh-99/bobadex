@@ -66,26 +66,60 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
     }
   }
 
-  void _handleAddNewBrand() async {
-    await showDialog(
-      context: context,
-      builder: (_) => AddNewBrandDialog(onSubmit: (name, location) async {
-        try {
-          await Supabase.instance.client
-            .from('brand_staging')
-            .insert({
-              'suggested_name': name,
-              'location': location,
-              'submitted_by': Supabase.instance.client.auth.currentUser!.id,
-              'status': 'pending',
-            });
-          if (mounted) showAppSnackBar(context, 'Brand pending for review');
-        } catch (e) {
-          debugPrint('Error submitting new shop $e');
-          if (mounted) showAppSnackBar(context, 'Error submitting new shop', type: SnackType.error);
+  Future<String?> verifyBrand(String brand, String city, String state) async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    try {
+      final res = await Supabase.instance.client.functions.invoke(
+        'verify-brand',
+        body: {
+          'name': brand,
+          'city': city,
+          'state': state,
+          'user_id': userId,
+        },
+      );
+
+      final status = res.status;
+      final data = res.data as Map<String, dynamic>?;
+
+      if (status == 200 && data != null) {
+        final apiStatus = data['status'];
+        if (apiStatus == 'ok') {
+          return null; // No error, success
+        } else if (apiStatus == 'rejected') {
+          return data['message'] ?? 'Could not verify shop.';
+        } else {
+          // Any other "status" (like duplicate, pending, etc)
+          return data['message'] ?? 'Something went wrong';
         }
-      })
+      } else if (status == 409 && data != null) {
+        // Duplicate or pending
+        return data['message'] ?? 'Duplicate or pending brand';
+      } else if (status == 422 && data != null) {
+        return 'This brand could not be verified';
+      } else if (data != null && data['error'] != null) {
+        return data['error'];
+      } else {
+        return 'Unknown error occurred. (${res.status})';
+      }
+    } catch (e) {
+      return 'Failed to verify brand: $e';
+    }
+  }
+
+  void _handleAddNewBrand() async {
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (_) => AddNewBrandDialog(
+        onSubmit: (name, city) => verifyBrand(name, city.name, city.state),
+      ),
     );
+    if (!mounted) return;
+    if (result == null) {
+      showAppSnackBar(context, 'Brand pending for review'); // success
+    } else {
+      showAppSnackBar(context, result, type: SnackType.error); // error message
+    }
   }
 
   @override
