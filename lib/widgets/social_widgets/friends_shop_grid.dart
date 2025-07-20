@@ -35,7 +35,7 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
       shopsData = data.map((json) => FriendsShop.fromJson(json)).toList();
     } catch (e) {
       debugPrint('Error loading shops $e');
-      if(mounted) showAppSnackBar(context, 'Error loading shops', type: SnackType.error);
+      if(mounted) showAppSnackBar(context, 'Error loading shops, try again later', type: SnackType.error);
     }
     shopsData ??= [];
     if (mounted) setState(() => _loading = false);
@@ -52,11 +52,13 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
               (context, i) {
                 if (_loading) {
                   return _buildLoadingPearl();
+                } else if (shopsData!.isEmpty) {
+                  return Center(child: Text('No shared shops yet', style: Constants.emptyListTextStyle));
                 } else if (i < shopsData!.length) {
                   final shop = shopsData![i];
                   return _buildShopPearl(shop);
                 } else {
-                  return SizedBox.shrink(); // Never render past the real data!
+                  return SizedBox.shrink();
                 }
               },
               childCount: _loading ? 8 : shopsData!.length,

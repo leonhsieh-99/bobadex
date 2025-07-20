@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:bobadex/widgets/compact_text_row.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +23,7 @@ class GalleryImage {
 
   GalleryImage({
     this.url,
-    this. thumbUrl,
+    this.thumbUrl,
     this.id,
     this.file,
     this.comment = '',
@@ -123,83 +124,96 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
         left: 16,
         right: 16,
         top: 18,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16),
-      child: Builder(builder: (context) {
-        // --- UPLOAD/EDIT MODES ---
-        if (uploadMode) {
-          return _UploadOrEditFields(
-            commentController: _commentControllers[currentIndex],
-            visibility: _visibilityOptions[currentIndex],
-            onVisibilityChanged: (v) =>
-                setState(() => _visibilityOptions[currentIndex] = v),
-            onPrev: currentIndex > 0
-                ? () => _pageController.previousPage(
-                    duration: Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  )
-                : null,
-            onNext: currentIndex < widget.images.length - 1
-                ? () => _pageController.nextPage(
-                    duration: Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  )
-                : null,
-            onUpload: _submitUploads,
-          );
-        }
-        if (editMode && isEditing) {
-          return _UploadOrEditFields(
-            commentController: _commentControllers[currentIndex],
-            visibility: _visibilityOptions[currentIndex],
-            onVisibilityChanged: (v) =>
-                setState(() => _visibilityOptions[currentIndex] = v),
-            onSave: () => _saveEdit(currentIndex),
-            onCancel: _cancelEdit,
-          );
-        }
-        // --- VIEW MODE ---
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Avatar + name
-            Column(
-              children: [
-                Row(
-                  children: [
-                    if (img.userThumbUrl != null && img.userThumbUrl!.isNotEmpty) ThumbPic(url: img.userThumbUrl, size: 40),
-                    SizedBox(width: 12),
-                    Text(
-                      img.userName ?? '',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 20),
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16
+      ),
+      child: SingleChildScrollView(
+        child: Builder(builder: (context) {
+          // --- UPLOAD/EDIT MODES ---
+          if (uploadMode) {
+            return _UploadOrEditFields(
+              commentController: _commentControllers[currentIndex],
+              visibility: _visibilityOptions[currentIndex],
+              onVisibilityChanged: (v) =>
+                  setState(() => _visibilityOptions[currentIndex] = v),
+              onPrev: currentIndex > 0
+                  ? () => _pageController.previousPage(
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    )
+                  : null,
+              onNext: currentIndex < widget.images.length - 1
+                  ? () => _pageController.nextPage(
+                      duration: Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    )
+                  : null,
+              onUpload: _submitUploads,
+            );
+          }
+          if (editMode && isEditing) {
+            return _UploadOrEditFields(
+              commentController: _commentControllers[currentIndex],
+              visibility: _visibilityOptions[currentIndex],
+              onVisibilityChanged: (v) =>
+                  setState(() => _visibilityOptions[currentIndex] = v),
+              onSave: () => _saveEdit(currentIndex),
+              onCancel: _cancelEdit,
+            );
+          }
+          // --- VIEW MODE ---
+          return Row(
+            children: [
+              // Avatar + name
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (!canEdit)
+                    Row(
+                      children: [
+                        ThumbPic(url: img.userThumbUrl, size: 40),
+                        SizedBox(width: 12),
+                        Text(
+                          img.userName ?? '',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 20
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                Padding(
-                  padding:
-                      const EdgeInsets.only(top: 6.0, bottom: 2.0),
-                  child: Text(
-                    img.comment,
-                    style: TextStyle(
-                        fontSize: 16, color: Colors.grey[800]),
-                  ),
-                ),
-              ],
-            ),
-            // Action buttons
-            Spacer(),
-            if (canEdit && widget.mode == FullscreenImageMode.edit)
-              IconButton(
-                icon: Icon(Icons.edit, color: Colors.grey[800]),
-                onPressed: () => _startEdit(currentIndex),
+                  Padding(
+                    padding: EdgeInsets.only(left: !canEdit ? 12 : 0, top: !canEdit ? 8 : 0),
+                    child: Text(
+                      img.comment,
+                      style: TextStyle(
+                        fontSize: 20, color: Colors.grey[800]
+                      ),
+                    ),
+                  )
+                ],
               ),
-            IconButton(
-              icon: Icon(Icons.close, color: Colors.grey[700]),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
-        );
-      }),
+              // Action buttons
+              Spacer(),
+              if (canEdit && widget.mode == FullscreenImageMode.edit)
+                Container(
+                  padding: EdgeInsets.symmetric(vertical: 2, horizontal: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(img.visibility, style: TextStyle(fontSize: 12)),
+                ),
+              if (canEdit && widget.mode == FullscreenImageMode.edit)
+                SizedBox(width: 4),
+              if (canEdit && widget.mode == FullscreenImageMode.edit)
+                IconButton(
+                  icon: Icon(Icons.edit, color: Colors.grey[800]),
+                  onPressed: () => _startEdit(currentIndex),
+                ),
+            ],
+          );
+        }),
+      )
     );
 
     return Scaffold(
@@ -232,6 +246,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                     loadingBuilder: (context, _) => Center(child: CircularProgressIndicator()),
                   )
                 : ExtendedImageSlidePage(
+                  slideAxis: SlideAxis.vertical,
                   child: ExtendedImageGesturePageView.builder(
                     itemCount: widget.images.length,
                     controller: _extendedPageController,
@@ -246,7 +261,12 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                           initGestureConfigHandler: (state) => GestureConfig(
                             inPageView: true,
                             initialScale: 1.0,
+                            minScale: 1.0,
+                            maxScale: 1.5,
+                            animationMinScale: 1.0,
                             cacheGesture: true,
+                            speed: 0.85,
+                            inertialSpeed: 70.0,
                           ),
                           loadStateChanged: (state) {
                             if (state.extendedImageLoadState == LoadState.loading) {
@@ -260,11 +280,26 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                     },
                     onPageChanged: (int index) {
                       setState(() => currentIndex = index);
+                      _cancelEdit();
                     },
                   )
                 )
             ),
-            infoEditArea,
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.25,
+                minHeight: 0,
+              ),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 18,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                ),
+                child: infoEditArea,
+              ),
+            ),
           ],
         ),
       ),
@@ -300,28 +335,14 @@ class _UploadOrEditFields extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
-          controller: commentController,
-          decoration: InputDecoration(
-            labelText: 'Comment (optional)',
-            border: OutlineInputBorder(),
-          ),
-          maxLines: 1,
-        ),
-        SizedBox(height: 10),
-        DropdownButtonFormField<String>(
-          value: visibility,
-          items: ['private', 'public']
-              .map((v) => DropdownMenuItem(value: v, child: Text(v)))
-              .toList(),
-          onChanged: onVisibilityChanged == null
-              ? null
-              : (v) {
-                  if (v != null) onVisibilityChanged!(v);
-                },
-          decoration: InputDecoration(
-            labelText: 'Visibility',
-            border: OutlineInputBorder(),
+        CompactTextRow(
+          textController: commentController,
+          leftFlexStart: 5,
+          leftFlexEnd: 10,
+          rightFlex: 3,
+          child: VisibilityToggleButton(
+            value: visibility,
+            onChanged: onVisibilityChanged!,
           ),
         ),
         SizedBox(height: 10),
@@ -359,6 +380,34 @@ class _UploadOrEditFields extends StatelessWidget {
             ],
           ),
       ],
+    );
+  }
+}
+
+class VisibilityToggleButton extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  const VisibilityToggleButton({
+    super.key,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isPublic = value == 'public';
+    return TextButton.icon(
+      style: TextButton.styleFrom(
+        foregroundColor: isPublic ? Colors.green[800] : Colors.grey[700],
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      ),
+      icon: Icon(
+        Icons.sync_alt,
+        size: 20,
+      ),
+      label: Text(isPublic ? 'Public' : 'Private'),
+      onPressed: () => onChanged(isPublic ? 'private' : 'public'),
     );
   }
 }

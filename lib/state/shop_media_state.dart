@@ -72,6 +72,29 @@ class ShopMediaState extends ChangeNotifier {
     }
   }
 
+  Future<void> editMedia(id, comment, visibility) async {
+    final mediaIdx = _shopMedia.indexWhere((m) => m.id == id);
+    final tempMedia = _shopMedia[mediaIdx];
+    _shopMedia[mediaIdx] = tempMedia.copyWith(comment: comment, visibility: visibility);
+    notifyListeners();
+    if (mediaIdx != -1) {
+      try {
+        await Supabase.instance.client
+          .from('shop_media')
+          .update({
+            'comment': comment,
+            'visibility': visibility,
+          })
+          .eq('id', id);
+      } catch (e) {
+        debugPrint('Error updating comment: $e');
+        _shopMedia[mediaIdx] = tempMedia;
+        notifyListeners();
+        rethrow;
+      }
+    }
+  }
+
   Future<ShopMedia> addMedia(ShopMedia media) async {
     try {
       final response = await Supabase.instance.client

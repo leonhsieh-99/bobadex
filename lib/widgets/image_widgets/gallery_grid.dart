@@ -1,9 +1,10 @@
 import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/shop_media.dart';
+import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
 import 'package:bobadex/widgets/image_widgets/tappable_image.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
 
 class GalleryGrid extends StatefulWidget {
   final List<ShopMedia> mediaList;
@@ -66,27 +67,11 @@ class _GalleryGridState extends State<GalleryGrid> {
             isCurrentUser: widget.isCurrentUser,
             onEdit: widget.isEditable
               ? (img, comment, visibility) async {
-                final mediaIdx = widget.mediaList.indexWhere((m) => m.id == img.id);
-                if (mediaIdx != -1) {
-                  setState(() {
-                    widget.mediaList[mediaIdx] = widget.mediaList[mediaIdx].copyWith(
-                      comment: comment,
-                      visibility: visibility,
-                    );
-                  });
-                  try {
-                    await Supabase.instance.client
-                      .from('shop_media')
-                      .update({
-                        'comment': comment,
-                        'visibility': visibility,
-                      })
-                      .eq('id', img.id);
-                      if (mounted) showAppSnackBar(context, 'Updated photo', type: SnackType.success);
-                  } catch (e) {
-                    debugPrint('Error updating comment: $e');
-                    if (mounted) showAppSnackBar(context, 'Error updating comment: $e', type: SnackType.error);
-                  }
+                try {
+                  await context.read<ShopMediaState>().editMedia(img.id, comment, visibility);
+                  if (mounted) showAppSnackBar(context, 'Updated photo', type: SnackType.success);
+                } catch (e) {
+                  if (mounted) showAppSnackBar(context, 'Error updating comment: $e', type: SnackType.error);
                 }
               }
             : null,

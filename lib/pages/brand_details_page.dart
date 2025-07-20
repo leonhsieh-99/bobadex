@@ -103,13 +103,36 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              Row(
+                children: [
+                  Text('Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  Spacer(),
+                  if(medias.isNotEmpty)
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(    
+                            builder: (_) => ShopGalleryPage(
+                              shopMediaList: medias,
+                              isCurrentUser: false,
+                              onFetchMore: (offset, limit) => fetchGallery(offset: offset, limit: limit),
+                            ),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'View All',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    )
+                ],
+              ),
               const SizedBox(height: 8),
               SizedBox(
                 width: MediaQuery.of(context).size.width,
                 height: 200,
                 child: medias.isEmpty
-                  ? const Center(child: Text('No community photos yet'))
+                  ? const Center(child: Text('No community photos yet', style: Constants.emptyListTextStyle))
                   : HorizontalPhotoPreview(maxPreview: 3, height: 200, width: 150, shopMediaList: medias, onViewAll: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) =>
                       ShopGalleryPage(
