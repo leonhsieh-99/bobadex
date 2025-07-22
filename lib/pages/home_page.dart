@@ -9,6 +9,7 @@ import 'package:bobadex/pages/splash_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
+import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider;
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -395,7 +396,13 @@ class _HomePageState extends State<HomePage> {
           children: [
             DrawerHeader(
               decoration: BoxDecoration(color: themeColor.shade100),
-              child: Text('Bobadex Menu', style: TextStyle(color: Colors.black)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ThumbPic(url: userState.user.thumbUrl, size: 120,),
+                ],
+              )
             ),
             ListTile(
               leading: const Icon(Icons.settings),
