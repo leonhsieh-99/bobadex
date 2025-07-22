@@ -277,19 +277,19 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                 backgroundColor: Constants.getThemeColor(user.themeSlug).shade100,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                 onPressed: () async {
+                                  final parentContext = context;
                                   await showDialog(
-                                    context: context,
+                                    context: parentContext,
                                     builder: (_) => AddOrEditDrinkDialog(
                                       onSubmit: (drink) async {
                                         try {
                                           await drinkState.add(drink.toDrink(shopId: shopRead.id), shopRead.id!);
                                           await achievementState.checkAndUnlockDrinkAchievement(drinkState);
                                           await achievementState.checkAndUnlockNotesAchievement(drinkState);
-                                          if (context.mounted) { context.read<NotificationQueue>().queue('Drink added.', SnackType.success);
-                                          }
+                                          if (parentContext.mounted) parentContext.read<NotificationQueue>().queue('Drink added.', SnackType.success);
                                         } catch (e) {
-                                          if (context.mounted) { context.read<NotificationQueue>().queue('Error adding drink.', SnackType.error);
-                                          }
+                                          debugPrint('Error adding drink: $e');
+                                          if (parentContext.mounted) parentContext.read<NotificationQueue>().queue('Error adding drink.', SnackType.error);
                                         }
                                       },
                                     ),
