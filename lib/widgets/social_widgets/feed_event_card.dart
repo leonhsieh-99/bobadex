@@ -92,7 +92,7 @@ class FeedEventCard extends StatelessWidget {
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             onPressed: () {
-                              final slug = payload['slug']?.toString() ?? '';
+                              final slug = event.brandSlug?.toString() ?? '';
                               if (slug.isNotEmpty) {
                                 final brand = brandState.getBrand(slug);
                                 if (brand != null) {

@@ -43,25 +43,42 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.all(16),
+            sliver: SliverGrid(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) => _buildLoadingPearl(),
+                childCount: 8,
+              ),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 18,
+                crossAxisSpacing: 18,
+                childAspectRatio: 0.9,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (shopsData!.isEmpty) {
+      return Center(
+        child: Text('No shared shops yet', style: Constants.emptyListTextStyle),
+      );
+    }
+
     return CustomScrollView(
       slivers: [
         SliverPadding(
           padding: EdgeInsets.all(16),
           sliver: SliverGrid(
             delegate: SliverChildBuilderDelegate(
-              (context, i) {
-                if (_loading) {
-                  return _buildLoadingPearl();
-                } else if (shopsData!.isEmpty) {
-                  return Center(child: Text('No shared shops yet', style: Constants.emptyListTextStyle));
-                } else if (i < shopsData!.length) {
-                  final shop = shopsData![i];
-                  return _buildShopPearl(shop);
-                } else {
-                  return SizedBox.shrink();
-                }
-              },
-              childCount: _loading ? 8 : shopsData!.length,
+              (context, i) => _buildShopPearl(shopsData![i]),
+              childCount: shopsData!.length,
             ),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -74,6 +91,7 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
       ],
     );
   }
+
 
   Widget _buildLoadingPearl() {
     return Column(
