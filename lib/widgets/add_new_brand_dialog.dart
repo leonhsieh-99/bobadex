@@ -96,7 +96,7 @@ class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
                     final error = await widget.onSubmit(_nameController.text, _selectedCity!);
                     setState(() => _isSubmitting = false);
                     if (context.mounted) {
-                      Navigator.of(context).pop(error);
+                      Navigator.of(context).pop(error ?? 'success');
                     }
                   },
                   child: Text('Submit'),

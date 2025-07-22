@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
@@ -22,6 +24,7 @@ class AddShopSearchPage extends StatefulWidget {
 class _AddShopSearchPageState extends State<AddShopSearchPage> {
   final _searchController = SearchController();
   List<Brand> _filteredBrands = [];
+  Timer? _debounce;
 
   List<Brand> get _brands {
     return context.read<BrandState>().all;
@@ -31,27 +34,28 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _onSearchChanged());
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _onSearchChanged();
-  }
 
   void _onSearchChanged() {
-    String query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredBrands = _brands
-          .where((b) => b.display.toLowerCase().contains(query))
-          .toList();
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () async {
+      String query = _searchController.text.toLowerCase().trim();
+      if (query.length >= 2) {
+        setState(() {
+          _filteredBrands = _brands
+              .where((b) => b.display.toLowerCase().contains(query))
+              .toList();
+        });
+      }
     });
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
@@ -115,9 +119,9 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
       ),
     );
     if (!mounted) return;
-    if (result == null) {
+    if (result == 'success') {
       showAppSnackBar(context, 'Brand pending for review'); // success
-    } else {
+    } else if (result != null) {
       showAppSnackBar(context, result, type: SnackType.error); // error message
     }
   }

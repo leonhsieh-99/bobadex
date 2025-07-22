@@ -12,34 +12,37 @@ class SocialPage extends StatefulWidget {
 class _SocialPageState extends State<SocialPage> {
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      initialIndex: 0,
-      child: Scaffold(
-        // No appBar here!
-        body: SafeArea(
-          child: Column(
-            children: [
-              // TabBar at the top
-              const TabBar(
-                tabs: [
-                  Tab(icon: Icon(Icons.rss_feed), text: 'Feed'),
-                  Tab(icon: Icon(Icons.people_alt), text: 'Shops'),
-                ],
-              ),
-              // Expanded so TabBarView fills the rest
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    FeedView(),
-                    FriendsShopGrid(),
+    return Scaffold(
+      appBar: AppBar(),
+      body: DefaultTabController(
+        length: 2,
+        initialIndex: 0,
+        child: Scaffold(
+          // No appBar here!
+          body: SafeArea(
+            child: Column(
+              children: [
+                // TabBar at the top
+                const TabBar(
+                  tabs: [
+                    Tab(icon: Icon(Icons.rss_feed), text: 'Feed'),
+                    Tab(icon: Icon(Icons.people_alt), text: 'Shops'),
                   ],
                 ),
-              ),
-            ],
+                // Expanded so TabBarView fills the rest
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      FeedView(),
+                      FriendsShopGrid(),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
+      )
     );
   }
 }

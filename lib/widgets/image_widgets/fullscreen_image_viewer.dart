@@ -217,6 +217,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
     );
 
     return Scaffold(
+      appBar: PreferredSize(preferredSize: Size.fromHeight(30), child: AppBar()),
       backgroundColor: Colors.grey[50],
       resizeToAvoidBottomInset: true,
       body: SafeArea(

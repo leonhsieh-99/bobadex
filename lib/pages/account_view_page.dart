@@ -8,9 +8,7 @@ import 'package:bobadex/pages/home_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_account_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
-import 'package:bobadex/state/drink_state.dart';
 import 'package:bobadex/state/friend_state.dart';
-import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/user_stats_cache.dart';
 import 'package:bobadex/widgets/badge_picker_dialog.dart';
@@ -80,13 +78,10 @@ class _AccountViewPageState extends State<AccountViewPage> {
   @override
   Widget build(BuildContext context) {
     final userState = context.watch<UserState>();
-    final shopState = context.watch<ShopState>();
-    final shop = shopState.getShop(stats.topShopId);
-    final drinkState = context.watch<DrinkState>();
     final brandState = context.read<BrandState>();
     final friendState = context.watch<FriendState>();
     final brand = brandState.getBrand(stats.topShopSlug);
-    final drink = drinkState.getDrink(stats.topDrinkId);
+    final drinkName = stats.topDrinkName;
     final currentUser = userState.user;
     final isCurrentUser = currentUser.id == widget.user.id;
     final user = isCurrentUser ? currentUser : widget.user;
@@ -216,7 +211,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
                 : null,
               child: SizedBox(
                 height: 60,
-                child: (shop != null)
+                child: (brand != null)
                   ? ListTile(
                       leading: (brandThumbUrl.isNotEmpty)
                         ? CachedNetworkImage(
@@ -229,8 +224,8 @@ class _AccountViewPageState extends State<AccountViewPage> {
                           'lib/assets/default_icon.png',
                           fit: BoxFit.cover,
                         ),
-                      title: Text(shop.name),
-                      subtitle: Text(drink?.name ?? ''),
+                      title: Text(brand.display),
+                      subtitle: Text(drinkName),
                     )
                   : Center( child: Text( isCurrentUser ? 'No shops yet, add in home page' : 'User has no shops yet', style: Constants.emptyListTextStyle))
               )
@@ -269,7 +264,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
                       .map((a) => Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Tooltip(
-                          message: a.description,
+                          message: (a.isHidden && !isCurrentUser) ? 'Hidden ? ? ?' : a.description,
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [

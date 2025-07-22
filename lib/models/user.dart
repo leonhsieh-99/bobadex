@@ -18,7 +18,7 @@ class User {
     this.profileImagePath,
     this.bio,
     this.gridColumns = 2,
-    this.useIcons = true,
+    this.useIcons = false,
   });
 
   String get firstName => displayName.split(' ').first;

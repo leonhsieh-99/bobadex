@@ -23,7 +23,7 @@ class FeedEvent {
 
   factory FeedEvent.fromJson(Map<String, dynamic> json) {
     return FeedEvent(
-      feedUser: User.empty(),
+      feedUser: json['feed_user'] == null ? User.empty() : User.fromJson(json['feed_user']),
       id: json['id'] as String,
       objectId: json['object_id'] as String,
       eventType: json['event_type'] as String,
