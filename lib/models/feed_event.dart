@@ -1,7 +1,7 @@
 import 'package:bobadex/models/user.dart';
 
 class FeedEvent {
-  final User feedUser;
+  User feedUser;
   final String id;
   final String objectId;
   final String eventType;
@@ -23,7 +23,7 @@ class FeedEvent {
 
   factory FeedEvent.fromJson(Map<String, dynamic> json) {
     return FeedEvent(
-      feedUser: User.fromJson(json['feed_user']),
+      feedUser: User.empty(),
       id: json['id'] as String,
       objectId: json['object_id'] as String,
       eventType: json['event_type'] as String,
@@ -36,6 +36,19 @@ class FeedEvent {
           : {},
       isBackfill: json['is_backfill'] == true,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'feedUser': feedUser.toJson(),
+      'id': id,
+      'object_id': objectId,
+      'event_type': eventType,
+      'brand_slug': brandSlug,
+      'created_at': createdAt,
+      'is_backfill': isBackfill,
+      'payload': payload,
+    };
   }
 
   FeedEvent copyWith({

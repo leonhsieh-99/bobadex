@@ -120,6 +120,7 @@ class _HomePageState extends State<HomePage> {
     final brandState = context.watch<BrandState>();
     final shopMediaState = context.watch<ShopMediaState>();
     final user = isCurrentUser ? userState.user : widget.user;
+    final themeColor = Constants.getThemeColor(user.themeSlug);
 
     Widget shopGrid(List<Shop> shops, List<ShopMedia> banners) {
       final visibleShops = getVisibleShops(shops);
@@ -159,7 +160,7 @@ class _HomePageState extends State<HomePage> {
               onTap: () async => _navigateToShop(shop, user),
               child: Card(
                 elevation: 2,
-                color: useIcons ? Constants.getThemeColor(userState.user.themeSlug).shade200 : Colors.grey.shade100,
+                color: useIcons ? themeColor == Colors.grey ? themeColor.shade200 : themeColor.shade200 : Colors.grey.shade100,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: useIcons
                   ? Padding(
@@ -364,7 +365,7 @@ class _HomePageState extends State<HomePage> {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(color: Constants.getThemeColor(user.themeSlug).shade100),
+              decoration: BoxDecoration(color: themeColor.shade100),
               child: Text('Bobadex Menu', style: TextStyle(color: Colors.black)),
             ),
             ListTile(
@@ -435,7 +436,6 @@ class _HomePageState extends State<HomePage> {
                             return Center(child: Text('Error: ${snapshot.error}'));
                           }
                           final shops = snapshot.data ?? [];
-                          // Only filter here, don't search/refresh future
                           final shopIds = getVisibleShops(shops).map((s) => s.id).whereType<String>().toList();
                           return FutureBuilder<List<ShopMedia>>(
                             future: fetchBannersForShops(shopIds),
@@ -463,7 +463,7 @@ class _HomePageState extends State<HomePage> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 20),
                 decoration: BoxDecoration(
-                  color: Constants.getThemeColor(user.themeSlug).shade50,
+                  color: themeColor.shade50,
                   borderRadius: BorderRadius.circular(40),
                   boxShadow: [
                     BoxShadow(
@@ -487,7 +487,7 @@ class _HomePageState extends State<HomePage> {
                           child: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Constants.getThemeColor(user.themeSlug).shade300,
+                              color: themeColor == Colors.grey ? themeColor.shade400 : themeColor.shade300,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(Icons.add, color: Colors.white, size: 24),

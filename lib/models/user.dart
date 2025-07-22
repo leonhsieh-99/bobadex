@@ -69,6 +69,19 @@ class User {
     useIcons: true,
   );
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'username': username,
+      'profileImagePath': profileImagePath,
+      'themeSlug': themeSlug,
+      'displayName': displayName,
+      'bio': bio,
+      'gridColumns': gridColumns,
+      'useIcons': useIcons,
+    };
+  }
+
   User copyWith({
     String? username,
     String? displayName,

@@ -44,6 +44,7 @@ class FeedState extends ChangeNotifier {
         .single();
 
       final insertedEvent = FeedEvent.fromJson(response);
+      insertedEvent.feedUser = event.feedUser;
       final index = _feed.indexWhere((e) => e.id == tempId);
       if (index != -1) {
         _feed[index] = insertedEvent;
@@ -52,7 +53,7 @@ class FeedState extends ChangeNotifier {
       }
       throw StateError('Error with temp id');
     } catch (e) {
-      debugPrint('Insert failed: $e');
+      debugPrint('Insert feed event failed: $e');
       _feed.removeWhere((e) => e.id == tempId);
       notifyListeners();
       rethrow;
