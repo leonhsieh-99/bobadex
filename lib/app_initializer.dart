@@ -1,10 +1,9 @@
 import 'dart:async';
-
-import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/feed_event.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/feed_state.dart';
 import 'package:bobadex/state/friend_state.dart';
+import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as p;
@@ -160,7 +159,7 @@ class _AppInitializerState extends State<AppInitializer> {
       _achievementListener = achievementsState.unlockedAchievementsStream.listen((achievement) {
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (!mounted) return;
-          showAppSnackBar(context, 'Achievement unlocked ${achievement.name}', type: SnackType.achievement);
+          context.read<NotificationQueue>().queueAchievement(achievement.name);
           try {
             await feedState.addFeedEvent(
               FeedEvent(

@@ -59,7 +59,7 @@ class ShopState extends ChangeNotifier {
   }
 
   Future<Shop> update(Shop updated) async {
-    final index = _shops.indexWhere((s) => s.id == updated.id);
+    int index = _shops.indexWhere((s) => s.id == updated.id);
     if (index == -1) {
       throw StateError('Shop not found in local state');
     }
@@ -84,7 +84,10 @@ class ShopState extends ChangeNotifier {
           .single();
 
       final persistedShop = Shop.fromJson(response);
-      _shops[index] = persistedShop;
+      index = _shops.indexWhere((s) => s.id == updated.id);
+      if (index != -1) {
+        _shops[index] = persistedShop;
+      }
       notifyListeners();
       return persistedShop;
     } catch (e) {

@@ -44,7 +44,7 @@ class User {
       bio: profile['bio'],
       themeSlug: settings?['theme_slug'] ?? 'grey',
       gridColumns: settings?['grid_columns'] ?? 2,
-      useIcons: settings?['use_icons'] ?? true,
+      useIcons: settings?['use_icons'] ?? false,
     );
   }
 
@@ -66,7 +66,7 @@ class User {
     displayName: '',
     bio: '',
     gridColumns: 2,
-    useIcons: true,
+    useIcons: false,
   );
 
   Map<String, dynamic> toJson() {

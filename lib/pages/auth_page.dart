@@ -1,5 +1,6 @@
 import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/state/brand_state.dart';
+import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/utils/validators.dart';
 import 'package:flutter/material.dart';
@@ -36,13 +37,13 @@ class _AuthPageState extends State<AuthPage> {
       if (_isSigningUp) {
         debugPrint('📦 Signing up...');
         if (username.isEmpty || displayName.isEmpty) {
-        showAppSnackBar(context, 'Username and name are required', type: SnackType.error);
+        context.read<NotificationQueue>().queue('Username and name are required', SnackType.error);
           return;
         }
 
         final usernameExists = await supabase.rpc('username_exists', params: {'input_username': username});
         if (usernameExists) {
-        showAppSnackBar(context, 'Username already taken', type: SnackType.error);
+          if (mounted) context.read<NotificationQueue>().queue('Username already taken', SnackType.error);
           return;
         }
 
@@ -85,7 +86,7 @@ class _AuthPageState extends State<AuthPage> {
           await supabase.from('user_settings').insert({
             'user_id': userId,
             'theme_slug': 'grey',
-            'grid_columns': 3,
+            'grid_columns': 2,
           });
         }
       }
@@ -96,15 +97,15 @@ class _AuthPageState extends State<AuthPage> {
       if (!mounted) return; // back to app initializer
     } on AuthException catch(e) {
       if (e.message.contains('User already registered')) {
-        showAppSnackBar(context, 'Email already taken', type: SnackType.error);
+        context.read<NotificationQueue>().queue('Email already taken', SnackType.error);
       } else {
         debugPrint('📦 Auth error: ${e.message}');
-        showAppSnackBar(context, 'Error ${e.message}', type: SnackType.error);
+        context.read<NotificationQueue>().queue('Error ${e.message}', SnackType.error);
       }
     } catch (e) {
       debugPrint('email: $email');
       debugPrint('📦 Unexpected error: $e');
-        showAppSnackBar(context, 'An unexpected error occurred', type: SnackType.error);
+        context.read<NotificationQueue>().queue('An unexpected error occurred', SnackType.error);
     }
   }
 

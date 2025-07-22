@@ -2,6 +2,7 @@ import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/state/friend_state.dart';
+import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/custom_search_bar.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
@@ -42,7 +43,7 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), () async {
       final query = _searchController.text.trim();
-      if (query.trim().length >= 3) {
+      if (query.trim().length >= 2) {
         final response = await Supabase.instance.client
           .rpc('search_users_fuzzy', params: {'query': query});
         
@@ -100,7 +101,7 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
                       try {
                         friendState.addUser(addressee);
                       } catch (e) {
-                        if (mounted) { showAppSnackBar(context, 'Error adding friend', type: SnackType.error); }
+                        if (mounted) { context.read<NotificationQueue>().queue('Error adding friend', SnackType.error); }
                       }
                     },
                     style: ElevatedButton.styleFrom(

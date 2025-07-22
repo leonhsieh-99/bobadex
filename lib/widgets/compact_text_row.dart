@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 class CompactTextRow extends StatefulWidget {
   final TextEditingController textController;
-  final String labelText;
+  final String? labelText;
+  final String? hintText; 
+  final ValueChanged<String>? onSearchChanged;
   final int maxLength;
   final Widget child;
   final int leftFlexStart;
@@ -12,7 +14,9 @@ class CompactTextRow extends StatefulWidget {
   const CompactTextRow({
     super.key,
     required this.textController,
-    this.labelText = 'Description',
+    this.onSearchChanged,
+    this.labelText,
+    this.hintText,
     this.maxLength = 20,
     required this.child,
     this.leftFlexStart = 3,
@@ -52,14 +56,18 @@ class _CompactTextRowState extends State<CompactTextRow> {
       Expanded(
         flex: _focused ? widget.leftFlexEnd : widget.leftFlexStart,
         child: AnimatedSize(
-          duration: Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.fastOutSlowIn,
           child: TextField(
             focusNode: _focusNode,
             controller: widget.textController,
+            onChanged: widget.onSearchChanged,
             decoration: InputDecoration(
               labelText: widget.labelText,
-              border: OutlineInputBorder(),
+              hintText: widget.hintText,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               isDense: true,
               contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               counterText: "",

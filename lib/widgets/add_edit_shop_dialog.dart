@@ -3,6 +3,7 @@ import 'package:bobadex/models/feed_event.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/feed_state.dart';
+import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
@@ -137,7 +138,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
           shopMediaState.replacePendingMedia(tempId, insertedMedia);
         } catch (e) {
           shopMediaState.removePendingMedia(tempId);
-          if (mounted) { showAppSnackBar(context, 'Error uploading images', type: SnackType.error); }
+          if (mounted) { context.read<NotificationQueue>().queue('Error uploading images', SnackType.error); }
         }
       }));
 
@@ -165,17 +166,17 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
       }
 
       if (mounted) {
-        showAppSnackBar(context, widget.shop == null ? 'Shop added successfully' : 'Shop saved successfully', type: SnackType.success);
-
         if (!isNewShop) {
           Navigator.of(context).pop();
         } else {
+          context.read<NotificationQueue>().queue('Shop added', SnackType.success);
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
       }
     } catch (e) {
       if (mounted) {
-        showAppSnackBar(context, 'Failed to submit', type: SnackType.error);
+        debugPrint('Failed to submit shop: $e');
+        context.read<NotificationQueue>().queue('Failed to add shop', SnackType.success);
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
 

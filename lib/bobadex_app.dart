@@ -4,10 +4,12 @@ import 'package:bobadex/state/city_data_provider.dart';
 import 'package:bobadex/state/drink_state.dart';
 import 'package:bobadex/state/feed_state.dart';
 import 'package:bobadex/state/friend_state.dart';
+import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/user_stats_cache.dart';
+import 'package:bobadex/widgets/notification_consumer.dart';
 import 'package:flutter/material.dart';
 import 'app_initializer.dart';
 import 'package:provider/provider.dart';
@@ -30,6 +32,7 @@ class BobadexApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AchievementsState()),
         ChangeNotifierProvider(create: (_) => FeedState()),
         ChangeNotifierProvider(create: (_) => CityDataProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationQueue()),
       ],
       child: Consumer<UserState>(
         builder: (context, userState, _) {
@@ -70,7 +73,12 @@ class BobadexApp extends StatelessWidget {
               onTap: () => FocusScope.of(context).unfocus(),
               child: child!,
             ),
-            home: const AppInitializer(),
+            home: Stack(
+              children: [
+                AppInitializer(),
+                NotificationConsumer(), // <--- Here, it's inside the MaterialApp/Overlay
+              ]
+            ),
           );
         },
       ),

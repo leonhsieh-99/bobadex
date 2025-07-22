@@ -12,6 +12,7 @@ class AchievementsState extends ChangeNotifier {
   final List<Achievement> _achievements = [];
   final List<UserAchievement> _userAchievements = [];
   final Map<String, UserAchievement> _progressMap = {};
+  final List<Achievement> _pendingAchievements = [];
   final _unlockedAchievementController = StreamController<Achievement>.broadcast();
 
   List<Achievement> get achievements => _achievements;
@@ -56,6 +57,17 @@ class AchievementsState extends ChangeNotifier {
         rethrow;
       }
     }
+  }
+
+  void queueAchievement(Achievement a) {
+    _pendingAchievements.add(a);
+    notifyListeners();
+  }
+
+  List<Achievement> consumeQueuedAchievements() {
+    final achievements = List<Achievement>.from(_pendingAchievements);
+    _pendingAchievements.clear();
+    return achievements;
   }
 
   Future<void> checkAndUnlock(int count, int min, Achievement a) async {

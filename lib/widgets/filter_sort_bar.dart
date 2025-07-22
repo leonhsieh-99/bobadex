@@ -1,3 +1,4 @@
+import 'package:bobadex/widgets/compact_text_row.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/constants.dart';
@@ -10,19 +11,21 @@ class SortOption {
   SortOption (this.key, this.icon);
 }
 class FilterSortBar extends StatefulWidget {
+  final TextEditingController controller;
   final ValueChanged<String> onSearchChanged;
   final List<SortOption> sortOptions;
   final ValueChanged<String> onSortSelected;
   
   const FilterSortBar ({
     super.key,
+    required this.controller,
     required this.onSearchChanged,
     required this.sortOptions,
     required this.onSortSelected,
   });
 
   @override
-  State<FilterSortBar> createState () => _FilterSortBarState();
+  State<FilterSortBar> createState() => _FilterSortBarState();
 }
 
 class _FilterSortBarState extends State<FilterSortBar> {
@@ -39,78 +42,69 @@ class _FilterSortBarState extends State<FilterSortBar> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<UserState>().user;
-    return Row(
-      children: [
-        // search bar
-        Expanded(
-          flex: 4,
-          child:SizedBox(
-            height: 36,
-            child: TextField(
-              onChanged: widget.onSearchChanged,
-              decoration: InputDecoration(
-                isDense: true,
-                hintText: 'Search',
-                prefixIcon: const Icon(Icons.search, size: 18),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+    final user = context.read<UserState>().user;
+    return CompactTextRow(
+      maxLength: 24,
+      leftFlexStart: 2,
+      leftFlexEnd: 9,
+      rightFlex: 3,
+      hintText: 'Search',
+      textController: widget.controller,
+      onSearchChanged: widget.onSearchChanged,
+      child: Row(
+        children: [
+          // Asc/desc icon
+          GestureDetector(
+            onTap: () {
+              setState(() => _isAscending = !_isAscending);
+              widget.onSortSelected(_selectedSortKey + (_isAscending ? '-asc' : '-desc'));
+            },
+            child: Padding(
+              padding: const EdgeInsets.only(right: 10), // very tight spacing
+              child: Icon(
+                _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                color: Constants.getThemeColor(user.themeSlug),
+                size: 20,
               ),
             ),
           ),
-        ),
 
-        // Asc/desc icon
-        GestureDetector(
-          onTap: () {
-            setState(() => _isAscending = !_isAscending);
-            widget.onSortSelected(_selectedSortKey + (_isAscending ? '-asc' : '-desc'));
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10), // very tight spacing
-            child: Icon(
-              _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
-              color: Constants.getThemeColor(user.themeSlug),
-              size: 20,
-            ),
-          ),
-        ),
+          // Vertical divider
+          const SizedBox(height: 40, child: VerticalDivider(width: 1)),
 
-        // Vertical divider
-        const SizedBox(height: 40, child: VerticalDivider(width: 1)),
-
-        // Sort option chips
-        const SizedBox(width: 8),
-        Flexible(
-          flex: 4,
-          child: Stack(
-            children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.only(right: 12),
-                child: Row(
-                  children: widget.sortOptions.map((opt) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: ChoiceChip(
-                        label: Icon(opt.icon, size: 16),
-                        selected: _selectedSortKey == opt.key,
-                        backgroundColor: Constants.getThemeColor(user.themeSlug).shade50,
-                        selectedColor: Constants.getThemeColor(user.themeSlug).shade100,
-                        showCheckmark: false,
-                        onSelected: (_) {
-                          setState(() => _selectedSortKey = opt.key);
-                          widget.onSortSelected(opt.key + (_isAscending ? '-asc' : '-desc'));
-                        },
-                      ),
-                    );
-                  }).toList(),
+          // Sort option chips
+          const SizedBox(width: 8),
+          Flexible(
+            flex: 4,
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Row(
+                    children: widget.sortOptions.map((opt) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: ChoiceChip(
+                          label: Icon(opt.icon, size: 16),
+                          selected: _selectedSortKey == opt.key,
+                          backgroundColor: Constants.getThemeColor(user.themeSlug).shade50,
+                          selectedColor: Constants.getThemeColor(user.themeSlug).shade100,
+                          showCheckmark: false,
+                          onSelected: (_) {
+                            setState(() => _selectedSortKey = opt.key);
+                            widget.onSortSelected(opt.key + (_isAscending ? '-asc' : '-desc'));
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      )
     );
   }
 }

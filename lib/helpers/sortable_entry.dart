@@ -21,8 +21,8 @@ void sortEntries<T extends SortableEntry>(
           ? a.name.toLowerCase().compareTo(b.name.toLowerCase())
           : b.name.toLowerCase().compareTo(a.name.toLowerCase());
       case 'favorite':
-        if (a.isFavorite && !b.isFavorite) return -1;
-        if (!a.isFavorite && b.isFavorite) return 1;
+        int favComp = (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0);
+        if (favComp != 0) return favComp;
         return b.rating.compareTo(a.rating);
       case 'createdAt':
         return ascending

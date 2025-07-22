@@ -1,6 +1,8 @@
 import 'package:bobadex/helpers/show_snackbar.dart';
+import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/utils/validators.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> changePasswordDialog(BuildContext context) async {
@@ -84,12 +86,12 @@ Future<void> changePasswordDialog(BuildContext context) async {
                     );
 
                     if (context.mounted) {
-                      showAppSnackBar(context, 'Password changed successfully', type: SnackType.success);
+                      context.read<NotificationQueue>().queue('Password changed successfully', SnackType.success);
                       Navigator.pop(context);
                     }
                   } catch (e) {
                     if (context.mounted) {
-                      showAppSnackBar(context, 'Error changing password', type: SnackType.error);
+                      context.read<NotificationQueue>().queue('Error changing password', SnackType.error);
                     }
                   } finally {
                     setState(() => _isLoading = false);

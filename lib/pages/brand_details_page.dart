@@ -5,6 +5,7 @@ import 'package:bobadex/models/brand_stats.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/pages/shop_gallery_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
+import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/brand_feed_view.dart';
@@ -196,7 +197,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                             }
                           } catch (e) {
                             debugPrint('error: $e');
-                            if (context.mounted) { showAppSnackBar(context, 'Failed to update shop.', type: SnackType.error); }
+                            if (context.mounted) { context.read<NotificationQueue>().queue('Failed to update shop.', SnackType.error); }
                             rethrow;
                           }
                         },

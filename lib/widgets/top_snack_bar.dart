@@ -12,7 +12,7 @@ class TopSnackBar extends StatefulWidget {
     required this.message,
     required this.backgroundColor,
     this.icon,
-    this.duration = const Duration(seconds: 2),
+    this.duration = const Duration(milliseconds: 1900),
     this.onDismissed,
   });
 

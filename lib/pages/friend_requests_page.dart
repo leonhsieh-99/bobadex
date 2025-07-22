@@ -3,6 +3,7 @@ import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/friend_state.dart';
+import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
@@ -68,9 +69,9 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> {
                               try {
                                 friendState.acceptUser(requester.id);
                                 achievementState.checkAndUnlockFriendAchievement(friendState);
-                                showAppSnackBar(context, 'Friend added', type: SnackType.info);
+                                context.read<NotificationQueue>().queue('Friend added', SnackType.info);
                               } catch (e) {
-                                showAppSnackBar(context, 'Error adding friend', type: SnackType.error);
+                                context.read<NotificationQueue>().queue('Error adding friend', SnackType.error);
                               }
                             },
                             icon: Icon(
@@ -93,7 +94,7 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> {
                               try {
                                 friendState.rejectUser(requester.id);
                               } catch (e) {
-                                showAppSnackBar(context, 'Error rejecting user', type: SnackType.error);
+                                context.read<NotificationQueue>().queue('Error rejecting user', SnackType.error);
                               }
                             },
                             icon: Icon(

@@ -3,6 +3,7 @@ import 'package:bobadex/helpers/image_uploader_helper.dart';
 import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/state/achievements_state.dart';
+import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
 import 'package:bobadex/widgets/image_widgets/gallery_grid.dart';
@@ -84,9 +85,9 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
         _selecting = false;
         _selected = [];
       });
-      if (mounted) showAppSnackBar(context, 'Photos deleted', type: SnackType.success);
+      if (mounted) context.read<NotificationQueue>().queue('Photos deleted', SnackType.success);
     } catch (e) {
-      if (mounted) showAppSnackBar(context, 'Error deleting photos', type: SnackType.error);
+      if (mounted) context.read<NotificationQueue>().queue('Error deleting photos', SnackType.error);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -148,11 +149,11 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
         shopMediaState.replacePendingMedia(tempId, insertedMedia);
       } catch (e) {
         shopMediaState.removePendingMedia(tempId);
-        if (mounted) showAppSnackBar(context, 'Upload failed', type: SnackType.error);
+        if (mounted) context.read<NotificationQueue>().queue('Upload failed', SnackType.error);
       }
     }
     setState(() => _isLoading = false);
-    if (mounted) showAppSnackBar(context, 'Images uploaded', type: SnackType.success);
+    if (mounted) context.read<NotificationQueue>().queue('Images uploaded', SnackType.success);
   }
 
   @override

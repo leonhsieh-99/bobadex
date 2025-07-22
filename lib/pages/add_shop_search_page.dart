@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
+import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/widgets/add_new_brand_dialog.dart';
 import 'package:bobadex/widgets/custom_search_bar.dart';
@@ -120,9 +121,9 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
     );
     if (!mounted) return;
     if (result == 'success') {
-      showAppSnackBar(context, 'Brand pending for review'); // success
+      context.read<NotificationQueue>().queue('Brand pending for review', SnackType.info);
     } else if (result != null) {
-      showAppSnackBar(context, result, type: SnackType.error); // error message
+      context.read<NotificationQueue>().queue(result, SnackType.error); // error message
     }
   }
 

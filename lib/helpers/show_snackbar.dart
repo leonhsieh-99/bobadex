@@ -5,7 +5,7 @@ enum SnackType { info, success, error, achievement }
 
 // Place this function anywhere (eg. in a helpers file)
 void showAppSnackBar(BuildContext context, String message, {SnackType type = SnackType.info}) {
-  final overlay = Overlay.of(context);
+  final overlay = Overlay.of(context, rootOverlay: true);
 
   Color bgColor;
   IconData? icon;

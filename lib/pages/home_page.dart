@@ -40,6 +40,7 @@ class _HomePageState extends State<HomePage> {
   late Future<List<Shop>> _userShopsFuture;
   String _searchQuery = '';
   String _selectedSort = 'favorite-asc';
+  final _searchController = TextEditingController();
 
   bool get isCurrentUser => widget.user.id == Supabase.instance.client.auth.currentUser!.id;
 
@@ -47,6 +48,12 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _userShopsFuture = fetchUserShops(widget.user.id);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -142,6 +149,7 @@ class _HomePageState extends State<HomePage> {
             childAspectRatio: 1,
           ),
           itemBuilder: (context, index) {
+            // view settings
             final screenWidth = MediaQuery.of(context).size.width;
             final columns = user.gridColumns;
             const spacing = 4.0;
@@ -151,10 +159,22 @@ class _HomePageState extends State<HomePage> {
             final imageScale = columns == 2 ? scaleFactor * 1.2 : scaleFactor;
             final textScale = columns == 2 ? scaleFactor * 1 : scaleFactor;
 
+            // actual data
             final shop = visibleShops[index];
             final brand = brandState.getBrand(shop.brandSlug);
+            final String? url = brand?.thumbUrl;
+            final bool hasValidThumb = url != null && url.isNotEmpty;
             final useIcons = user.useIcons == true;
+
+            // banner vars
             final banner = bannerByShop[shop.id];
+            final String? bannerUrl = banner?.imageUrl;
+            final String? brandThumb = brand?.thumbUrl;
+            final bool hasBanner = bannerUrl != null && bannerUrl.isNotEmpty;
+            final bool hasBrandThumb = brandThumb != null && brandThumb.isNotEmpty;
+            final String? displayUrl = hasBanner
+                ? bannerUrl
+                : (hasBrandThumb ? brandThumb : null);
 
             return GestureDetector(
               onTap: () async => _navigateToShop(shop, user),
@@ -230,17 +250,17 @@ class _HomePageState extends State<HomePage> {
                               child: SizedBox(
                                 width: 55 * imageScale,
                                 height: 60 * imageScale,
-                                child: (shop.brandSlug == null || shop.brandSlug!.isEmpty) || (brand == null || brand.iconPath == null || brand.iconPath!.isEmpty)
-                                  ? Image.asset(
-                                    'lib/assets/default_icon.png',
-                                    fit: BoxFit.cover,
-                                  )
-                                  : CachedNetworkImage(
-                                    imageUrl: brand.thumbUrl,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) => CircularProgressIndicator(),
-                                    errorWidget: (context, url, error) => Icon(Icons.broken_image, size: 50 * imageScale),
-                                  )
+                                child: hasValidThumb
+                                  ? CachedNetworkImage(
+                                      imageUrl: url,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => CircularProgressIndicator(),
+                                      errorWidget: (context, url, error) => Icon(Icons.broken_image, size: 50 * imageScale),
+                                    )
+                                  : Image.asset(
+                                      'lib/assets/default_icon.png',
+                                      fit: BoxFit.cover,
+                                    ),
                               )
                             ),
                           ),
@@ -263,12 +283,21 @@ class _HomePageState extends State<HomePage> {
                         fit: StackFit.expand,
                         children: [
                           // Banner background
-                          CachedNetworkImage(
-                            imageUrl: banner != null ? banner.imageUrl : brand!.thumbUrl,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                          ),
+                          displayUrl != null
+                            ? CachedNetworkImage(
+                                imageUrl: displayUrl,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                                placeholder: (context, url) => Center(child: CircularProgressIndicator()),
+                                errorWidget: (context, url, error) => Icon(Icons.broken_image, size: 50 * textScale),
+                              )
+                            : Image.asset(
+                                'lib/assets/default_icon.png',
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                              ),
                           // Gradient overlay for bottom
                           Align(
                             alignment: Alignment.bottomCenter,
@@ -405,6 +434,7 @@ class _HomePageState extends State<HomePage> {
               Padding(
                 padding: const EdgeInsets.all(8),
                 child: FilterSortBar(
+                  controller: _searchController,
                   sortOptions: [
                     SortOption('favorite', Icons.favorite),
                     SortOption('rating', Icons.star),

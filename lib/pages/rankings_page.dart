@@ -3,9 +3,11 @@ import 'package:bobadex/models/brand_stats.dart';
 import 'package:bobadex/models/user_stats.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
+import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RankingsPage extends StatefulWidget {
@@ -38,7 +40,7 @@ class _RankingsPageState extends State<RankingsPage> {
       ];
     } catch (e) {
       debugPrint('Error loading rankings: $e');
-      if (mounted) { showAppSnackBar(context, 'Error loading rankings', type: SnackType.error); }
+      if (mounted) { context.read<NotificationQueue>().queue('Error loading rankings', SnackType.error); }
     }
     return [[],[]];
   }

@@ -1,5 +1,6 @@
 import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/shop_media.dart';
+import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
 import 'package:bobadex/widgets/image_widgets/tappable_image.dart';
@@ -69,9 +70,9 @@ class _GalleryGridState extends State<GalleryGrid> {
               ? (img, comment, visibility) async {
                 try {
                   await context.read<ShopMediaState>().editMedia(img.id, comment, visibility);
-                  if (mounted) showAppSnackBar(context, 'Updated photo', type: SnackType.success);
+                  if (mounted) context.read<NotificationQueue>().queue('Updated photo', SnackType.success);
                 } catch (e) {
-                  if (mounted) showAppSnackBar(context, 'Error updating comment: $e', type: SnackType.error);
+                  if (mounted) context.read<NotificationQueue>().queue('Error updating comment: $e', SnackType.error);
                 }
               }
             : null,
