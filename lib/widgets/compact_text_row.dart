@@ -6,6 +6,7 @@ class CompactTextRow extends StatefulWidget {
   final String? hintText; 
   final ValueChanged<String>? onSearchChanged;
   final int maxLength;
+  final int maxLines;
   final Widget child;
   final int leftFlexStart;
   final int leftFlexEnd;
@@ -18,6 +19,7 @@ class CompactTextRow extends StatefulWidget {
     this.labelText,
     this.hintText,
     this.maxLength = 20,
+    this.maxLines = 1,
     required this.child,
     this.leftFlexStart = 3,
     this.leftFlexEnd = 6,
@@ -73,7 +75,7 @@ class _CompactTextRowState extends State<CompactTextRow> {
               counterText: "",
             ),
             maxLength: widget.maxLength,
-            maxLines: 1,
+            maxLines: widget.maxLines,
           ),
         ),
       ),

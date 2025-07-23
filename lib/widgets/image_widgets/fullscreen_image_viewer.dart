@@ -161,55 +161,67 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
             );
           }
           // --- VIEW MODE ---
-          return Row(
+          return canEdit
+            ? Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                if (!canEdit)
+                  ThumbPic(url: img.userThumbUrl, size: 40),
+                if (!canEdit) SizedBox(width: 12),
+                if (!canEdit)
+                  Text(
+                    img.userName ?? '',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                  ),
+                if (!canEdit) SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    img.comment,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 20, color: Colors.grey[800]),
+                  ),
+                ),
+                if (canEdit && widget.mode == FullscreenImageMode.edit)
+                  Container(
+                    padding: EdgeInsets.symmetric(vertical: 2, horizontal: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.25),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(img.visibility, style: TextStyle(fontSize: 12)),
+                  ),
+                if (canEdit && widget.mode == FullscreenImageMode.edit)
+                  SizedBox(width: 4),
+                if (canEdit && widget.mode == FullscreenImageMode.edit)
+                  IconButton(
+                    icon: Icon(Icons.edit, color: Colors.grey[800]),
+                    onPressed: () => _startEdit(currentIndex),
+                  ),
+              ],
+            )
+          : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar + name
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+              Row(
                 children: [
-                  if (!canEdit)
-                    Row(
-                      children: [
-                        ThumbPic(url: img.userThumbUrl, size: 40),
-                        SizedBox(width: 12),
-                        Text(
-                          img.userName ?? '',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 20
-                          ),
-                        ),
-                      ],
+                  ThumbPic(url: img.userThumbUrl, size: 40),
+                  SizedBox(width: 12),
+                  Text(
+                    img.userName ?? '',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 20
                     ),
-                  Padding(
-                    padding: EdgeInsets.only(left: !canEdit ? 12 : 0, top: !canEdit ? 8 : 0),
-                    child: Text(
-                      img.comment,
-                      style: TextStyle(
-                        fontSize: 20, color: Colors.grey[800]
-                      ),
-                    ),
-                  )
+                  ),
                 ],
               ),
-              // Action buttons
-              Spacer(),
-              if (canEdit && widget.mode == FullscreenImageMode.edit)
-                Container(
-                  padding: EdgeInsets.symmetric(vertical: 2, horizontal: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(img.visibility, style: TextStyle(fontSize: 12)),
-                ),
-              if (canEdit && widget.mode == FullscreenImageMode.edit)
-                SizedBox(width: 4),
-              if (canEdit && widget.mode == FullscreenImageMode.edit)
-                IconButton(
-                  icon: Icon(Icons.edit, color: Colors.grey[800]),
-                  onPressed: () => _startEdit(currentIndex),
-                ),
+              SizedBox(height: 4),
+              Text(
+                img.comment,
+                style: TextStyle(fontSize: 20, color: Colors.grey[800]),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           );
         }),
@@ -341,6 +353,8 @@ class _UploadOrEditFields extends StatelessWidget {
           leftFlexStart: 5,
           leftFlexEnd: 10,
           rightFlex: 3,
+          maxLength: 30,
+          maxLines: 2,
           child: VisibilityToggleButton(
             value: visibility,
             onChanged: onVisibilityChanged!,

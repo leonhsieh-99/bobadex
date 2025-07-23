@@ -1,6 +1,6 @@
 import 'package:bobadex/pages/setting_pages/settings_account_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_layout_page.dart';
-import 'package:bobadex/pages/setting_pages/settings_notifications_page.dart';
+// import 'package:bobadex/pages/setting_pages/settings_notifications_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_theme_page.dart';
 import 'package:flutter/material.dart';
 // import '../state/user_state.dart';
@@ -33,16 +33,17 @@ class _SettingsPageState extends State<SettingsPage> {
               MaterialPageRoute(builder: (_) => SettingsAccountPage())
             ),
           ),
-          ListTile(
-            leading: Icon(Icons.notifications),
-            title: Text('Notifications'),
-            subtitle: Text('Manage your notifications'),
-            trailing: Icon(Icons.chevron_right),
-            onTap:() => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => SettingsNotificationsPage())
-            ),
-          ),
+          // for future dev
+          // ListTile(
+          //   leading: Icon(Icons.notifications),
+          //   title: Text('Notifications'),
+          //   subtitle: Text('Manage your notifications'),
+          //   trailing: Icon(Icons.chevron_right),
+          //   onTap:() => Navigator.push(
+          //     context,
+          //     MaterialPageRoute(builder: (_) => SettingsNotificationsPage())
+          //   ),
+          // ),
           ListTile(
             leading: Icon(Icons.color_lens),
             title: Text('Theme'),

@@ -65,7 +65,7 @@ class FriendState extends ChangeNotifier {
           .eq('requester_id', requesterId)
           .eq('addressee_id', userId);
       } catch (e) {
-        debugPrint('Update failed: $e');
+        debugPrint('Accept user failed: $e');
         _friendships[index] = temp;
         notifyListeners();
         rethrow;
@@ -88,7 +88,7 @@ class FriendState extends ChangeNotifier {
           .eq('requester_id', requesterId)
           .eq('addressee_id', userId);
       } catch (e) {
-        debugPrint('Delete failed: $e');
+        debugPrint('Reject user failed: $e');
         _friendships.insert(index, temp);
         notifyListeners();
         rethrow;

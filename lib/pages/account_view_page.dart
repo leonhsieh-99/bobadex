@@ -196,10 +196,12 @@ class _AccountViewPageState extends State<AccountViewPage> {
             Text(user.bio ?? 'No bio set', textAlign: TextAlign.center),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                StatBox(label: 'Shops', value: _isLoading ? '...' : stats.shopCount.toString()),
-                StatBox(label: 'Drinks', value: _isLoading ? '...' : stats.drinkCount.toString()),
-              ],
+              children: _isLoading
+                ? [StatBoxSkeleton(), StatBoxSkeleton()]
+                : [
+                    StatBox(label: 'Shops', value: stats.shopCount.toString()),
+                    StatBox(label: 'Drinks', value: stats.drinkCount.toString()),
+                  ],
             ),
             Divider(height: 32),
             Text('Favorite Shop', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -211,23 +213,25 @@ class _AccountViewPageState extends State<AccountViewPage> {
                 : null,
               child: SizedBox(
                 height: 60,
-                child: (brand != null)
-                  ? ListTile(
-                      leading: (brandThumbUrl.isNotEmpty)
-                        ? CachedNetworkImage(
-                          imageUrl: brandThumbUrl,
-                          width: 50,
-                          height: 50,
-                          placeholder: (context, url) => CircularProgressIndicator(),
-                        )
-                        : Image.asset(
-                          'lib/assets/default_icon.png',
-                          fit: BoxFit.cover,
-                        ),
-                      title: Text(brand.display),
-                      subtitle: Text(drinkName),
-                    )
-                  : Center( child: Text( isCurrentUser ? 'No shops yet, add in home page' : 'User has no shops yet', style: Constants.emptyListTextStyle))
+                child: _isLoading
+                  ? ShopTileSkeleton()
+                  : (brand != null)
+                    ? ListTile(
+                        leading: (brandThumbUrl.isNotEmpty)
+                          ? CachedNetworkImage(
+                            imageUrl: brandThumbUrl,
+                            width: 50,
+                            height: 50,
+                            placeholder: (context, url) => CircularProgressIndicator(),
+                          )
+                          : Image.asset(
+                            'lib/assets/default_icon.png',
+                            fit: BoxFit.cover,
+                          ),
+                        title: Text(brand.display),
+                        subtitle: Text(drinkName),
+                      )
+                    : Center( child: Text( isCurrentUser ? 'No shops yet, add in home page' : 'User has no shops yet', style: Constants.emptyListTextStyle))
               )
             ),
             SizedBox(height: 6),
@@ -257,48 +261,98 @@ class _AccountViewPageState extends State<AccountViewPage> {
               child: SizedBox(
                 width: double.infinity,
                 height: 60,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: pinnedBadges.isNotEmpty
-                    ? pinnedBadges
-                      .map((a) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Tooltip(
-                          message: (a.isHidden && !isCurrentUser) ? 'Hidden ? ? ?' : a.description,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                CircleAvatar(
-                                  backgroundImage: AssetImage(
-                                    (a.iconPath != null && a.iconPath!.isNotEmpty)
-                                      ? a.iconPath!
-                                      : 'lib/assets/badges/default_badge.png'
+                child: _isLoading
+                  ? BadgeRowSkeleton()
+                  : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: pinnedBadges.isNotEmpty
+                      ? pinnedBadges
+                        .map((a) => Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Tooltip(
+                            message: (a.isHidden && !isCurrentUser) ? 'Hidden ? ? ?' : a.description,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CircleAvatar(
+                                    backgroundImage: AssetImage(
+                                      (a.iconPath != null && a.iconPath!.isNotEmpty)
+                                        ? a.iconPath!
+                                        : 'lib/assets/badges/default_badge.png'
+                                    ),
+                                    radius: 22,
                                   ),
-                                  radius: 22,
-                                ),
-                                Text(
-                                  a.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w300,
-                                    fontSize: 9,
-                                  ),
-                                )
-                              ]
-                            )
-                        )
-                      ))
-                      .toList()
-                    : [
-                        Text( isCurrentUser ? 'No badges yet, tap to pin your badges' : 'User has no badges yet', style: Constants.emptyListTextStyle),
-                      ],
-                ),
+                                  Text(
+                                    a.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w300,
+                                      fontSize: 9,
+                                    ),
+                                  )
+                                ]
+                              )
+                          )
+                        ))
+                        .toList()
+                      : [
+                          Text( isCurrentUser ? 'No badges yet, tap to pin your badges' : 'User has no badges yet', style: Constants.emptyListTextStyle),
+                        ],
+                  ),
               ),
             ),
           ],
         ),
       )
+    );
+  }
+}
+
+class ShopTileSkeleton extends StatelessWidget {
+  const ShopTileSkeleton({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.grey[300],
+          shape: BoxShape.circle,
+        ),
+      ),
+      title: Container(
+        width: 80,
+        height: 12,
+        color: Colors.grey[300],
+      ),
+      subtitle: Container(
+        width: 60,
+        height: 10,
+        color: Colors.grey[200],
+        margin: EdgeInsets.only(top: 4),
+      ),
+    );
+  }
+}
+
+class BadgeRowSkeleton extends StatelessWidget {
+  const BadgeRowSkeleton({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(
+        3, // Show 3 fake badges
+        (i) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: CircleAvatar(
+            backgroundColor: Colors.grey[300],
+            radius: 22,
+          ),
+        ),
+      ),
     );
   }
 }

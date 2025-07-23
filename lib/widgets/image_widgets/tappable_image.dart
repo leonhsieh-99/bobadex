@@ -35,6 +35,10 @@ class TappableImage extends StatelessWidget {
             fit: BoxFit.cover,
             width: width,
             height: height,
+            errorBuilder: (context, error, stackTrace) {
+              debugPrint("Failed to load image: $error");
+              return Icon(Icons.broken_image, size: 40);
+            }
           ),
         );
       } else {
@@ -43,6 +47,10 @@ class TappableImage extends StatelessWidget {
           fit: BoxFit.cover,
           width: width,
           height: height,
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint("Failed to load image: $error");
+            return Icon(Icons.broken_image, size: 40);
+          }
         );
       }
     }
@@ -72,6 +80,40 @@ class TappableImage extends StatelessWidget {
               child: Icon(Icons.check_circle, color: Colors.white, size: 36),
             )),
         ],
+      ),
+    );
+  }
+}
+
+class SkeletonTappableImage extends StatelessWidget {
+  final double width;
+  final double height;
+
+  const SkeletonTappableImage({
+    super.key,
+    required this.width,
+    required this.height,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.grey[300],
+        ),
+        child: Stack(
+          children: [
+            // Optional: add a subtle shimmer with AnimatedContainer or shimmer package
+            // For now, just a static box
+            Center(
+              child: Icon(Icons.image, color: Colors.grey[400], size: width * 0.35),
+            ),
+          ],
+        ),
       ),
     );
   }

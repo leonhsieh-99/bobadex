@@ -67,7 +67,7 @@ class ShopMediaState extends ChangeNotifier {
       if (hadOldBanner) _shopMedia[oldIndex].isBanner = true;
       _shopMedia[newIndex].isBanner = false;
       notifyListeners();
-      debugPrint('Error updating banner: $e');
+      debugPrint('Error updating media banner: $e');
       rethrow;
     }
   }
@@ -87,7 +87,7 @@ class ShopMediaState extends ChangeNotifier {
           })
           .eq('id', id);
       } catch (e) {
-        debugPrint('Error updating comment: $e');
+        debugPrint('Error updating media comment: $e');
         _shopMedia[mediaIdx] = tempMedia;
         notifyListeners();
         rethrow;
@@ -142,7 +142,7 @@ class ShopMediaState extends ChangeNotifier {
         }
       }
     } catch (e) {
-      debugPrint('Remove failed: $e');
+      debugPrint('Remove media failed: $e');
       _shopMedia.add(removedMedia);
       notifyListeners();
       rethrow;

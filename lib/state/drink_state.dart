@@ -31,7 +31,7 @@ class DrinkState extends ChangeNotifier {
           })
           .eq('id', updated.id);
       } catch (e) {
-        debugPrint('Update failed: $e');
+        debugPrint('Update drink failed: $e');
         _drinks[index] = temp;
         notifyListeners();
         rethrow;
@@ -50,7 +50,7 @@ class DrinkState extends ChangeNotifier {
         .delete()
         .eq('id', id);
     } catch (e) {
-      debugPrint('Remove failed: $e');
+      debugPrint('Remove drink failed: $e');
       _drinks.add(temp!);
       notifyListeners();
       rethrow;
@@ -86,7 +86,7 @@ class DrinkState extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('Insert failed: $e');
+      debugPrint('Insert drink failed: $e');
       _drinks.remove(tempDrink);
       notifyListeners();
       rethrow;
