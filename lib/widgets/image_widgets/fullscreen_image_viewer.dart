@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:bobadex/widgets/compact_text_row.dart';
+import 'package:bobadex/widgets/report_widget.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
@@ -237,66 +238,95 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
           children: [
             // IMAGE GALLERY
             Expanded(
-              child: uploadMode
-                ? PhotoViewGallery.builder(
-                    backgroundDecoration: BoxDecoration(color: Colors.grey[50]),
-                    itemCount: widget.images.length,
-                    pageController: _pageController,
-                    onPageChanged: (index) {
-                      setState(() {
-                        currentIndex = index;
-                        editingIndex = null;
-                      });
-                    },
-                    builder: (context, index) {
-                      final img = widget.images[index];
-                      return PhotoViewGalleryPageOptions.customChild(
-                        minScale: PhotoViewComputedScale.contained,
-                        maxScale: PhotoViewComputedScale.covered * 2,
-                        child: Image.file(img.file!)
-                      );
-                    },
-                    loadingBuilder: (context, _) => Center(child: CircularProgressIndicator()),
+              child: Stack(
+                children: [
+                  uploadMode
+                  ? PhotoViewGallery.builder(
+                      backgroundDecoration: BoxDecoration(color: Colors.grey[50]),
+                      itemCount: widget.images.length,
+                      pageController: _pageController,
+                      onPageChanged: (index) {
+                        setState(() {
+                          currentIndex = index;
+                          editingIndex = null;
+                        });
+                      },
+                      builder: (context, index) {
+                        final img = widget.images[index];
+                        return PhotoViewGalleryPageOptions.customChild(
+                          minScale: PhotoViewComputedScale.contained,
+                          maxScale: PhotoViewComputedScale.covered * 2,
+                          child: Image.file(img.file!)
+                        );
+                      },
+                      loadingBuilder: (context, _) => Center(child: CircularProgressIndicator()),
+                    )
+                  : ExtendedImageSlidePage(
+                    slideAxis: SlideAxis.vertical,
+                    child: ExtendedImageGesturePageView.builder(
+                      itemCount: widget.images.length,
+                      controller: _extendedPageController,
+                      itemBuilder: (context, index) {
+                        final img = widget.images[index];
+                        return Hero(
+                          tag: img.id!,
+                          child: ExtendedImage.network(
+                            img.url!,
+                            fit: BoxFit.contain,
+                            mode: ExtendedImageMode.gesture,
+                            initGestureConfigHandler: (state) => GestureConfig(
+                              inPageView: true,
+                              initialScale: 1.0,
+                              minScale: 1.0,
+                              maxScale: 1.5,
+                              animationMinScale: 1.0,
+                              cacheGesture: true,
+                              speed: 0.85,
+                              inertialSpeed: 70.0,
+                            ),
+                            loadStateChanged: (state) {
+                              if (state.extendedImageLoadState == LoadState.loading) {
+                                return Image.network(img.thumbUrl!, fit: BoxFit.contain);
+                              }
+                              return null;
+                            },
+                            enableSlideOutPage: true,
+                          )
+                        ); 
+                      },
+                      onPageChanged: (int index) {
+                        setState(() => currentIndex = index);
+                        _cancelEdit();
+                      },
+                    )
+                  ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: PopupMenuButton(
+                      onSelected: (value) {
+                        switch(value) {
+                          case 'report':
+                            showDialog(
+                              context: context,
+                              builder: (_) => ReportDialog(
+                                contentType: 'photo',
+                                contentId: img.id ?? '',
+                              ),
+                            );
+                            break;
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'report',
+                          child: Text('Report'),
+                        ),
+                      ]
+                    )
                   )
-                : ExtendedImageSlidePage(
-                  slideAxis: SlideAxis.vertical,
-                  child: ExtendedImageGesturePageView.builder(
-                    itemCount: widget.images.length,
-                    controller: _extendedPageController,
-                    itemBuilder: (context, index) {
-                      final img = widget.images[index];
-                      return Hero(
-                        tag: img.id!,
-                        child: ExtendedImage.network(
-                          img.url!,
-                          fit: BoxFit.contain,
-                          mode: ExtendedImageMode.gesture,
-                          initGestureConfigHandler: (state) => GestureConfig(
-                            inPageView: true,
-                            initialScale: 1.0,
-                            minScale: 1.0,
-                            maxScale: 1.5,
-                            animationMinScale: 1.0,
-                            cacheGesture: true,
-                            speed: 0.85,
-                            inertialSpeed: 70.0,
-                          ),
-                          loadStateChanged: (state) {
-                            if (state.extendedImageLoadState == LoadState.loading) {
-                              return Image.network(img.thumbUrl!, fit: BoxFit.contain);
-                            }
-                            return null;
-                          },
-                          enableSlideOutPage: true,
-                        )
-                      ); 
-                    },
-                    onPageChanged: (int index) {
-                      setState(() => currentIndex = index);
-                      _cancelEdit();
-                    },
-                  )
-                )
+                ]
+              )
             ),
             ConstrainedBox(
               constraints: BoxConstraints(

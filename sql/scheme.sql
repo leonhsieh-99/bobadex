@@ -101,6 +101,17 @@ create table feed_events (
   is_backfill boolean default false
 );
 
+create table reports (
+  id uuid primary key default gen_random_uuid(),
+  reported_by uuid references users(id) not null,
+  content_type text not null,         -- 'photo', 'comment', etc.
+  content_id uuid not null,           -- id of reported item
+  reason text not null,               -- category
+  message text,                       -- optional, extra user message
+  created_at timestamptz not null default now()
+);
+
+
 -- Common filter/join targets
 create index on drinks(shop_id);
 create index on drink_notes(drink_id);
@@ -114,6 +125,7 @@ create index on drinks(visibility);
 
 -- Index for fast querying
 create index on feed_events(user_id, created_at desc);
+create index on reports(content_type, content_id);
 
 ----------READ ONLY TABLES------------
 
