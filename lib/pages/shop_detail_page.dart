@@ -143,7 +143,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                       await shopMediaState.removeMedia(mediaId);
                     } catch (e) {
                       if(context.mounted) {
-                        debugPrint('deletion failed: $e');
+                        debugPrint('Delete failed: $e');
                       }
                     }
                     setState(() {});

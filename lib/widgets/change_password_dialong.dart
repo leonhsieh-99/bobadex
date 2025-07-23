@@ -11,7 +11,7 @@ Future<void> changePasswordDialog(BuildContext context) async {
   final confirmController = TextEditingController();
   final formKey = GlobalKey<FormState>();
   String? currentPasswordError;
-  bool _isLoading = false;
+  bool isLoading = false;
 
   await showDialog(
     context: context,
@@ -58,7 +58,7 @@ Future<void> changePasswordDialog(BuildContext context) async {
                   FocusScope.of(context).unfocus();
                   
                   if (!formKey.currentState!.validate()) return;
-                  setState(() => _isLoading = true);
+                  setState(() => isLoading = true);
 
                   final current = currentController.text.trim();
                   final newPass = newController.text.trim();
@@ -94,14 +94,14 @@ Future<void> changePasswordDialog(BuildContext context) async {
                       context.read<NotificationQueue>().queue('Error changing password', SnackType.error);
                     }
                   } finally {
-                    setState(() => _isLoading = false);
+                    setState(() => isLoading = false);
                   }
                 },
                 child: const Text('Save'),
               )
             ],
           ),
-          if (_isLoading)
+          if (isLoading)
             Container(
               color: Colors.black.withOpacity(0.1),
               child: const Center(
