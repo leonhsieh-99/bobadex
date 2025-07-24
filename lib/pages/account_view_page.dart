@@ -128,27 +128,28 @@ class _AccountViewPageState extends State<AccountViewPage> {
     return Scaffold(
       appBar: AppBar(
         actions: [
-          PopupMenuButton(
-            onSelected: (value) {
-              switch(value) {
-                case 'report':
-                  showDialog(
-                    context: context,
-                    builder: (_) => ReportDialog(
-                      contentType: 'user',
-                      contentId: user.id,
-                    ),
-                  );
-                  break;
-              }
-            },
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                value: 'report',
-                child: Text('report')
-              )
-            ]
-          )
+          if (!isCurrentUser)
+            PopupMenuButton(
+              onSelected: (value) {
+                switch(value) {
+                  case 'report':
+                    showDialog(
+                      context: context,
+                      builder: (_) => ReportDialog(
+                        contentType: 'user',
+                        contentId: user.id,
+                      ),
+                    );
+                    break;
+                }
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'report',
+                  child: Text('report')
+                )
+              ]
+            )
         ],
       ),
       body: Padding(

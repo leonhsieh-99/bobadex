@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/achievements_page.dart';
+import 'package:bobadex/pages/setting_pages/settings_about_page.dart';
 import 'package:bobadex/pages/settings_page.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
 import 'package:bobadex/pages/social_page.dart';
@@ -12,6 +13,7 @@ import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../helpers/sortable_entry.dart';
@@ -48,6 +50,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    if (isCurrentUser) _showOnboardingIfNeeded(Supabase.instance.client.auth.currentUser!.id);
     _userShopsFuture = fetchUserShops(widget.user.id);
   }
 
@@ -62,6 +65,20 @@ class _HomePageState extends State<HomePage> {
     super.didUpdateWidget(oldWidget);
     if (widget.user.id != oldWidget.user.id) {
       _userShopsFuture = fetchUserShops(widget.user.id);
+    }
+  }
+
+  void _showOnboardingIfNeeded(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'seen_onboarding_$userId';
+    final seen = prefs.getBool(key) ?? false;
+    if (!seen) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => SettingsAboutPage()),
+        );
+      });
+      await prefs.setBool(key, true);
     }
   }
 
@@ -421,6 +438,16 @@ class _HomePageState extends State<HomePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => AchievementsPage(userId: widget.user.id))
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: const Text('About + Contact'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => SettingsAboutPage())
                 );
               },
             ),
