@@ -8,6 +8,7 @@ import 'package:bobadex/state/shop_media_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uni_links/uni_links.dart';
 import 'state/user_state.dart';
 import 'pages/splash_page.dart';
 import 'state/drink_state.dart';
@@ -29,6 +30,7 @@ class _AppInitializerState extends State<AppInitializer> {
   bool _isReady = false;
   Session? _session;
   StreamSubscription? _achievementListener;
+  StreamSubscription? _uniLinksSub;
   late u.User user;
 
   String? _lastSessionId;
@@ -37,12 +39,49 @@ class _AppInitializerState extends State<AppInitializer> {
   void initState() {
     super.initState();
     _initializeSession();
+    _initDeepLinks();
   }
 
   @override
   void dispose() {
     _achievementListener?.cancel();
+    _uniLinksSub?.cancel();
     super.dispose();
+  }
+
+  void _initDeepLinks() {
+    // For when the app is already running
+    _uniLinksSub = linkStream.listen((String? link) {
+      if (link != null) {
+        _handleIncomingAuthLink(link);
+      }
+    }, onError: (err) {
+      debugPrint('Deep link error: $err');
+    });
+
+    // For when the app is started from a deep link
+    getInitialLink().then((String? link) {
+      if (link != null) {
+        _handleIncomingAuthLink(link);
+      }
+    });
+  }
+
+  void _handleIncomingAuthLink(String link) async {
+    debugPrint('Received deep link: $link');
+    Uri uri = Uri.parse(link);
+    String fragment = uri.fragment;
+
+    if (fragment.isNotEmpty) {
+      try {
+        await Supabase.instance.client.auth.recoverSession(fragment);
+        debugPrint('Session recovered from deep link!');
+      } catch (e) {
+        debugPrint('Failed to recover session from deep link: $e');
+      }
+    } else {
+      debugPrint('Deep link did not contain auth tokens.');
+    }
   }
 
   void _resetAllStates() {
