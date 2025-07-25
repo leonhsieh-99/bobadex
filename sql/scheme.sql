@@ -54,6 +54,8 @@ create table user_settings (
   user_id uuid primary key references users(id) on delete cascade,
   theme_slug text default 'grey',
   grid_columns int default 2,
+  use_icons boolean default false,
+  onboarded boolean default false,
   created_at timestamptz default now()
 );
 

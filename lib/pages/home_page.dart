@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/achievements_page.dart';
@@ -9,11 +10,12 @@ import 'package:bobadex/pages/social_page.dart';
 import 'package:bobadex/pages/splash_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
+import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/shop_media_state.dart';
+import 'package:bobadex/widgets/onboarding_wizard.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../helpers/sortable_entry.dart';
@@ -32,7 +34,8 @@ import '../models/user.dart' as u;
 
 class HomePage extends StatefulWidget {
   final u.User user;
-  const HomePage({super.key, required this.user});
+  final bool showAddShopSnackBar;
+  const HomePage({super.key, required this.user, this.showAddShopSnackBar = false});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -51,6 +54,11 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     if (isCurrentUser) _showOnboardingIfNeeded(Supabase.instance.client.auth.currentUser!.id);
+    if (widget.showAddShopSnackBar) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<NotificationQueue>().queue('Tap the + button below to add your first shop!', SnackType.info, duration: 4000);
+      });
+    }
     _userShopsFuture = fetchUserShops(widget.user.id);
   }
 
@@ -68,17 +76,15 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _showOnboardingIfNeeded(String userId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = 'seen_onboarding_$userId';
-    final seen = prefs.getBool(key) ?? false;
+  Future<void> _showOnboardingIfNeeded(String userId) async {
+    final seen = widget.user.onboarded;
     if (!seen) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => SettingsAboutPage()),
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => OnboardingWizard()),
         );
+        setState(() => widget.user.onboarded = true);
       });
-      await prefs.setBool(key, true);
     }
   }
 

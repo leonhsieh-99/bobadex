@@ -107,6 +107,21 @@ class UserState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setOnboarded() async {
+    _user.onboarded = true;
+    notifyListeners();
+    try {
+      await Supabase.instance.client
+        .from('user_settings')
+        .update({'onboarded': true})
+        .eq('user_id', _user.id);
+    } catch (e) {
+      _user.onboarded = false;
+      notifyListeners();
+      debugPrint('Error setting onboarded: $e');
+      rethrow;
+    }
+  }
 
   Future<bool> usernameExists(String username) async {
     return await Supabase.instance.client

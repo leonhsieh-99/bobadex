@@ -9,6 +9,7 @@ class User {
   String? bio;
   int gridColumns;
   bool useIcons;
+  bool onboarded;
 
   User ({
     required this.id,
@@ -19,6 +20,7 @@ class User {
     this.bio,
     this.gridColumns = 2,
     this.useIcons = false,
+    this.onboarded = false,
   });
 
   String get firstName => displayName.split(' ').first;
@@ -45,6 +47,7 @@ class User {
       themeSlug: settings?['theme_slug'] ?? 'grey',
       gridColumns: settings?['grid_columns'] ?? 2,
       useIcons: settings?['use_icons'] ?? false,
+      onboarded: settings?['onboarded'] ?? false,
     );
   }
 
@@ -67,6 +70,7 @@ class User {
     bio: '',
     gridColumns: 2,
     useIcons: false,
+    onboarded: false,
   );
 
   Map<String, dynamic> toJson() {
@@ -79,6 +83,7 @@ class User {
       'bio': bio,
       'gridColumns': gridColumns,
       'useIcons': useIcons,
+      'onboarded': onboarded
     };
   }
 
@@ -90,6 +95,7 @@ class User {
     String? themeSlug,
     int? gridColumns,
     bool? useIcons,
+    bool? onboarded,
   }) {
     return User(
       id: id,
@@ -100,6 +106,7 @@ class User {
       themeSlug: themeSlug ?? this.themeSlug,
       gridColumns: gridColumns ?? this.gridColumns,
       useIcons: useIcons ?? this.useIcons,
+      onboarded: onboarded ?? this.onboarded,
     );
   }
 }

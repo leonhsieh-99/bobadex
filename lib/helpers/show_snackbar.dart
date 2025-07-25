@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 enum SnackType { info, success, error, achievement }
 
 // Place this function anywhere (eg. in a helpers file)
-void showAppSnackBar(BuildContext context, String message, {SnackType type = SnackType.info}) {
+void showAppSnackBar(BuildContext context, String message, {SnackType type = SnackType.info, int duration = 1900}) {
   final overlay = Overlay.of(context, rootOverlay: true);
 
   Color bgColor;
@@ -35,6 +35,7 @@ void showAppSnackBar(BuildContext context, String message, {SnackType type = Sna
       backgroundColor: bgColor,
       icon: icon,
       onDismissed: () => entry.remove(),
+      duration: Duration(milliseconds: duration),
     ),
   );
   overlay.insert(entry);
