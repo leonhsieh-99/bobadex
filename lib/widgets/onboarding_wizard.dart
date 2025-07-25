@@ -211,7 +211,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                           ),
                           child: Column(
                             children: [
-                              Icon(Icons.view_column, size: 36),
+                              Icon(Icons.photo, size: 36),
                               Text("Use photos", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                               Text("User uploaded photos as background", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300), textAlign: TextAlign.center),
                             ],
@@ -242,7 +242,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                           ),
                           child: Column(
                             children: [
-                              Icon(Icons.grid_view, size: 36),
+                              Icon(Icons.apps, size: 36),
                               Text("Use icons", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                               Text("Uses built-in icons as foreground", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300), textAlign: TextAlign.center,),
                             ],
