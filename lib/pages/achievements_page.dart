@@ -90,13 +90,27 @@ class AchievementsPage extends StatelessWidget {
             count = min;
           }
 
+          const double iconSize = 40;
+          const double avatarRadius = iconSize / 2;
+
           return ListTile(
-            leading: CircleAvatar(
-              backgroundImage: (a.iconPath != null && a.iconPath!.isNotEmpty)
-                ? AssetImage(a.iconPath!)
-                : AssetImage('lib/assets/badges/default_badge.png'),
-              backgroundColor: count == min ? Colors.amber : Colors.grey[300],
-            ),
+            leading: (a.isHidden && (count != min))
+              ? Container(
+                  width: iconSize,
+                  height: iconSize,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.question_mark, size: iconSize * 0.75),
+                )
+              : CircleAvatar(
+                  radius: avatarRadius,
+                  backgroundImage: (a.iconPath != null && a.iconPath!.isNotEmpty)
+                      ? AssetImage(a.iconPath!)
+                      : const AssetImage('lib/assets/badges/default_badge.png'),
+                  backgroundColor: count == min ? Colors.amber : Colors.grey[300],
+                ),
             title: Text(a.isHidden && (count != min) ? 'Hidden' : a.name),
             subtitle: Text(a.isHidden && (count != min) ? '? ? ?' : a.description),
             trailing: count == min
