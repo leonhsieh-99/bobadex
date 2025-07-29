@@ -88,15 +88,19 @@ class _AppInitializerState extends State<AppInitializer> {
     if (!mounted) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<UserState>().reset();
-      context.read<DrinkState>().reset();
-      context.read<ShopState>().reset();
-      context.read<BrandState>().reset();
-      context.read<FriendState>().reset();
-      context.read<UserStatsCache>().clearCache();
-      context.read<ShopMediaState>().reset();
-      context.read<AchievementsState>().reset();
-      context.read<FeedState>().reset();
+      try {
+        context.read<UserState>().reset();
+        context.read<DrinkState>().reset();
+        context.read<ShopState>().reset();
+        context.read<BrandState>().reset();
+        context.read<FriendState>().reset();
+        context.read<UserStatsCache>().clearCache();
+        context.read<ShopMediaState>().reset();
+        context.read<AchievementsState>().reset();
+        context.read<FeedState>().reset();
+      } catch (e) {
+        debugPrint('Error resetting states: $e');
+      }
     });
   }
 
@@ -192,7 +196,11 @@ class _AppInitializerState extends State<AppInitializer> {
       }
 
       if (_achievementListener != null) {
-        await _achievementListener!.cancel();
+        try {
+          await _achievementListener!.cancel();
+        } catch (e) {
+          debugPrint('Error canceling achievement listener: $e');
+        }
         _achievementListener = null;
       }
       _achievementListener = achievementsState.unlockedAchievementsStream.listen((achievement) {

@@ -53,6 +53,7 @@ class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
                 if (_isSubmitting) LinearProgressIndicator(),
                 TextFormField(
                   controller: _nameController,
+                  textCapitalization: TextCapitalization.words,
                   decoration: const InputDecoration(
                     labelText: 'Brand name',
                   ),
@@ -61,11 +62,11 @@ class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
                 TypeAheadField<City>(
                 suggestionsCallback: (pattern) async {
                   return _cities!
-                      .where((city) =>
-                          city.name.toLowerCase().contains(pattern.toLowerCase()) ||
-                          city.state.toLowerCase().contains(pattern.toLowerCase()))
-                      .take(10)
-                      .toList();
+                    .where((city) =>
+                        city.name.toLowerCase().contains(pattern.toLowerCase()) ||
+                        city.state.toLowerCase().contains(pattern.toLowerCase()))
+                    .take(10)
+                    .toList();
                   },
                   itemBuilder: (context, City city) {
                     return ListTile(

@@ -8,7 +8,7 @@ class RatingPicker extends StatelessWidget {
 
   const RatingPicker({
     super.key,
-    required this.rating,
+    this.rating = 0.0,
     this.onChanged,
     this.size,
   });
@@ -52,7 +52,7 @@ class RatingPicker extends StatelessWidget {
 
         Widget icon = Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: outlinedStar(iconData, iconSize, color), // choose outlineColor to match your theme
+          child: outlinedStar(iconData, iconSize, color),
         );
 
 

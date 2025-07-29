@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 const List<String> funFacts = [
   "All tea comes from one plant: Camellia sinensis. The differences between green, black, oolong, and white teas come from how the leaves are processed after harvesting.",
@@ -38,29 +39,26 @@ class SplashPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Logo Placeholder
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: Colors.deepPurple.shade100,
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(Icons.local_cafe, size: 56, color: Colors.deepPurple),
+              Center(
+                child: SvgPicture.asset(
+                  'lib/assets/logo.svg',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
                 ),
               ),
               const SizedBox(height: 32),
               // App Name
-              const Text(
-                'Bobadex',
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.5,
-                  color: Colors.deepPurple,
-                ),
-              ),
-              const SizedBox(height: 32),
+              // const Text(
+              //   'Bobadex',
+              //   style: TextStyle(
+              //     fontSize: 36,
+              //     fontWeight: FontWeight.bold,
+              //     letterSpacing: 1.5,
+              //     color: Colors.deepPurple,
+              //   ),
+              // ),
+              // const SizedBox(height: 32),
               // Fun Fact
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),

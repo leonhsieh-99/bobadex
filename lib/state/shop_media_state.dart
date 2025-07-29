@@ -1,3 +1,4 @@
+import 'package:bobadex/helpers/image_uploader_helper.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -130,6 +131,13 @@ class ShopMediaState extends ChangeNotifier {
     notifyListeners();
 
     try {
+      await ImageUploaderHelper.deleteImage(removedMedia.imagePath);
+    } catch (e) {
+      debugPrint('Error deleting media from storage: $e');
+      rethrow;
+    }
+
+    try {
       await Supabase.instance.client
         .from('shop_media')
         .delete()
@@ -145,6 +153,34 @@ class ShopMediaState extends ChangeNotifier {
       debugPrint('Remove media failed: $e');
       _shopMedia.add(removedMedia);
       notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> removeAllMediaForShop(String shopId) async {
+    final medias = getByShop(shopId);
+
+    // Delete each image from storage (media-uploads and thumbs)
+    await Future.wait(medias.map((media) async {
+      if (media.imagePath.isNotEmpty) {
+        try {
+          await ImageUploaderHelper.deleteImage(media.imagePath);
+        } catch (e) {
+          debugPrint('Failed to delete image from storage: $e');
+        }
+      }
+    }));
+
+    _shopMedia.removeWhere((m) => m.shopId == shopId);
+    notifyListeners();
+
+    try {
+      await Supabase.instance.client
+        .from('shop_media')
+        .delete()
+        .eq('shop_id', shopId);
+    } catch (e) {
+      debugPrint('Error deleting shop_media from DB: $e');
       rethrow;
     }
   }

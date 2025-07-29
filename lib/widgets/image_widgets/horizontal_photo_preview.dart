@@ -19,11 +19,11 @@ class HorizontalPhotoPreview extends StatelessWidget {
     this.width = 100,
   });
 
-  void _onTap(context, int idx) {
+  void _onTap(context, List<ShopMedia> mediaList, int idx) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => FullscreenImageViewer(
-          images: shopMediaList.map((m) =>
+          images: mediaList.map((m) =>
             GalleryImage(
               url: m.imageUrl,
               thumbUrl: m.thumbUrl,
@@ -42,8 +42,9 @@ class HorizontalPhotoPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final showViewAll = shopMediaList.length > maxPreview;
-    final visibleMedia = showViewAll ? shopMediaList.take(maxPreview).toList() : shopMediaList;
+    final mediaList = shopMediaList.where((sm) => sm.visibility == 'public').toList();
+    final showViewAll = (mediaList.length > maxPreview) && onViewAll != null;
+    final visibleMedia = showViewAll ? mediaList.take(maxPreview).toList() : mediaList;
 
     return SizedBox(
       height: height,
@@ -76,7 +77,7 @@ class HorizontalPhotoPreview extends StatelessWidget {
             );
           }
           return GestureDetector(
-            onTap: () => _onTap(context, index),
+            onTap: () => _onTap(context, mediaList, index),
             child: TappableImage(height: height, width: width, media: visibleMedia[index], useHero: false)
           );
         }

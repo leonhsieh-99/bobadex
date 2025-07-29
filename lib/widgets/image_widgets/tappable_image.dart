@@ -24,35 +24,79 @@ class TappableImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget image;
-    if (media.isPending && media.localFile != null) {
-      image = Image.file(media.localFile!, fit: BoxFit.cover, width: width, height: height);
-    } else {
-      if (useHero) {
-        image = Hero(
-          tag: media.id,
-          child: Image.network(
+    try {
+      if (media.isPending && media.localFile != null) {
+        image = Image.file(
+          media.localFile!, 
+          fit: BoxFit.cover, 
+          width: width, 
+          height: height,
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint("Failed to load local image: $error");
+            return Icon(Icons.broken_image, size: 40);
+          }
+        );
+      } else {
+        if (useHero) {
+          image = Hero(
+            tag: media.id,
+            child: Image.network(
+              media.thumbUrl,
+              fit: BoxFit.cover,
+              width: width,
+              height: height,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  width: width,
+                  height: height,
+                  color: Colors.grey[300],
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                          : null,
+                    ),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                debugPrint("Failed to load image: $error");
+                return Icon(Icons.broken_image, size: 40);
+              }
+            ),
+          );
+        } else {
+          image = Image.network(
             media.thumbUrl,
             fit: BoxFit.cover,
             width: width,
             height: height,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                width: width,
+                height: height,
+                color: Colors.grey[300],
+                child: Center(
+                  child: CircularProgressIndicator(
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                        : null,
+                  ),
+                ),
+              );
+            },
             errorBuilder: (context, error, stackTrace) {
               debugPrint("Failed to load image: $error");
               return Icon(Icons.broken_image, size: 40);
             }
-          ),
-        );
-      } else {
-        image = Image.network(
-          media.thumbUrl,
-          fit: BoxFit.cover,
-          width: width,
-          height: height,
-          errorBuilder: (context, error, stackTrace) {
-            debugPrint("Failed to load image: $error");
-            return Icon(Icons.broken_image, size: 40);
-          }
-        );
+          );
+        }
       }
+    } catch (e) {
+      debugPrint("Error building image widget: $e");
+      image = Icon(Icons.broken_image, size: 40);
     }
 
     return GestureDetector(

@@ -44,12 +44,13 @@ class _BrandFeedViewState extends State<BrandFeedView> {
     }
     if (feed.isEmpty) {
       return Center(child: Text("No activity yet!", style: Constants.emptyListTextStyle));
-    }
-    return Column(
-      children: List.generate(feed.length, (index) {
-        final event = feed[index];
-        return FeedEventCard(event: event);
-      }),
-    );
+    } else {
+      return Column(
+          children: List.generate(feed.length, (index) {
+            final event = feed[index];
+            return FeedEventCard(event: event);
+          }),
+        );
+      }
   }
 }

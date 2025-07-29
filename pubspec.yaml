@@ -90,6 +90,9 @@ flutter:
     - lib/assets/default_icon.png
     - lib/assets/badges/
     - lib/assets/cities.json
+    - lib/assets/logo.svg
+    - lib/assets/bobadex.svg
+    
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

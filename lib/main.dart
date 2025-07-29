@@ -7,17 +7,36 @@ import 'bobadex_app.dart';
 
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load();
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    await dotenv.load();
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
 
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!, 
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
-  );
-  
-  runApp(const BobadexApp());
+    final supabaseUrl = dotenv.env['SUPABASE_URL'];
+    final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
+    
+    if (supabaseUrl == null || supabaseAnonKey == null) {
+      throw Exception('Missing Supabase configuration. Please check your .env file.');
+    }
+
+    await Supabase.initialize(
+      url: supabaseUrl, 
+      anonKey: supabaseAnonKey,
+    );
+    
+    runApp(const BobadexApp());
+  } catch (e) {
+    debugPrint('Failed to initialize app: $e');
+    // Show a simple error screen if initialization fails
+    runApp(MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Text('Failed to initialize app: $e'),
+        ),
+      ),
+    ));
+  }
 }
 

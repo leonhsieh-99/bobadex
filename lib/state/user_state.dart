@@ -124,8 +124,13 @@ class UserState extends ChangeNotifier {
   }
 
   Future<bool> usernameExists(String username) async {
-    return await Supabase.instance.client
-      .rpc('username_exists', params: {'input_username': username});
+    try {
+      return await Supabase.instance.client
+        .rpc('username_exists', params: {'input_username': username});
+    } catch (e) {
+      debugPrint('Error checking username existence: $e');
+      return false;
+    }
   }
 
   void reset() {
@@ -134,18 +139,24 @@ class UserState extends ChangeNotifier {
   }
 
   Future<void> loadFromSupabase() async {
-    final supabase = Supabase.instance.client;
-    String? userId = supabase.auth.currentUser?.id;
+    try {
+      final supabase = Supabase.instance.client;
+      String? userId = supabase.auth.currentUser?.id;
 
-    if (userId == null) return;
+      if (userId == null) return;
 
-    final profile = await supabase.from('users').select().eq('id', userId).maybeSingle();
-    final settings = await supabase.from('user_settings').select().eq('user_id', userId).maybeSingle();
+      final profile = await supabase.from('users').select().eq('id', userId).maybeSingle();
+      final settings = await supabase.from('user_settings').select().eq('user_id', userId).maybeSingle();
 
-    if (profile != null) {
-      _user = u.User.fromMap(profile, settings);
-      notifyListeners();
-      isLoaded = true;
+      if (profile != null) {
+        _user = u.User.fromMap(profile, settings);
+        notifyListeners();
+        isLoaded = true;
+      }
+    } catch (e) {
+      debugPrint('Error loading user from Supabase: $e');
+      isLoaded = false;
+      rethrow;
     }
   }
 }

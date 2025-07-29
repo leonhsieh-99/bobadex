@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class User {
@@ -23,19 +24,36 @@ class User {
     this.onboarded = false,
   });
 
-  String get firstName => displayName.split(' ').first;
+  String get firstName {
+    final parts = displayName.trim().split(' ');
+    return parts.isNotEmpty ? parts.first : '';
+  }
 
-  String get imageUrl => profileImagePath != null && profileImagePath!.isNotEmpty
-    ? Supabase.instance.client.storage
-        .from('media-uploads')
-        .getPublicUrl(profileImagePath!.trim())
-    : '';
+  String get imageUrl {
+    try {
+      return profileImagePath != null && profileImagePath!.isNotEmpty
+        ? Supabase.instance.client.storage
+            .from('media-uploads')
+            .getPublicUrl(profileImagePath!.trim())
+        : '';
+    } catch (e) {
+      debugPrint('Error generating image URL: $e');
+      return '';
+    }
+  }
 
-  String get thumbUrl => profileImagePath != null && profileImagePath!.isNotEmpty
-    ? Supabase.instance.client.storage
-        .from('media-uploads')
-        .getPublicUrl('thumbs/${profileImagePath!.trim()}')
-    : '';
+  String get thumbUrl {
+    try {
+      return profileImagePath != null && profileImagePath!.isNotEmpty
+        ? Supabase.instance.client.storage
+            .from('media-uploads')
+            .getPublicUrl('thumbs/${profileImagePath!.trim()}')
+        : '';
+    } catch (e) {
+      debugPrint('Error generating thumbnail URL: $e');
+      return '';
+    }
+  }
 
   factory User.fromMap(Map<String, dynamic> profile, Map<String, dynamic>? settings) {
     return User(

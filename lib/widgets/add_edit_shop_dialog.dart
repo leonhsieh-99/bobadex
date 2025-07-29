@@ -77,7 +77,12 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
     }
   }
 
-  void _handleSubmit(ShopMediaState shopMediaState, AchievementsState achievementState, FeedState feedState, user) async {
+  void _handleSubmit(
+    ShopMediaState shopMediaState,
+    AchievementsState achievementState,
+    FeedState feedState,
+    user,
+  ) async {
     final isValid = _formkey.currentState?.validate() ?? false;
     if (!isValid) return;
 
@@ -95,54 +100,81 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
         rating: _rating,
         notes: _notesController.text.trim(),
         brandSlug: _brandSlug,
-      ) ?? Shop(
-        name: _nameController.text.trim(),
-        rating: _rating,
-        notes: _notesController.text.trim(),
-        brandSlug: _brandSlug,
-      );
+      ) ??
+          Shop(
+            name: _nameController.text.trim(),
+            rating: _rating,
+            notes: _notesController.text.trim(),
+            brandSlug: _brandSlug,
+          );
       final submittedShop = await widget.onSubmit(newShop);
 
-      List<Map<String, dynamic>> uploadedImages = [];
+      final List<String> tempIds = [];
+      for (int idx = 0; idx < _selectedImages.length; idx++) {
+        final img = _selectedImages[idx];
+        final tempId = Uuid().v4();
+        tempIds.add(tempId);
+        shopMediaState.addPendingMedia(
+          ShopMedia(
+            id: tempId,
+            shopId: submittedShop.id!,
+            userId: Supabase.instance.client.auth.currentUser!.id,
+            imagePath: '',
+            comment: img.comment,
+            visibility: img.visibility,
+            isBanner: idx == 0 && !bannerExists,
+            localFile: img.file,
+            isPending: true,
+          ),
+        );
+      }
+
+      List<Map<String, dynamic>?> uploadedImages = List.filled(_selectedImages.length, null);
 
       await Future.wait(_selectedImages.asMap().entries.map((entry) async {
         final idx = entry.key;
         final img = entry.value;
-
-        final imagePath = await ImageUploaderHelper.uploadImage(
-          file: img.file!,
-          folder: 'shop-gallery',
-          generateThumbnail: true,
-        );
-
-        uploadedImages.add({
-          "path": imagePath,
-          "comment": img.comment,
-        });
-
-        final tempId = Uuid().v4();
-        final media = ShopMedia(
-          id: tempId,
-          shopId: submittedShop.id!,
-          userId: Supabase.instance.client.auth.currentUser!.id,
-          imagePath: imagePath,
-          comment: img.comment,
-          visibility: img.visibility,
-          isBanner: idx == 0 && !bannerExists,  // first image is banner
-        );
-        shopMediaState.addPendingMedia(media);
+        final tempId = tempIds[idx];
 
         try {
-          final insertedMedia = await shopMediaState.addMedia(media);
+          final imagePath = await ImageUploaderHelper.uploadImage(
+            file: img.file!,
+            folder: 'shop-gallery',
+            generateThumbnail: true,
+          );
+
+          uploadedImages[idx] = {
+            "path": imagePath,
+            "comment": img.comment,
+          };
+
+          final realMedia = ShopMedia(
+            id: '', // Will be set by backend
+            shopId: submittedShop.id!,
+            userId: Supabase.instance.client.auth.currentUser!.id,
+            imagePath: imagePath,
+            comment: img.comment,
+            visibility: img.visibility,
+            isBanner: idx == 0 && !bannerExists,
+          );
+
+          final insertedMedia = await shopMediaState.addMedia(realMedia);
           await achievementState.checkAndUnlockMediaUploadAchievement(shopMediaState);
           shopMediaState.replacePendingMedia(tempId, insertedMedia);
         } catch (e) {
+          debugPrint('Error uploading images: $e');
           shopMediaState.removePendingMedia(tempId);
-          if (mounted) { context.read<NotificationQueue>().queue('Error uploading images', SnackType.error); }
+          if (e.toString().contains('statusCode: 409')) {
+            if (mounted) context.read<NotificationQueue>().queue('Image already exists, skipping', SnackType.info);
+          } else if (mounted) {
+            context.read<NotificationQueue>().queue('Error uploading images', SnackType.error);
+          }
         }
       }));
 
-       if (isNewShop) {
+      uploadedImages = uploadedImages.whereType<Map<String, dynamic>>().toList();
+
+      if (isNewShop) {
         try {
           await feedState.addFeedEvent(
             FeedEvent(
@@ -176,14 +208,14 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
     } catch (e) {
       if (mounted) {
         debugPrint('Failed to submit shop: $e');
-        context.read<NotificationQueue>().queue('Failed to add shop', SnackType.success);
+        context.read<NotificationQueue>().queue('Failed to add shop', SnackType.error);
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
-
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

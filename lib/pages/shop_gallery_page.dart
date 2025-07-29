@@ -103,9 +103,11 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
 
     setState(() => _isLoading = true);
 
+    final tempIds = <String>[];
     for (int idx = 0; idx < images.length; idx++) {
       final img = images[idx];
       final tempId = UniqueKey().toString();
+      tempIds.add(tempId);
 
       // check for any existing pending images
       if (shopMediaState.all.any((m) => m.localFile == img.file && m.isPending)) {
@@ -126,32 +128,42 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
         isPending: true,
       );
       shopMediaState.addPendingMedia(pendingMedia);
-
-      try {
-        final imagePath = await ImageUploaderHelper.uploadImage(
-          file: img.file!,
-          folder: 'shop-gallery',
-          generateThumbnail: true,
-        );
-
-        final realMedia = ShopMedia(
-          id: '', // Will be set by backend
-          shopId: widget.shopId!,
-          userId: Supabase.instance.client.auth.currentUser!.id,
-          imagePath: imagePath,
-          comment: img.comment,
-          visibility: img.visibility,
-          isBanner: idx == 0 && !bannerExists,
-        );
-
-        final insertedMedia = await shopMediaState.addMedia(realMedia);
-        await achievementState.checkAndUnlockMediaUploadAchievement(shopMediaState);
-        shopMediaState.replacePendingMedia(tempId, insertedMedia);
-      } catch (e) {
-        shopMediaState.removePendingMedia(tempId);
-        if (mounted) context.read<NotificationQueue>().queue('Upload failed', SnackType.error);
-      }
     }
+
+    await Future.wait(
+      images.asMap().entries.map((entry) async {
+        final idx = entry.key;
+        final img = entry.value;
+        final tempId = tempIds[idx];
+
+        try {
+          final imagePath = await ImageUploaderHelper.uploadImage(
+            file: img.file!,
+            folder: 'shop-gallery',
+            generateThumbnail: true,
+          );
+
+          final realMedia = ShopMedia(
+            id: '', // Will be set by backend
+            shopId: widget.shopId!,
+            userId: Supabase.instance.client.auth.currentUser!.id,
+            imagePath: imagePath,
+            comment: img.comment,
+            visibility: img.visibility,
+            isBanner: idx == 0 && !bannerExists,
+          );
+
+          final insertedMedia = await shopMediaState.addMedia(realMedia);
+          await achievementState.checkAndUnlockMediaUploadAchievement(shopMediaState);
+          shopMediaState.replacePendingMedia(tempId, insertedMedia);
+        } catch (e) {
+          debugPrint('Error uploading image $idx: $e');
+          shopMediaState.removePendingMedia(tempId);
+          if (mounted) context.read<NotificationQueue>().queue('Upload failed', SnackType.error);
+        }
+      }),
+    );
+    
     setState(() => _isLoading = false);
     if (mounted) context.read<NotificationQueue>().queue('Images uploaded', SnackType.success);
   }

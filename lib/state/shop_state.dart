@@ -108,6 +108,11 @@ class ShopState extends ChangeNotifier {
       await Supabase.instance.client
         .from('shops')
         .delete().eq('id', id);
+      await Supabase.instance.client
+        .from('feed_events')
+        .delete()
+        .eq('object_id', id)
+        .eq('event_type', 'shop_add');
     } catch (e) {
       _shops.add(temp!);
       notifyListeners();

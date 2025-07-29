@@ -108,7 +108,7 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
         return 'Unknown error occurred. (${res.status})';
       }
     } catch (e) {
-      return 'Failed to verify brand: $e';
+      return 'Failed to verify brand';
     }
   }
 
@@ -123,6 +123,7 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
     if (result == 'success') {
       context.read<NotificationQueue>().queue('Brand pending for review', SnackType.info);
     } else if (result != null) {
+      debugPrint(result);
       context.read<NotificationQueue>().queue(result, SnackType.error); // error message
     }
   }

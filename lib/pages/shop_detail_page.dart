@@ -645,6 +645,9 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                               
                               if (confirm == true && context.mounted) {
                                 try {
+                                  // delete images first
+                                  await shopMediaState.removeAllMediaForShop(widget.shop.id!);
+                                  // delete shop
                                   await shopState.remove(widget.shop.id!);
                                   await feedState.removeFeedEvent(widget.shop.id!);
                                   if (context.mounted) {

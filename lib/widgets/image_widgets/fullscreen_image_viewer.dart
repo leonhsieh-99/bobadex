@@ -384,7 +384,8 @@ class _UploadOrEditFields extends StatelessWidget {
           leftFlexEnd: 10,
           rightFlex: 3,
           maxLength: 30,
-          maxLines: 2,
+          maxLines: 1,
+          hintText: 'Description',
           child: VisibilityToggleButton(
             value: visibility,
             onChanged: onVisibilityChanged!,

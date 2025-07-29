@@ -113,7 +113,7 @@ class FeedEventCard extends StatelessWidget {
                 ),
                 Spacer(),
                 if (event.eventType == 'shop_add')
-                  NumberRating(rating: rating.toString())
+                  rating != 0.0 ? NumberRating(rating: rating.toString()) : NumberRating(rating: 'N/A')
               ],
             ),
             const SizedBox(height: 10),
