@@ -5,23 +5,40 @@ import 'package:uuid/uuid.dart';
 
 class FeedState extends ChangeNotifier {
   final List<FeedEvent> _feed = [];
-  bool _isLoading = false;
+  bool _hasMore = false;
+  bool _isFetchingMore = false;
+  final int _limit = 50;
 
   List<FeedEvent> get feed => _feed;
-  bool get isLoading => _isLoading;
+  bool get hasMore => _hasMore;
+  bool get isLoading => _isFetchingMore;
 
-  Future<void> fetchFeed() async {
+  Future<void> fetchFeed({bool refresh = false}) async {
     final supabase = Supabase.instance.client;
-    _isLoading = true;
+    if (_isFetchingMore) return;
+
+    if (refresh) {
+      _feed.clear();
+      _hasMore = true;
+    }
+
+    if (!_hasMore) return;
+
+    _isFetchingMore = true;
+    notifyListeners();
+
     final response = await supabase
       .rpc('get_feed', params: {
         'user_id': supabase.auth.currentUser!.id,
-        'limit_count': 50,
+        'offset_count': _feed.length,
+        'limit_count': _limit,
       });
-    _feed
-      ..clear()
-      ..addAll((response as List).map((json) => FeedEvent.fromJson(json)));
-    _isLoading = false;
+    final newFeed = (response as List).map((json) => FeedEvent.fromJson(json)).toList();
+    _feed.addAll(newFeed);
+
+    if (newFeed.length < _limit) _hasMore = false;
+
+    _isFetchingMore = false;
     notifyListeners();
   }
 

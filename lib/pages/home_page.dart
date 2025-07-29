@@ -3,7 +3,7 @@ import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/achievements_page.dart';
-import 'package:bobadex/pages/setting_pages/settings_about_page.dart';
+import 'package:bobadex/pages/about_page.dart';
 import 'package:bobadex/pages/settings_page.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
 import 'package:bobadex/pages/social_page.dart';
@@ -453,7 +453,7 @@ class _HomePageState extends State<HomePage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => SettingsAboutPage())
+                  MaterialPageRoute(builder: (_) => AboutPage())
                 );
               },
             ),

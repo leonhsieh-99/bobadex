@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 // import 'package:url_launcher/url_launcher.dart';
 
-class SettingsAboutPage extends StatelessWidget {
-  const SettingsAboutPage ({super.key});
+class AboutPage extends StatelessWidget {
+  const AboutPage ({super.key});
 
   // void _launchEmail() async {
   //   final Uri emailUri = Uri(
@@ -63,10 +63,13 @@ class SettingsAboutPage extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                'Bobadex is your personal boba shop and drink tracker.\n\n'
-                '• Rate and journal your favorite boba drinks.\n'
-                '• Discover new shops and share your reviews.\n'
-                '• Beta version: some features may be in progress.\n',
+                'Bobadex is your personal boba shop and drink tracker. '
+                'This is truthfully like a more niche and hopefully cuter version of beli.'
+                ' I made this mostly for fun and because I drink an unhealthy amount'
+                ' of milk tea -- oh! and also for my portfolio so I can get a job. '
+                'If anyone has any suggestions or feedback you can get my email in the contacts below. '
+                'Anyways I don\'t have much to say. Hope everyone has a '
+                'lovely time using this app\n\n- Leon~',
                 style: theme.textTheme.bodyMedium,
               ),
             ),

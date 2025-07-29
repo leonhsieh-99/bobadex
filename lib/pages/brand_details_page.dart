@@ -38,6 +38,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
     super.initState();
     _statsFuture = fetchStats();
     _globalGalleryFuture = fetchGallery();
+    fetchFeed();
   }
 
   Future<String?> reportBrandClosed() async {

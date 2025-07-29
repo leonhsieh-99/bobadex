@@ -1,7 +1,8 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/feed_event.dart';
+import 'package:bobadex/pages/brand_feed_page.dart';
 import 'package:bobadex/widgets/social_widgets/feed_event_card.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BrandFeedView extends StatefulWidget {
@@ -14,25 +15,31 @@ class BrandFeedView extends StatefulWidget {
 class _BrandFeedViewState extends State<BrandFeedView> {
   bool isLoading = true;
   List<FeedEvent> feed = [];
+  bool hasMore = false;
 
   @override
   void initState() {
     super.initState();
-    fetchFeed();
+    fetchFeed(limit: 11);
   }
 
-  Future<void> fetchFeed() async {
+  Future<void> fetchFeed({int limit = 50}) async {
     setState(() => isLoading = true);
     try {
       final response = await Supabase.instance.client.rpc('get_brand_feed', params: {
         'brand_slug': widget.brandSlug,
-        'limit_count': 50,
+        'limit_count': limit,
       });
-      feed = (response as List).map((json) => FeedEvent.fromJson(json)).toList();
+      final items = (response as List).map((json) => FeedEvent.fromJson(json)).toList();
+      setState(() {
+        hasMore = items.length == limit;
+        feed = items.take(10).toList();
+        isLoading = false;
+      });
     } catch (e) {
       debugPrint('Error loading feed: $e');
+      setState(() => isLoading = false);
     }
-    setState(() => isLoading = false);
   }
 
   @override
@@ -44,13 +51,35 @@ class _BrandFeedViewState extends State<BrandFeedView> {
     }
     if (feed.isEmpty) {
       return Center(child: Text("No activity yet!", style: Constants.emptyListTextStyle));
-    } else {
-      return Column(
-          children: List.generate(feed.length, (index) {
-            final event = feed[index];
-            return FeedEventCard(event: event);
-          }),
-        );
-      }
+    }
+    return Column(
+      children: [
+        ...feed.map((event) => FeedEventCard(event: event)),
+        if (hasMore)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => BrandFeedPage(brandSlug: widget.brandSlug),
+                  ),
+                );
+              },
+              child: Container(
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                alignment: Alignment.center,
+                child: Text('See more', style: TextStyle(color: Theme.of(context).primaryColor)),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }

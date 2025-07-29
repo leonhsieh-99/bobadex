@@ -95,7 +95,7 @@ CREATE TABLE user_achievements (
 create table feed_events (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references users(id),
-  shop_id uuid references shops(id) on delete cascade,
+  object_id uuid,
   brand_slug text references brands(slug) on delete cascade,
   event_type text,  -- 'shop_add', 'drink_add', 'achievement', etc.
   created_at timestamptz default now(),
