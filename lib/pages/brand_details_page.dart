@@ -37,6 +37,34 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
     _globalGalleryFuture = fetchGallery();
   }
 
+  Future<String?> reportBrandClosed() async {
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'report-brand-closed',
+        body: {
+          'slug': widget.brand.slug,
+          'name': widget.brand.display,
+          'id': Supabase.instance.client.auth.currentUser!.id
+        },
+      );
+
+      final status = response.status;
+      final data = response.data is Map ? response.data as Map<String, dynamic> : null;
+
+      if ((status == 200 || status == 201) && data != null) {
+        return data['result'];
+      } else if ((status == 400 || status == 500) && data != null) {
+        return data['error'];
+      } else {
+        return 'Unknown error occurred. ($status)';
+      }
+    } catch (e, stack) {
+      debugPrint('reportBrandClosed error: $e\n$stack');
+      return 'Failed to report brand';
+    }
+  }
+
+
   Future<BrandStats> fetchStats() async {
     try {
       final response = await Supabase.instance.client
@@ -207,6 +235,32 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                   },
                 ),
               ),
+              Positioned(
+                top: 25,
+                right: 10,
+                child: PopupMenuButton(
+                  icon: Icon(Icons.more_horiz, color: Colors.white, size: 24),
+                  onSelected: (value) async {
+                    switch(value) {
+                      case 'report':
+                        final result = await reportBrandClosed();
+                        if (result != null && (result == 'incremented' || result == 'created')) {
+                          if(context.mounted) context.read<NotificationQueue>().queue('Report pending review', SnackType.info);
+                        } else if (result != null ) {
+                          debugPrint(result);
+                          if(context.mounted) context.read<NotificationQueue>().queue(result, SnackType.error);
+                        }
+                        break;
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: 'report',
+                      child: Text('Report closed')
+                    )
+                  ]
+                ),
+              )
             ]
           ),
           Expanded(

@@ -153,11 +153,13 @@ create table brand_staging (
   location text,
   submitted_by uuid,
   created_at timestamp with time zone default timezone('utc', now()),
-  status text default 'pending',
-  merged_slug text,  -- slug in brands if merged/approved
+  updated_at timestamp with time zone default timezone('utc', now()),
+  status brand_staging_status default 'pending',
+  slug text,
   raw_payload jsonb,
   source text default 'user',
-  duplicates int default 1
+  duplicates int default 1,
+  reason text
 );
 
 
