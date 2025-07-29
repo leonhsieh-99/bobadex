@@ -69,51 +69,67 @@ class FeedEventCard extends StatelessWidget {
                   },
                 ),
                 const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(user.username, style: TextStyle(fontWeight: FontWeight.bold)),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Text(
-                          _eventTypeToText(event.eventType, payload['is_hidden']),
-                          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                        ),
-                        (event.eventType != 'shop_add')
-                          ? Text(
-                            name,
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          )
-                          : TextButton(
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.all(0),
-                              minimumSize: Size(0, 0),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            onPressed: () {
-                              final slug = event.brandSlug?.toString() ?? '';
-                              if (slug.isNotEmpty) {
-                                final brand = brandState.getBrand(slug);
-                                if (brand != null) {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand))
-                                  );
-                                }
-                              }
-                            },
-                            child: Text(
-                              name,
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                Expanded( // <-- this is what you want, not inside a button!
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(user.username, style: TextStyle(fontWeight: FontWeight.bold)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Text(
+                            _eventTypeToText(event.eventType, payload['is_hidden']),
+                            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                          ),
+                          SizedBox(width: 6),
+                          if (event.eventType != 'shop_add')
+                            Flexible(
+                              child: Text(
+                                name,
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
                             )
-                          )
-                      ],
-                    )
-                  ],
+                          else
+                            Flexible(
+                              child: TextButton(
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.all(0),
+                                  minimumSize: Size(0, 0),
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: () {
+                                  final slug = event.brandSlug?.toString() ?? '';
+                                  if (slug.isNotEmpty) {
+                                    final brand = brandState.getBrand(slug);
+                                    if (brand != null) {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand))
+                                      );
+                                    }
+                                  }
+                                },
+                                child: Text(
+                                  name,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  maxLines: 1,
+                                  softWrap: false,
+                                ),
+                              ),
+                            )
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                Spacer(),
                 if (event.eventType == 'shop_add')
-                  rating != 0.0 ? NumberRating(rating: rating.toString()) : NumberRating(rating: 'N/A')
+                  rating != 0.0
+                    ? NumberRating(rating: rating.toString())
+                    : NumberRating(rating: 'N/A'),
               ],
             ),
             const SizedBox(height: 10),

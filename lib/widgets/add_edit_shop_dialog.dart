@@ -228,164 +228,175 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       behavior: HitTestBehavior.opaque,
-      child: Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: SingleChildScrollView(
-            child: Form(
-              key: _formkey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (_isSubmitting) const LinearProgressIndicator(minHeight: 2),
-                  // --- TITLE & NAME FIELD ---
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
-                      isNewShop ? 'Add Shop' : 'Edit Shop',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  // --- NAME FIELD
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _brandSlug != null
-                      ? ListTile(
-                          minTileHeight: 30,
-                          minVerticalPadding: 4,
-                          leading: Icon(Icons.storefront_rounded),
-                          title: Text(
-                            _nameController.text,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.left,
-                          )
-                        )
-                      : TextFormField(
-                          controller: _nameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Shop Name',
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final viewInsets = MediaQuery.of(context).viewInsets;
+          final maxHeight = constraints.maxHeight - viewInsets.bottom - 24; // 24 for margin
+
+          return Dialog(
+            insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: maxHeight > 300 ? maxHeight : 300, // minimum height
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: SingleChildScrollView(
+                  child: Form(
+                    key: _formkey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (_isSubmitting) const LinearProgressIndicator(minHeight: 2),
+                        // --- TITLE & NAME FIELD ---
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Text(
+                            isNewShop ? 'Add Shop' : 'Edit Shop',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                            textAlign: TextAlign.center,
                           ),
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                          textAlign: TextAlign.left,
-                          validator: (value) =>
-                              value == null || value.isEmpty ? 'Enter a name' : null,
                         ),
-                  ),
-                  const SizedBox(height: 2),
-                  // --- RATING ---
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 12, bottom: 4),
-                      child: Text('Rating', style: Theme.of(context).textTheme.labelLarge),
-                    ),
-                  ),
-                  StatefulBuilder(
-                    builder: (context, setState) {
-                      return RatingPicker(
-                        rating: _rating,
-                        onChanged: (val) => setState(() => _rating = val),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  // --- NOTES ---
-                  TextFormField(
-                    controller: _notesController,
-                    decoration: const InputDecoration(
-                      labelText: 'Notes',
-                      border: OutlineInputBorder(),
-                      alignLabelWithHint: true,
-                    ),
-                    keyboardType: TextInputType.multiline,
-                    maxLines: null,
-                    minLines: 2,
-                  ),
-                  // --- ADD PHOTOS (ONLY for new shop) ---
-                  if (isNewShop) ...[
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.add_photo_alternate),
-                      label: const Text('Add Photos'),
-                      onPressed: _pickImages,
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 100,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _selectedImages.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
-                        itemBuilder: (context, index) {
-                          final image = _selectedImages[index];
-                          return Stack(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.file(
-                                  image.file!,
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() => _selectedImages.removeAt(index));
-                                  },
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.black45,
-                                      borderRadius: BorderRadius.circular(12),
+                        // --- NAME FIELD
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _brandSlug != null
+                              ? ListTile(
+                                  minTileHeight: 30,
+                                  minVerticalPadding: 4,
+                                  leading: Icon(Icons.storefront_rounded),
+                                  title: Text(
+                                    _nameController.text,
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    child: const Icon(Icons.close, size: 20, color: Colors.white),
+                                    textAlign: TextAlign.left,
+                                  ))
+                              : TextFormField(
+                                  controller: _nameController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Shop Name',
                                   ),
+                                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                                  textAlign: TextAlign.left,
+                                  validator: (value) =>
+                                      value == null || value.isEmpty ? 'Enter a name' : null,
                                 ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
+                        ),
+                        const SizedBox(height: 2),
+                        // --- RATING ---
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 12, bottom: 4),
+                            child: Text('Rating', style: Theme.of(context).textTheme.labelLarge),
+                          ),
+                        ),
+                        StatefulBuilder(
+                          builder: (context, setState) {
+                            return RatingPicker(
+                              rating: _rating,
+                              onChanged: (val) => setState(() => _rating = val),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        // --- NOTES ---
+                        TextFormField(
+                          controller: _notesController,
+                          decoration: const InputDecoration(
+                            labelText: 'Notes',
+                            border: OutlineInputBorder(),
+                            alignLabelWithHint: true,
+                          ),
+                          keyboardType: TextInputType.multiline,
+                          maxLines: null,
+                          minLines: 2,
+                        ),
+                        // --- ADD PHOTOS (ONLY for new shop) ---
+                        if (isNewShop) ...[
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.add_photo_alternate),
+                            label: const Text('Add Photos'),
+                            onPressed: _pickImages,
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 100,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: _selectedImages.length,
+                              separatorBuilder: (_, __) => const SizedBox(width: 8),
+                              itemBuilder: (context, index) {
+                                final image = _selectedImages[index];
+                                return Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.file(
+                                        image.file!,
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 0,
+                                      right: 0,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          setState(() => _selectedImages.removeAt(index));
+                                        },
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.black45,
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: const Icon(Icons.close, size: 20, color: Colors.white),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                        // --- ACTION BUTTONS ---
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('Cancel'),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: _isSubmitting
+                                  ? null
+                                  : () => _handleSubmit(shopMediaState, achievementState, feedState, user),
+                              child: _isSubmitting
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    )
+                                  : (isNewShop ? Text('Add Shop') : Text('Save')),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ],
-                  const SizedBox(height: 16),
-                  // --- ACTION BUTTONS ---
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Cancel'),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: _isSubmitting
-                          ? null
-                          : () => _handleSubmit(shopMediaState, achievementState, feedState, user),
-                        child: _isSubmitting
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : (isNewShop ? Text('Add Shop') : Text('Save')),
-                      ),
-                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

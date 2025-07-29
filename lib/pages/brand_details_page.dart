@@ -196,127 +196,138 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
     }
 
     return Scaffold(
-      body: Column(
-        children: [
-          Stack(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildBrandBanner(
-                context,
-                widget.brand,
-                _globalGalleryFuture,
-                buildBannerContent(context, widget.brand, _statsFuture),
-              ),
-              Positioned(
-                bottom: 20,
-                right: 20,
-                child: TextButton(
-                  style: TextButton.styleFrom(
-                    backgroundColor: themeColor == Colors.grey ? themeColor.shade500 : themeColor.shade200,
-                    shape: const StadiumBorder(),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    elevation: 3,
-                    minimumSize: Size(0,0)
+              Stack(
+                children: [
+                  _buildBrandBanner(
+                    context,
+                    widget.brand,
+                    _globalGalleryFuture,
+                    buildBannerContent(context, widget.brand, _statsFuture),
                   ),
-                  child: Text(
-                    hasVisit ? "Edit Visit" : "Add Visit",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
+                  Positioned(
+                    bottom: 20,
+                    right: 20,
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: themeColor == Colors.grey ? themeColor.shade500 : themeColor.shade200,
+                        shape: const StadiumBorder(),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        elevation: 3,
+                        minimumSize: Size(0,0)
+                      ),
+                      child: Text(
+                        hasVisit ? "Edit Visit" : "Add Visit",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                      onPressed: () async {
+                        await showDialog(
+                          context: context,
+                          builder: (context) => AddOrEditShopDialog(
+                            shop: hasVisit ? userShop : null,
+                            onSubmit: (submittedShop) async {
+                              try {
+                                if (hasVisit) {
+                                  final persistedShop = await shopState.update(submittedShop);
+                                  return persistedShop;
+                                } else {
+                                  final persistedShop = await shopState.add(submittedShop);
+                                  await achievementState.checkAndUnlockShopAchievement(shopState);
+                                  await achievementState.checkAndUnlockBrandAchievement(shopState);
+                                  return persistedShop;
+                                }
+                              } catch (e) {
+                                debugPrint('error: $e');
+                                if (context.mounted) { context.read<NotificationQueue>().queue('Failed to update shop.', SnackType.error); }
+                                rethrow;
+                              }
+                            },
+                            brand: widget.brand,
+                          ),
+                        );
+                      },
                     ),
                   ),
-                  onPressed: () async {
-                    await showDialog(
-                      context: context,
-                      builder: (context) => AddOrEditShopDialog(
-                        shop: hasVisit ? userShop : null,
-                        onSubmit: (submittedShop) async {
-                          try {
-                            if (hasVisit) {
-                              final persistedShop = await shopState.update(submittedShop);
-                              return persistedShop;
-                            } else {
-                              final persistedShop = await shopState.add(submittedShop);
-                              await achievementState.checkAndUnlockShopAchievement(shopState);
-                              await achievementState.checkAndUnlockBrandAchievement(shopState);
-                              return persistedShop;
+                  Positioned(
+                    top: 25,
+                    right: 10,
+                    child: PopupMenuButton(
+                      icon: Icon(Icons.more_horiz, color: Colors.white, size: 24),
+                      onSelected: (value) async {
+                        switch(value) {
+                          case 'report':
+                            final result = await reportBrandClosed();
+                            if (result != null && (result == 'incremented' || result == 'created')) {
+                              if(context.mounted) context.read<NotificationQueue>().queue('Report pending review', SnackType.info);
+                            } else if (result != null ) {
+                              debugPrint(result);
+                              if(context.mounted) context.read<NotificationQueue>().queue(result, SnackType.error);
                             }
-                          } catch (e) {
-                            debugPrint('error: $e');
-                            if (context.mounted) { context.read<NotificationQueue>().queue('Failed to update shop.', SnackType.error); }
-                            rethrow;
-                          }
-                        },
-                        brand: widget.brand,
-                      ),
-                    );
-                  },
+                            break;
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'report',
+                          child: Text('Report closed')
+                        )
+                      ]
+                    ),
+                  )
+                ]
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    buildGlobalGallery(widget.brand, _globalGalleryFuture),
+                    const SizedBox(height: 24),
+                    Text("Recent Activity", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    const SizedBox(height: 8),
+                  ],
                 ),
               ),
-              Positioned(
-                top: 25,
-                right: 10,
-                child: PopupMenuButton(
-                  icon: Icon(Icons.more_horiz, color: Colors.white, size: 24),
-                  onSelected: (value) async {
-                    switch(value) {
-                      case 'report':
-                        final result = await reportBrandClosed();
-                        if (result != null && (result == 'incremented' || result == 'created')) {
-                          if(context.mounted) context.read<NotificationQueue>().queue('Report pending review', SnackType.info);
-                        } else if (result != null ) {
-                          debugPrint(result);
-                          if(context.mounted) context.read<NotificationQueue>().queue(result, SnackType.error);
-                        }
-                        break;
-                    }
-                  },
-                  itemBuilder: (_) => [
-                    PopupMenuItem(
-                      value: 'report',
-                      child: Text('Report closed')
-                    )
-                  ]
-                ),
-              )
+              // Feed section: make it scrollable horizontally if needed
+              Builder(
+                builder: (context) {
+                  if (isLoading) {
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: List.generate(3, (_) => FeedEventCardSkeleton()),
+                    );
+                  }
+                  if (feed.isEmpty) {
+                    return SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.25,
+                      child: Center(
+                        child: Text("No activity yet!", style: Constants.emptyListTextStyle),
+                      ),
+                    );
+                  }
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    itemCount: feed.length,
+                    itemBuilder: (context, index) {
+                      final event = feed[index];
+                      return FeedEventCard(event: event);
+                    },
+                  );
+                },
+              ),
             ]
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                buildGlobalGallery(widget.brand, _globalGalleryFuture),
-                const SizedBox(height: 24),
-                Text("Recent Activity", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Builder(
-              builder: (context) {
-                if (isLoading) {
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: List.generate(3, (_) => FeedEventCardSkeleton()),
-                  );
-                }
-                if (feed.isEmpty) {
-                  return Center(child: Text("No activity yet!", style: Constants.emptyListTextStyle));
-                }
-                return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  itemCount: feed.length,
-                  itemBuilder: (context, index) {
-                    final event = feed[index];
-                    return FeedEventCard(event: event);
-                  },
-                );
-              },
-            ),
-          )
-        ]
-      )
+        ),
+      ),
     );
   }
 }
