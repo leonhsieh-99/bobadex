@@ -2,14 +2,15 @@ import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/brand.dart';
 import 'package:bobadex/models/brand_stats.dart';
+import 'package:bobadex/models/feed_event.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/pages/shop_gallery_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
-import 'package:bobadex/widgets/brand_feed_view.dart';
 import 'package:bobadex/widgets/image_widgets/horizontal_photo_preview.dart';
+import 'package:bobadex/widgets/social_widgets/feed_event_card.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -28,6 +29,8 @@ class BrandDetailsPage extends StatefulWidget {
 class _BrandDetailsPageState extends State<BrandDetailsPage> {
   late Future<BrandStats> _statsFuture;
   late Future<List<ShopMedia>> _globalGalleryFuture;
+  bool isLoading = false;
+  List<FeedEvent> feed = [];
 
   @override
   void initState() {
@@ -100,6 +103,20 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
       debugPrint('Error fetching gallery: $e');
       return [];
     }
+  }
+
+  Future<void> fetchFeed() async {
+    setState(() => isLoading = true);
+    try {
+      final response = await Supabase.instance.client.rpc('get_brand_feed', params: {
+        'brand_slug': widget.brand.slug,
+        'limit_count': 50,
+      });
+      feed = (response as List).map((json) => FeedEvent.fromJson(json)).toList();
+    } catch (e) {
+      debugPrint('Error loading feed: $e');
+    }
+    setState(() => isLoading = false);
   }
 
   @override
@@ -263,16 +280,39 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
               )
             ]
           ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 buildGlobalGallery(widget.brand, _globalGalleryFuture),
                 const SizedBox(height: 24),
                 Text("Recent Activity", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                 const SizedBox(height: 8),
-                BrandFeedView(brandSlug: widget.brand.slug),
               ],
+            ),
+          ),
+          Expanded(
+            child: Builder(
+              builder: (context) {
+                if (isLoading) {
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: List.generate(3, (_) => FeedEventCardSkeleton()),
+                  );
+                }
+                if (feed.isEmpty) {
+                  return Center(child: Text("No activity yet!", style: Constants.emptyListTextStyle));
+                }
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  itemCount: feed.length,
+                  itemBuilder: (context, index) {
+                    final event = feed[index];
+                    return FeedEventCard(event: event);
+                  },
+                );
+              },
             ),
           )
         ]
