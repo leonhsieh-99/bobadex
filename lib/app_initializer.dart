@@ -140,12 +140,7 @@ class _AppInitializerState extends State<AppInitializer> {
       final achievementsState = context.read<AchievementsState>();
       final feedState = context.read<FeedState>();
 
-      try {
-        await userState.loadFromSupabase();
-        debugPrint('Loaded user state');
-      } catch (e) {
-        debugPrint('Error loading user state: $e');
-      }
+      await userState.loadFromSupabase();
 
       final user = context.read<UserState>().user;
       if (user.id.isEmpty) {
@@ -160,40 +155,14 @@ class _AppInitializerState extends State<AppInitializer> {
       }
       this.user = user;
 
-      try {
-        await drinkState.loadFromSupabase();
-        debugPrint('Loaded ${drinkState.all.length} drinks');
-      } catch (e) {
-        debugPrint('Error loading drinks: $e');
-      }
-
-      try {
-        await brandState.loadFromSupabase();
-        debugPrint('Loaded ${brandState.all.length} brands');
-      } catch (e) {
-        debugPrint('Error loading brands: $e');
-      }
-
-      try {
-        await shopState.loadFromSupabase();
-        debugPrint('Loaded ${shopState.all.length} shops');
-      } catch (e) {
-        debugPrint('Error loading shops: $e');
-      }
-
-      try {
-        await friendState.loadFromSupabase();
-        debugPrint('Loaded ${friendState.allFriendships.length} friendships');
-      } catch (e) {
-        debugPrint('Error loading friend state: $e');
-      }
-
-      try {
-        await shopMediaState.loadFromSupabase();
-        debugPrint('Loaded ${shopMediaState.all.length} shop medias');
-      } catch (e) {
-        debugPrint('Error loading shop media state: $e');
-      }
+      await Future.wait([
+        drinkState.loadFromSupabase(),
+        brandState.loadFromSupabase(),
+        shopState.loadFromSupabase(),
+        friendState.loadFromSupabase(),
+        shopMediaState.loadFromSupabase(),
+        achievementsState.loadFromSupabase(),
+      ]);
 
       if (_achievementListener != null) {
         try {
@@ -230,19 +199,19 @@ class _AppInitializerState extends State<AppInitializer> {
       });
       
       try {
-        await achievementsState.loadFromSupabase();
-        debugPrint('Loaded ${achievementsState.achievements.length} achievements');
-        await achievementsState.checkAndUnlockShopAchievement(shopState);
-        await achievementsState.checkAndUnlockDrinkAchievement(drinkState);
-        await achievementsState.checkAndUnlockFriendAchievement(friendState);
-        await achievementsState.checkAndUnlockNotesAchievement(drinkState);
-        await achievementsState.checkAndUnlockMaxDrinksShopAchievement(drinkState);
-        await achievementsState.checkAndUnlockMediaUploadAchievement(shopMediaState);
-        await achievementsState.checkAndUnlockBrandAchievement(shopState);
-        await achievementsState.checkAndUpdateAllAchievement();
+        await Future.wait([
+          achievementsState.checkAndUnlockShopAchievement(shopState),
+          achievementsState.checkAndUnlockDrinkAchievement(drinkState),
+          achievementsState.checkAndUnlockFriendAchievement(friendState),
+          achievementsState.checkAndUnlockNotesAchievement(drinkState),
+          achievementsState.checkAndUnlockMaxDrinksShopAchievement(drinkState),
+          achievementsState.checkAndUnlockMediaUploadAchievement(shopMediaState),
+          achievementsState.checkAndUnlockBrandAchievement(shopState),
+          achievementsState.checkAndUpdateAllAchievement(),
+        ]);
         debugPrint('Loaded ${achievementsState.userAchievements.length} user achievements');
       } catch (e) {
-        debugPrint('Error loading achievements state: $e');
+        debugPrint('Error loading user achievements: $e');
       }
 
       try {

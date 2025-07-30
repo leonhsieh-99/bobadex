@@ -1,3 +1,4 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/feed_event.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,7 +8,7 @@ class FeedState extends ChangeNotifier {
   final List<FeedEvent> _feed = [];
   bool _hasMore = false;
   bool _isFetchingMore = false;
-  final int _limit = 50;
+  final int _limit = Constants.defaultFeedLimit;
 
   List<FeedEvent> get feed => _feed;
   bool get hasMore => _hasMore;

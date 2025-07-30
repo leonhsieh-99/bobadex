@@ -23,7 +23,7 @@ class _BrandFeedViewState extends State<BrandFeedView> {
     fetchFeed(limit: 11);
   }
 
-  Future<void> fetchFeed({int limit = 50}) async {
+  Future<void> fetchFeed({int limit = Constants.defaultFeedLimit}) async {
     setState(() => isLoading = true);
     try {
       final response = await Supabase.instance.client.rpc('get_brand_feed', params: {

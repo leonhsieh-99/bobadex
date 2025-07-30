@@ -52,7 +52,7 @@ class AchievementsState extends ChangeNotifier {
           .eq('user_id', Supabase.instance.client.auth.currentUser!.id);
       } catch (e) {
         debugPrint('Error updating pin: $e');
-        ua.pinned = !newPin; // revert if failed
+        ua.pinned = !newPin;
         notifyListeners();
         rethrow;
       }
@@ -210,7 +210,7 @@ class AchievementsState extends ChangeNotifier {
             'progress': unlockedCount,
           });
       } catch (e) {
-        debugPrint('Error inserting all achievements: $e');
+        debugPrint('Error inserting all achievement: $e');
         _progressMap.remove(a.id);
         notifyListeners();
         rethrow;
@@ -229,31 +229,36 @@ class AchievementsState extends ChangeNotifier {
   }
 
   Future<void> loadFromSupabase() async {
-    // Clear existing data to avoid duplicates if reloading
-    _achievements.clear();
-    _userAchievements.clear();
-    _progressMap.clear();
+    try {
+      // Clear existing data to avoid duplicates if reloading
+      _achievements.clear();
+      _userAchievements.clear();
+      _progressMap.clear();
 
-    final supabase = Supabase.instance.client;
+      final supabase = Supabase.instance.client;
 
-    final achievements = await supabase
-      .from('achievements')
-      .select()
-      .order('display_order');
-    final userAchievements = await supabase
-      .from('user_achievements')
-      .select()
-      .eq('user_id', supabase.auth.currentUser!.id);
+      final achievements = await supabase
+        .from('achievements')
+        .select()
+        .order('display_order');
+      final userAchievements = await supabase
+        .from('user_achievements')
+        .select()
+        .eq('user_id', supabase.auth.currentUser!.id);
 
-    _achievements.addAll(
-      (achievements as List).map((json) => Achievement.fromJson(json)).toList().reversed
-    );
-    _userAchievements.addAll(
-      (userAchievements as List).map((json) => UserAchievement.fromJson(json))
-    );
-    for (var ua in _userAchievements) {
-      _progressMap[ua.achievementId] = ua;
+      _achievements.addAll(
+        (achievements as List).map((json) => Achievement.fromJson(json)).toList().reversed
+      );
+      _userAchievements.addAll(
+        (userAchievements as List).map((json) => UserAchievement.fromJson(json))
+      );
+      for (var ua in _userAchievements) {
+        _progressMap[ua.achievementId] = ua;
+      }
+      notifyListeners();
+      debugPrint('Loaded ${achievements.length} achievements');
+    } catch (e) {
+      debugPrint('Error loading achievements state: $e');
     }
-    notifyListeners();
   }
 }

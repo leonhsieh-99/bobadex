@@ -1,3 +1,4 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:flutter/material.dart';
 
 class TopSnackBar extends StatefulWidget {
@@ -12,7 +13,7 @@ class TopSnackBar extends StatefulWidget {
     required this.message,
     required this.backgroundColor,
     this.icon,
-    this.duration = const Duration(milliseconds: 1900),
+    this.duration = const Duration(milliseconds: Constants.snackBarDuration),
     this.onDismissed,
   });
 

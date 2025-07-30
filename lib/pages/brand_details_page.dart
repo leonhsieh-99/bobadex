@@ -34,7 +34,6 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
 
   @override
   void initState() {
-    fetchStats();
     super.initState();
     _statsFuture = fetchStats();
     _globalGalleryFuture = fetchGallery();
@@ -89,7 +88,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
     }
   }
 
-  Future<List<ShopMedia>> fetchGallery({int offset = 0, limit = 20}) async {
+  Future<List<ShopMedia>> fetchGallery({int offset = 0, limit = Constants.defaultGalleryLimit}) async {
     try {
       final response = await Supabase.instance.client
         .rpc('get_brand_gallery', params: {

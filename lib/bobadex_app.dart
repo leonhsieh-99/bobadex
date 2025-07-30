@@ -76,7 +76,7 @@ class BobadexApp extends StatelessWidget {
             home: Stack(
               children: [
                 AppInitializer(),
-                NotificationConsumer(), // <--- Here, it's inside the MaterialApp/Overlay
+                NotificationConsumer(),
               ]
             ),
           );

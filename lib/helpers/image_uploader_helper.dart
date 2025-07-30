@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:bobadex/config/constants.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -6,7 +7,6 @@ import 'package:uuid/uuid.dart';
 
 class ImageUploaderHelper {
   static final _supabase = Supabase.instance.client;
-  static const int _maxFileSize = 10 * 1024 * 1024; // 10 MB
   static const List<String> _supportedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
   static Future<String> uploadImage({
@@ -49,7 +49,7 @@ class ImageUploaderHelper {
     }
 
     // Final file size check (after compression)
-    if (fileBytes.length > _maxFileSize) {
+    if (fileBytes.length > Constants.maxFileSize) {
       throw Exception('File size exceeds maximum limit of 10MB after compression.');
     }
 

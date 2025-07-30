@@ -108,17 +108,22 @@ class DrinkState extends ChangeNotifier {
 
 
   Future<void> loadFromSupabase() async {
-    final supabase = Supabase.instance.client;
-    final response = await supabase
-      .from('drinks')
-      .select()
-      .eq('user_id', supabase.auth.currentUser!.id);
+    try {
+      final supabase = Supabase.instance.client;
+      final response = await supabase
+        .from('drinks')
+        .select()
+        .eq('user_id', supabase.auth.currentUser!.id);
 
-    _drinks
-      ..clear()
-      ..addAll(
-        response.map<Drink>((json) => Drink.fromJson(json))
-      );
-    notifyListeners();
+      _drinks
+        ..clear()
+        ..addAll(
+          response.map<Drink>((json) => Drink.fromJson(json))
+        );
+      notifyListeners();
+      debugPrint('Loaded ${all.length} drinks');
+    } catch (e) {
+      debugPrint('Error loading drinks: $e');
+    }
   }
 }

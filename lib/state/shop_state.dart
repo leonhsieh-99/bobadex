@@ -26,7 +26,6 @@ class ShopState extends ChangeNotifier {
     _shops.add(tempShop);
     notifyListeners();
 
-    // save to db
     try {
       final response = await Supabase.instance.client
         .from('shops')
@@ -139,16 +138,21 @@ class ShopState extends ChangeNotifier {
     final supabase = Supabase.instance.client;
     final userId = supabase.auth.currentUser?.id;
 
-    final response = await supabase
-      .from('shops')
-      .select()
-      .eq('user_id', userId);
-    
-    _shops
-      ..clear()
-      ..addAll(
-        response.map<Shop>((json) => Shop.fromJson(json))
-      );
+    try {
+      final response = await supabase
+        .from('shops')
+        .select()
+        .eq('user_id', userId);
+      
+      _shops
+        ..clear()
+        ..addAll(
+          response.map<Shop>((json) => Shop.fromJson(json))
+        );
       notifyListeners();
+      debugPrint('Loaded ${all.length} shops');
+    } catch (e) {
+      debugPrint('Error loading shops: $e');
+    }
   }
 }

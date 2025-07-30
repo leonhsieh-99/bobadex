@@ -151,12 +151,12 @@ class UserState extends ChangeNotifier {
       if (profile != null) {
         _user = u.User.fromMap(profile, settings);
         notifyListeners();
+        debugPrint('User state loaded');
         isLoaded = true;
       }
     } catch (e) {
-      debugPrint('Error loading user from Supabase: $e');
+      debugPrint('Error loading user state: $e');
       isLoaded = false;
-      rethrow;
     }
   }
 }

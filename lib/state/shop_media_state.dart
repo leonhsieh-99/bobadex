@@ -192,18 +192,24 @@ class ShopMediaState extends ChangeNotifier {
 
   Future<void> loadFromSupabase() async {
     final supabase = Supabase.instance.client;
-    final response = await supabase
-      .from('shop_media')
-      .select()
-      .eq('user_id', supabase.auth.currentUser!.id);
+    try {
+      final response = await supabase
+        .from('shop_media')
+        .select()
+        .eq('user_id', supabase.auth.currentUser!.id);
 
-    final pendings = _shopMedia.where((m) => m.isPending == true).toList();
-    _shopMedia
-      ..clear()
-      ..addAll(
-        response.map<ShopMedia>((json) => ShopMedia.fromJson(json))
-      )
-      ..addAll(pendings);
-    notifyListeners();
+      final pendings = _shopMedia.where((m) => m.isPending == true).toList();
+      _shopMedia
+        ..clear()
+        ..addAll(
+          response.map<ShopMedia>((json) => ShopMedia.fromJson(json))
+        )
+        ..addAll(pendings);
+
+      notifyListeners();
+      debugPrint('Loaded ${all.length} shop medias');
+    } catch (e) {
+      debugPrint('Error loading shop media state: $e');
+    }
   }
 }

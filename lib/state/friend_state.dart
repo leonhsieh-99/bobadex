@@ -120,24 +120,27 @@ class FriendState extends ChangeNotifier {
   }
 
   Future<void> loadFromSupabase() async {
-    userId = supabase.auth.currentUser?.id;
-    final userResult = await supabase.from('users').select().eq('id', userId).single();
-    user = u.User.fromJson(userResult);
+    try {
+      userId = supabase.auth.currentUser?.id;
+      final userResult = await supabase.from('users').select().eq('id', userId).single();
+      user = u.User.fromJson(userResult);
+      final results = await supabase
+        .from('friendships')
+        .select('''
+          id,
+          status,
+          requester_id,
+          addressee_id,
+          requester:requester_id(id, username, display_name, profile_image_path),
+          addressee:addressee_id(id, username, display_name, profile_image_path)
+        ''')
+        .or('requester_id.eq.$userId, addressee_id.eq.$userId');
 
-    final results = await supabase
-      .from('friendships')
-      .select('''
-        id,
-        status,
-        requester_id,
-        addressee_id,
-        requester:requester_id(id, username, display_name, profile_image_path),
-        addressee:addressee_id(id, username, display_name, profile_image_path)
-      ''')
-      .or('requester_id.eq.$userId, addressee_id.eq.$userId');
-
-    _friendships = (results as List).map((f) => Friendship.fromJson(f)).toList();
-
-    notifyListeners();
+      _friendships = (results as List).map((f) => Friendship.fromJson(f)).toList();
+      notifyListeners();
+      debugPrint('Loaded ${allFriendships.length} friendships');
+    } catch (e) {
+      debugPrint('Error loading friend state: $e');
+    }
   }
 }

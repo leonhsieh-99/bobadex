@@ -30,7 +30,6 @@ class UserStatsCache extends ChangeNotifier {
     final topShop = await fetchTopShopFromServer(userId);
     final accountStats = AccountStats.fromJson(stats, topShop);
     _cache[userId] = accountStats;
-    notifyListeners();
     return accountStats;
   }
 

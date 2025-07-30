@@ -1,4 +1,5 @@
 import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/account_stats.dart';
 import 'package:bobadex/models/achievement.dart';
 import 'package:bobadex/models/friendship.dart';
@@ -9,6 +10,7 @@ import 'package:bobadex/pages/setting_pages/settings_account_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
+import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/user_stats_cache.dart';
 import 'package:bobadex/widgets/badge_picker_dialog.dart';
@@ -273,13 +275,19 @@ class _AccountViewPageState extends State<AccountViewPage> {
                         badges: unlockedBadges,
                         pinnedBadges: pinnedBadges,
                         onSave: (selected) async {
-                          for (final a in unlockedBadges) {
-                            final shouldPin = selected.contains(a.id);
-                            if (achievementState.progressMap[a.id]?.pinned != shouldPin) {
-                              await achievementState.setPinned(a.id);
+                          try {
+                            for (final a in unlockedBadges) {
+                              final shouldPin = selected.contains(a.id);
+                              if (achievementState.progressMap[a.id]?.pinned != shouldPin) {
+                                await achievementState.setPinned(a.id);
+                              }
+                            }
+                            if(context.mounted) Navigator.of(context).pop();
+                          } catch (e) {
+                            if (context.mounted) { 
+                              context.read<NotificationQueue>().queue('Error pinning badges', SnackType.error);
                             }
                           }
-                          if(context.mounted) Navigator.of(context).pop();
                         },
                       ),
                     );

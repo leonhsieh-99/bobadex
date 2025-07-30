@@ -1,3 +1,4 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:flutter/material.dart';
 
@@ -6,15 +7,15 @@ class QueuedNotification {
   final SnackType type;
   final int duration;
 
-  QueuedNotification(this.message, this.type, {this.duration = 1900});
+  QueuedNotification(this.message, this.type, {this.duration = Constants.snackBarDuration});
 }
 
 class NotificationQueue extends ChangeNotifier {
   final List<QueuedNotification> _queue = [];
   bool _draining = false;
 
-  void queue(String message, SnackType type, {int duration = 1900}) {
-    _queue.add(QueuedNotification(message, type, duration: duration));
+  void queue(String message, SnackType type, {int duration = Constants.snackBarDuration}) {
+    _queue.add(QueuedNotification(message, type, duration:duration));
     notifyListeners();
   }
 
