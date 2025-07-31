@@ -162,6 +162,11 @@ create table brand_staging (
   reason text
 );
 
+create table brand_metadata (
+  id int primary key,
+  last_updated timestamptz not null default now()
+);
+
 
 -- Brand Locations Table
 create table ref.brand_locations (

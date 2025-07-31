@@ -1,4 +1,5 @@
 import 'package:bobadex/helpers/image_uploader_helper.dart';
+import 'package:bobadex/helpers/retry_helper.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -6,8 +7,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ShopMediaState extends ChangeNotifier {
   final List<ShopMedia> _shopMedia = [];
+  bool _hasError = false;
 
   List<ShopMedia> get all => _shopMedia;
+  bool get hasError => _hasError;
 
   ShopMedia? getById(String id) {
     return _shopMedia.firstWhereOrNull((m) => m.id == id);
@@ -192,11 +195,13 @@ class ShopMediaState extends ChangeNotifier {
 
   Future<void> loadFromSupabase() async {
     final supabase = Supabase.instance.client;
+
     try {
-      final response = await supabase
+      final response = await RetryHelper.retry(() => supabase
         .from('shop_media')
         .select()
-        .eq('user_id', supabase.auth.currentUser!.id);
+        .eq('user_id', supabase.auth.currentUser!.id)
+      );
 
       final pendings = _shopMedia.where((m) => m.isPending == true).toList();
       _shopMedia
@@ -209,6 +214,10 @@ class ShopMediaState extends ChangeNotifier {
       notifyListeners();
       debugPrint('Loaded ${all.length} shop medias');
     } catch (e) {
+      if (!_hasError) {
+        _hasError = true;
+        notifyListeners();
+      }
       debugPrint('Error loading shop media state: $e');
     }
   }

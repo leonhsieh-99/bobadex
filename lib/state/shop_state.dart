@@ -1,3 +1,4 @@
+import 'package:bobadex/helpers/retry_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../models/shop.dart';
@@ -6,8 +7,10 @@ import 'package:collection/collection.dart';
 
 class ShopState extends ChangeNotifier {
   final List<Shop> _shops = [];
+  bool _hasError = false;
 
   List<Shop> get all => _shops;
+  bool get hasError => _hasError;
 
   Shop? getShop(String? id) {
     if (id == null) return null;
@@ -138,20 +141,29 @@ class ShopState extends ChangeNotifier {
     final supabase = Supabase.instance.client;
     final userId = supabase.auth.currentUser?.id;
 
+    if (userId == null) {
+      _shops.clear();
+      notifyListeners();
+      return;
+    }
+
     try {
-      final response = await supabase
+      final response = await RetryHelper.retry(() => supabase
         .from('shops')
         .select()
-        .eq('user_id', userId);
-      
+        .eq('user_id', userId)
+      );
+
       _shops
         ..clear()
-        ..addAll(
-          response.map<Shop>((json) => Shop.fromJson(json))
-        );
+        ..addAll(response.map<Shop>((json) => Shop.fromJson(json)));
       notifyListeners();
       debugPrint('Loaded ${all.length} shops');
     } catch (e) {
+      if (!_hasError) {
+        _hasError = true;
+        notifyListeners();
+      }
       debugPrint('Error loading shops: $e');
     }
   }

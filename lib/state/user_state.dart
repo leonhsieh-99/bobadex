@@ -1,3 +1,4 @@
+import 'package:bobadex/helpers/retry_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user.dart' as u;
@@ -5,8 +6,10 @@ import '../models/user.dart' as u;
 class UserState extends ChangeNotifier {
   u.User _user = u.User.empty();
   bool isLoaded = false;
+  bool _hasError = false;
 
   u.User get user => _user;
+  bool get hasError => _hasError;
 
   void setUser(u.User u) {
     _user = u;
@@ -145,18 +148,25 @@ class UserState extends ChangeNotifier {
 
       if (userId == null) return;
 
-      final profile = await supabase.from('users').select().eq('id', userId).maybeSingle();
-      final settings = await supabase.from('user_settings').select().eq('user_id', userId).maybeSingle();
+      final results = await RetryHelper.retry(() async {
+        final profile = await supabase.from('users').select().eq('id', userId).maybeSingle();
+        final settings = await supabase.from('user_settings').select().eq('user_id', userId).maybeSingle();
+        return [profile, settings];
+      });
+      final profile = results[0];
+      final settings = results[1];
 
       if (profile != null) {
         _user = u.User.fromMap(profile, settings);
+        isLoaded = true;
         notifyListeners();
         debugPrint('User state loaded');
-        isLoaded = true;
       }
     } catch (e) {
-      debugPrint('Error loading user state: $e');
+      _hasError = true;
       isLoaded = false;
+      notifyListeners();
+      debugPrint('Error loading user state: $e');
     }
   }
 }

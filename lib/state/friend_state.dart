@@ -1,3 +1,4 @@
+import 'package:bobadex/helpers/retry_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/friendship.dart';
@@ -7,6 +8,7 @@ class FriendState extends ChangeNotifier {
   final supabase = Supabase.instance.client;
   String? userId = '';
   u.User user = u.User.empty();
+  bool _hasError = false;
 
   List<Friendship> _friendships = [];
 
@@ -29,6 +31,8 @@ class FriendState extends ChangeNotifier {
     .map((f) => f.requester)
     .toList()
     ..sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
+
+  bool get hasError => _hasError;
 
   String getDisplayName(userId) {
     return friends.firstWhere((f) => f.id == userId).displayName;
@@ -122,9 +126,9 @@ class FriendState extends ChangeNotifier {
   Future<void> loadFromSupabase() async {
     try {
       userId = supabase.auth.currentUser?.id;
-      final userResult = await supabase.from('users').select().eq('id', userId).single();
+      final userResult = await RetryHelper.retry(() => supabase.from('users').select().eq('id', userId).single());
       user = u.User.fromJson(userResult);
-      final results = await supabase
+      final results = await RetryHelper.retry(() => supabase
         .from('friendships')
         .select('''
           id,
@@ -134,12 +138,18 @@ class FriendState extends ChangeNotifier {
           requester:requester_id(id, username, display_name, profile_image_path),
           addressee:addressee_id(id, username, display_name, profile_image_path)
         ''')
-        .or('requester_id.eq.$userId, addressee_id.eq.$userId');
+        .or('requester_id.eq.$userId, addressee_id.eq.$userId')
+      );
 
       _friendships = (results as List).map((f) => Friendship.fromJson(f)).toList();
+      
       notifyListeners();
       debugPrint('Loaded ${allFriendships.length} friendships');
     } catch (e) {
+      if (!_hasError) {
+        _hasError = true;
+        notifyListeners();
+      }
       debugPrint('Error loading friend state: $e');
     }
   }

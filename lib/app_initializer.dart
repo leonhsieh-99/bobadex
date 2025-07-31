@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/feed_event.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/feed_state.dart';
@@ -163,6 +164,25 @@ class _AppInitializerState extends State<AppInitializer> {
         shopMediaState.loadFromSupabase(),
         achievementsState.loadFromSupabase(),
       ]);
+
+      final hasErrors = [
+        drinkState.hasError,
+        brandState.hasError,
+        shopState.hasError,
+        friendState.hasError,
+        shopMediaState.hasError,
+        achievementsState.hasError,
+      ].any((e) => e);
+
+      if (hasErrors) {
+        debugPrint('Some providers failed to load. Showing partial data.');
+        if(mounted) {
+          context.read<NotificationQueue>().queue(
+            'Some data failed to load. Try refreshing.',
+            SnackType.error,
+          );
+        }
+      }
 
       if (_achievementListener != null) {
         try {

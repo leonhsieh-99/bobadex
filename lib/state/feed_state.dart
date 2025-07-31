@@ -1,4 +1,5 @@
 import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/helpers/retry_helper.dart';
 import 'package:bobadex/models/feed_event.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -28,19 +29,24 @@ class FeedState extends ChangeNotifier {
     _isFetchingMore = true;
     notifyListeners();
 
-    final response = await supabase
-      .rpc('get_feed', params: {
-        'user_id': supabase.auth.currentUser!.id,
-        'offset_count': _feed.length,
-        'limit_count': _limit,
-      });
-    final newFeed = (response as List).map((json) => FeedEvent.fromJson(json)).toList();
-    _feed.addAll(newFeed);
+    try {
+      final response = await RetryHelper.retry(() => supabase
+        .rpc('get_feed', params: {
+          'user_id': supabase.auth.currentUser!.id,
+          'offset_count': _feed.length,
+          'limit_count': _limit,
+        }));
 
-    if (newFeed.length < _limit) _hasMore = false;
+      final newFeed = (response as List).map((json) => FeedEvent.fromJson(json)).toList();
+      _feed.addAll(newFeed);
 
-    _isFetchingMore = false;
-    notifyListeners();
+      if (newFeed.length < _limit) _hasMore = false;
+    } catch (e) {
+      debugPrint('Error fetching feed: $e');
+    } finally {
+      _isFetchingMore = false;
+      notifyListeners();
+    }
   }
 
   Future<FeedEvent> addFeedEvent(FeedEvent event) async {

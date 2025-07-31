@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bobadex/helpers/retry_helper.dart';
 import 'package:bobadex/models/achievement.dart';
 import 'package:bobadex/state/drink_state.dart';
 import 'package:bobadex/state/friend_state.dart';
@@ -14,11 +15,13 @@ class AchievementsState extends ChangeNotifier {
   final Map<String, UserAchievement> _progressMap = {};
   final List<Achievement> _pendingAchievements = [];
   final _unlockedAchievementController = StreamController<Achievement>.broadcast();
+  bool _hasError = false;
 
   List<Achievement> get achievements => _achievements;
   List<UserAchievement> get userAchievements => _userAchievements;
   Map<String, UserAchievement> get progressMap => _progressMap;
   Stream<Achievement> get unlockedAchievementsStream => _unlockedAchievementController.stream;
+  bool get hasError => _hasError;
 
   String normalizer(String name) {
     return name
@@ -237,14 +240,16 @@ class AchievementsState extends ChangeNotifier {
 
       final supabase = Supabase.instance.client;
 
-      final achievements = await supabase
+      final achievements = await RetryHelper.retry(() => supabase
         .from('achievements')
         .select()
-        .order('display_order');
-      final userAchievements = await supabase
+        .order('display_order')
+      );
+      final userAchievements = await RetryHelper.retry(() => supabase
         .from('user_achievements')
         .select()
-        .eq('user_id', supabase.auth.currentUser!.id);
+        .eq('user_id', supabase.auth.currentUser!.id)
+      );
 
       _achievements.addAll(
         (achievements as List).map((json) => Achievement.fromJson(json)).toList().reversed
@@ -258,6 +263,10 @@ class AchievementsState extends ChangeNotifier {
       notifyListeners();
       debugPrint('Loaded ${achievements.length} achievements');
     } catch (e) {
+      if (!_hasError) {
+        _hasError = true;
+        notifyListeners();
+      }
       debugPrint('Error loading achievements state: $e');
     }
   }

@@ -1,3 +1,4 @@
+import 'package:bobadex/helpers/retry_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/drink.dart';
@@ -6,8 +7,10 @@ import 'package:uuid/uuid.dart';
 
 class DrinkState extends ChangeNotifier {
   final List<Drink> _drinks = [];
+  bool _hasError = false;
   
   List<Drink> get all => _drinks;
+  bool get hasError => _hasError;
 
   Drink? getDrink(String? id) {
     if (id == null) return null;
@@ -110,10 +113,11 @@ class DrinkState extends ChangeNotifier {
   Future<void> loadFromSupabase() async {
     try {
       final supabase = Supabase.instance.client;
-      final response = await supabase
+      final response = await RetryHelper.retry(() => supabase
         .from('drinks')
         .select()
-        .eq('user_id', supabase.auth.currentUser!.id);
+        .eq('user_id', supabase.auth.currentUser!.id)
+      );
 
       _drinks
         ..clear()
@@ -123,6 +127,10 @@ class DrinkState extends ChangeNotifier {
       notifyListeners();
       debugPrint('Loaded ${all.length} drinks');
     } catch (e) {
+      if (!_hasError) {
+        _hasError = true;
+        notifyListeners();
+      }
       debugPrint('Error loading drinks: $e');
     }
   }
