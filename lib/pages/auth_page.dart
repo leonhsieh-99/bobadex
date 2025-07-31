@@ -1,3 +1,4 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/notification_queue.dart';
@@ -56,7 +57,14 @@ class _AuthPageState extends State<AuthPage> {
           return;
         }
 
-        final response = await supabase.auth.signUp(email: email, password: password);
+        final response = await supabase.auth.signUp(
+          email: email,
+          password: password,
+          data: {
+            'username': username,
+            'display_name': displayName,
+          },
+        );
 
         if (response.session == null && response.user != null) {
           if (mounted) {
@@ -77,23 +85,6 @@ class _AuthPageState extends State<AuthPage> {
 
       final user = supabase.auth.currentUser;
       if (user == null) throw Exception('No user found after auth');
-      final userId = user.id;
-
-      if (_isSigningUp && username.isNotEmpty) {
-        final existing = await supabase.from('users').select().eq('id', userId).maybeSingle();
-        if (existing == null) {
-          await supabase.from('users').insert({
-            'id': userId,
-            'username': username,
-            'display_name': displayName,
-          });
-          await supabase.from('user_settings').insert({
-            'user_id': userId,
-            'theme_slug': 'grey',
-            'grid_columns': 2,
-          });
-        }
-      }
 
       await userState.loadFromSupabase();
       await brandState.loadFromSupabase();
@@ -142,8 +133,9 @@ class _AuthPageState extends State<AuthPage> {
                 if (_isSigningUp)
                   TextFormField(
                     controller: _displayNameController,
+                    maxLength: Constants.maxNameLength,
                     textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(labelText: 'Name'),
+                    decoration: const InputDecoration(labelText: 'Name', counterText: ''),
                     validator: (val) => val == null || val.isEmpty ? 'Enter your name' : null,
                     autofillHints: const [AutofillHints.name],
                   ),
@@ -160,8 +152,9 @@ class _AuthPageState extends State<AuthPage> {
                 ),
                 if (_isSigningUp)
                   TextFormField(
+                    maxLength: Constants.maxUsernameLength,
                     controller: _usernameController,
-                    decoration: const InputDecoration(labelText: 'Username'),
+                    decoration: const InputDecoration(labelText: 'Username', counterText: ''),
                     validator: (val) => val == null || val.isEmpty ? 'Enter a username' : null,
                   ),
                 const SizedBox(height: 10),

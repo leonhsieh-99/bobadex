@@ -1,3 +1,4 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/helpers/image_uploader_helper.dart';
 import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/state/notification_queue.dart';
@@ -147,7 +148,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                       context: context,
                       title: 'Edit Name',
                       initalValue: user.displayName,
-                      maxLength: 20,
+                      maxLength: Constants.maxNameLength,
                       maxLines: 1,
                       onSave: (newName) async {
                         try { 
@@ -175,7 +176,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                       context: context,
                       title: 'Edit Username',
                       initalValue: user.username,
-                      maxLength: 15,
+                      maxLength: Constants.maxUsernameLength,
                       maxLines: 1,
                       onSave: (newUsername) async {
                         try { 

@@ -70,18 +70,21 @@ class _AppInitializerState extends State<AppInitializer> {
 
   void _handleIncomingAuthLink(String link) async {
     debugPrint('Received deep link: $link');
-    Uri uri = Uri.parse(link);
-    String fragment = uri.fragment;
+    final uri = Uri.parse(link);
 
-    if (fragment.isNotEmpty) {
+    final fragment = uri.fragment;
+    if (fragment.isEmpty) return;
+
+    final params = Uri.splitQueryString(fragment);
+    if (params.containsKey('refresh_token')) {
       try {
-        await Supabase.instance.client.auth.recoverSession(fragment);
-        debugPrint('Session recovered from deep link!');
+        await Supabase.instance.client.auth.setSession(params['refresh_token']!);
+        debugPrint('Session restored!');
       } catch (e) {
-        debugPrint('Failed to recover session from deep link: $e');
+        debugPrint('Failed to restore session: $e');
       }
     } else {
-      debugPrint('Deep link did not contain auth tokens.');
+      debugPrint('Invalid or expired verification link');
     }
   }
 
