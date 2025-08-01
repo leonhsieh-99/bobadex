@@ -168,7 +168,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
                   : null
                 ),
               SizedBox(height: 12),
-              Text(user.displayName, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Text(user.displayName, textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               Text('@${user.username}', style: TextStyle(color: Colors.grey[700])),
               SizedBox(height: 12),
               Row(

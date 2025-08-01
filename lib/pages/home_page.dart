@@ -157,9 +157,9 @@ class _HomePageState extends State<HomePage> {
       final visibleShops = getVisibleShops(shops);
       final bannerByShop = { for (var b in banners) b.shopId: b };
       if (shops.isEmpty) {
-        return const Center(child: Text("No shops added."));
+        return const Center(child: Text("No shops added.", style: Constants.emptyListTextStyle));
       } else if (visibleShops.isEmpty) {
-        return const Center(child: Text('No shops found.'));
+        return const Center(child: Text('No shops found.', style:  Constants.emptyListTextStyle));
       }
       return Padding(
         padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),

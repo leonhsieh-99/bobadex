@@ -1,6 +1,5 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/helpers/show_snackbar.dart';
-import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/forgot_password_dialog.dart';
@@ -28,6 +27,8 @@ class _AuthPageState extends State<AuthPage> {
   bool _showPassword = false;
   bool _showConfirmPassword = false;
 
+  bool _resend = false;
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -37,27 +38,36 @@ class _AuthPageState extends State<AuthPage> {
     final displayName = _displayNameController.text.trim();
     final supabase = Supabase.instance.client;
     final userState = context.read<UserState>();
-    final brandState = context.read<BrandState>();
+    final notifications = context.read<NotificationQueue>();
 
     try {
+      AuthResponse response;
+
       if (_isSigningUp) {
+        // Validate password match
         if (_confirmPwController.text.trim() != password) {
-          context.read<NotificationQueue>().queue('Passwords do not match', SnackType.error);
+          notifications.queue('Passwords do not match', SnackType.error);
           return;
         }
 
         if (username.isEmpty || displayName.isEmpty) {
-          context.read<NotificationQueue>().queue('Username and name are required', SnackType.error);
+          notifications.queue('Username and name are required', SnackType.error);
           return;
         }
 
-        final usernameExists = await supabase.rpc('username_exists', params: {'input_username': username});
-        if (usernameExists) {
-          if (mounted) context.read<NotificationQueue>().queue('Username already taken', SnackType.error);
+        // Check username availability
+        final usernameExists = await supabase.rpc(
+          'username_exists',
+          params: {'input_username': username},
+        );
+
+        if (usernameExists == true) {
+          notifications.queue('Username already taken', SnackType.error);
           return;
         }
 
-        final response = await supabase.auth.signUp(
+        // Sign up with metadata
+        response = await supabase.auth.signUp(
           email: email,
           password: password,
           data: {
@@ -66,44 +76,61 @@ class _AuthPageState extends State<AuthPage> {
           },
         );
 
-        if (response.session == null && response.user != null) {
-          if (mounted) {
-            context.read<NotificationQueue>().queue(
-              'Check your email to confirm your account before logging in.',
-              SnackType.success,
-            );
+        if (response.user != null && response.session == null) {
+          if (_resend) {
+            try {
+              await supabase.auth.resend(
+                type: OtpType.signup,
+                email: email,
+              );
+              notifications.queue('Verification email resent. Check your inbox.', SnackType.success);
+            } on AuthException catch (e) {
+              if (e.statusCode.toString() == '429') {
+                notifications.queue(e.message.toString(), SnackType.error);
+              }
+            }
+          } else {
+            notifications.queue('Check your email to confirm your account.', SnackType.success);
+            if (mounted) setState(() => _resend = true);
           }
           return;
         }
       } else {
-        await supabase.auth.signInWithPassword(email: email, password: password);
+        // Login
+        response = await supabase.auth.signInWithPassword(
+          email: email,
+          password: password,
+        );
+
+        if (response.session == null) {
+          throw Exception('Login failed: No session created');
+        }
       }
 
-      await Future.delayed(const Duration(milliseconds: 500));
-      final session = supabase.auth.currentSession;
-      if (session == null) throw Exception('No session available after authentication');
+      // Confirm current user is available
+      final user = response.user ?? supabase.auth.currentUser;
+      if (user == null) {
+        throw Exception('No authenticated user found');
+      }
 
-      final user = supabase.auth.currentUser;
-      if (user == null) throw Exception('No user found after auth');
-
+      // Load user state
       await userState.loadFromSupabase();
-      await brandState.loadFromSupabase();
       if (!mounted) return;
 
     } on AuthException catch (e) {
       final msg = e.message.toLowerCase();
       if (msg.contains('invalid email')) {
-        context.read<NotificationQueue>().queue('Please enter a valid email address.', SnackType.error);
+        notifications.queue('Please enter a valid email address.', SnackType.error);
       } else if (msg.contains('invalid login credentials') || msg.contains('invalid password')) {
-        context.read<NotificationQueue>().queue('Incorrect email or password.', SnackType.error);
+        notifications.queue('Incorrect email or password.', SnackType.error);
       } else {
-        context.read<NotificationQueue>().queue(e.message, SnackType.error);
+        notifications.queue(e.message, SnackType.error);
         debugPrint('Auth Error: $e');
       }
     } on PostgrestException catch (e) {
-      context.read<NotificationQueue>().queue(e.message, SnackType.error);
+      notifications.queue(e.message, SnackType.error);
     } catch (e) {
-      context.read<NotificationQueue>().queue('An unexpected error occurred', SnackType.error);
+      notifications.queue('An unexpected error occurred', SnackType.error);
       debugPrint('Postgres Error: $e');
     }
   }
@@ -210,11 +237,14 @@ class _AuthPageState extends State<AuthPage> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: _submit,
-                    child: Text(_isSigningUp ? 'Create Account' : 'Log In'),
+                    child: Text(_isSigningUp ? _resend ? 'Resend Link' : 'Create Account' : 'Log In'),
                   ),
                 ),
                 TextButton(
-                  onPressed: () => setState(() => _isSigningUp = !_isSigningUp),
+                  onPressed: () => setState(() { 
+                    _isSigningUp = !_isSigningUp;
+                    _resend = false;
+                  }),
                   child: Text(
                     _isSigningUp
                       ? 'Already have an account? Log in'
