@@ -32,7 +32,7 @@ class DrinkState extends ChangeNotifier {
             'notes': updated.notes,
             'is_favorite': updated.isFavorite,
           })
-          .eq('id', updated.id);
+          .eq('id', updated.id!);
       } catch (e) {
         debugPrint('Update drink failed: $e');
         _drinks[index] = temp;

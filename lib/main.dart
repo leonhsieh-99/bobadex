@@ -25,9 +25,10 @@ void main() async {
     await Supabase.initialize(
       url: supabaseUrl, 
       anonKey: supabaseAnonKey,
-      authCallbackUrlHostname: 'login',
-      localStorage: const EmptyLocalStorage(),
-      authFlowType: AuthFlowType.pkce,
+      authOptions: const FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce,
+        autoRefreshToken: true,
+      )
     );
 
     await Hive.initFlutter();

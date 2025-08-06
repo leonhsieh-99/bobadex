@@ -81,7 +81,7 @@ class ShopState extends ChangeNotifier {
             'pinned_drink_id': updated.pinnedDrinkId,
             'notes': updated.notes,
           })
-          .eq('id', updated.id)
+          .eq('id', updated.id!)
           .select()
           .single();
 

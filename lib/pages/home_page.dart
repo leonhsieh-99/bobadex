@@ -130,7 +130,7 @@ class _HomePageState extends State<HomePage> {
     final response = await Supabase.instance.client
       .from('shop_media')
       .select()
-      .in_('shop_id', shopIds)
+      .inFilter('shop_id', shopIds)
       .eq('is_banner', true);
 
     return (response as List)

@@ -17,6 +17,7 @@ class AuthPage extends StatefulWidget {
 }
 
 class _AuthPageState extends State<AuthPage> {
+  final supabase = Supabase.instance.client;
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _usernameController = TextEditingController();
@@ -27,24 +28,24 @@ class _AuthPageState extends State<AuthPage> {
   bool _isSigningUp = false;
   bool _showPassword = false;
   bool _showConfirmPassword = false;
-
   bool _resend = false;
+  bool _loading = false;
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
+    if (_loading) return;
+
+    setState(() => _loading = true);
 
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final username = _usernameController.text.trim();
     final displayName = _displayNameController.text.trim();
-    final supabase = Supabase.instance.client;
     final userState = context.read<UserState>();
     final notifications = context.read<NotificationQueue>();
 
     try {
-      AuthResponse response;
-
       if (_isSigningUp) {
         // Validate password match
         if (_confirmPwController.text.trim() != password) {
@@ -68,47 +69,16 @@ class _AuthPageState extends State<AuthPage> {
           return;
         }
 
-        if (_resend) {
-          // resend verification email
-          try {
-            await supabase.auth.resend(
-              type: OtpType.signup,
-              email: email,
-            );
-            notifications.queue('Verification email resent. Check your inbox.', SnackType.success);
-          } on AuthException catch (e) {
-            if (e.statusCode.toString() == '429') {
-              // notifications.queue(e.message.toString(), SnackType.error);
-              debugPrint(e.message);
-            }
-            if (e.statusCode.toString() == '410') {
-              notifications.queue(
-                'This verification link has expired. Please request a new one.',
-                SnackType.error,
-              );
-            } else {
-              notifications.queue(
-                e.message,
-                SnackType.error,
-              );
-            }
-          }
-          return;
-        }
-
         // First-time signup: pass metadata for the supabase trigger to make rows
-        response = await supabase.auth.signUp(
+        final response = await supabase.auth.signUp(
           email: email,
           password: password,
           data: {
             'username': username,
             'display_name': displayName,
           },
+          emailRedirectTo: 'bobadex://login',
         );
-
-        // final box = await Hive.openBox('auth_cache');
-        // await box.put('username', username);
-        // await box.put('display_name', displayName);
 
         if (response.user != null && response.session == null) {
           notifications.queue('Check your email to confirm your account.', SnackType.success);
@@ -117,7 +87,7 @@ class _AuthPageState extends State<AuthPage> {
         }
       } else {
         // Login
-        response = await supabase.auth.signInWithPassword(
+        final response = await supabase.auth.signInWithPassword(
           email: email,
           password: password,
         );
@@ -128,7 +98,7 @@ class _AuthPageState extends State<AuthPage> {
       }
 
       // Confirm current user is available
-      final user = response.user ?? supabase.auth.currentUser;
+      final user = supabase.auth.currentUser;
       if (user == null) {
         throw Exception('No authenticated user found');
       }
@@ -152,9 +122,32 @@ class _AuthPageState extends State<AuthPage> {
     } catch (e) {
       notifications.queue('An unexpected error occurred', SnackType.error);
       debugPrint('Postgres Error: $e');
+    } finally {
+      setState(() {
+        _loading = false;
+      });
     }
   }
 
+  Future<void> _resendVerificationEmail(String email) async {
+    final notifications = context.read<NotificationQueue>();
+    final supabase = Supabase.instance.client;
+
+    try {
+      await supabase.auth.resend(
+        type: OtpType.signup,
+        email: email,
+      );
+
+      notifications.queue('Verification email resent. Check your inbox.', SnackType.success);
+    } on AuthException catch (e) {
+      notifications.queue(e.message, SnackType.error);
+      debugPrint('Auth resend error: $e');
+    } catch (e) {
+      notifications.queue('Failed to resend verification email.', SnackType.error);
+      debugPrint('Unexpected resend error: $e');
+    }
+  }
 
   @override
   void dispose() {
@@ -256,8 +249,20 @@ class _AuthPageState extends State<AuthPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _submit,
-                    child: Text(_isSigningUp ? _resend ? 'Resend Link' : 'Create Account' : 'Log In'),
+                    onPressed: () {
+                      if (_loading) {
+                        return;
+                      } else if (_isSigningUp && _resend) {
+                        _resendVerificationEmail(_emailController.text.trim());
+                      } else {
+                        _submit();
+                      }
+                    },
+                    child: Text(
+                      _isSigningUp 
+                        ? (_resend ? 'Resend Verification Email' : 'Create Account') 
+                        : 'Log In',
+                    ),
                   ),
                 ),
                 TextButton(

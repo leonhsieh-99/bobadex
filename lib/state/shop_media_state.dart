@@ -56,7 +56,7 @@ class ShopMediaState extends ChangeNotifier {
     notifyListeners();
 
     try {
-      if (hadOldBanner && oldBannerId != mediaId) {
+      if (hadOldBanner && oldBannerId != null && oldBannerId != mediaId) {
         await Supabase.instance.client
           .from('shop_media')
           .update({'is_banner': false})

@@ -6,7 +6,7 @@ import 'package:bobadex/models/user.dart' as u;
 
 class FriendState extends ChangeNotifier {
   final supabase = Supabase.instance.client;
-  String? userId = '';
+  String userId = '';
   u.User user = u.User.empty();
   bool _hasError = false;
 
@@ -113,7 +113,7 @@ class FriendState extends ChangeNotifier {
         });
     } catch (e) {
       debugPrint('Error adding user: $e');
-      removeByUsers(userId!, addressee.id);
+      removeByUsers(userId, addressee.id);
       rethrow;
     }
   }
@@ -125,9 +125,20 @@ class FriendState extends ChangeNotifier {
 
   Future<void> loadFromSupabase() async {
     try {
-      userId = supabase.auth.currentUser?.id;
-      final userResult = await RetryHelper.retry(() => supabase.from('users').select().eq('id', userId).single());
+      final currentUser = supabase.auth.currentUser;
+      if (currentUser == null) {
+        debugPrint('No authenticated user found');
+        return;
+      }
+
+      userId = currentUser.id;
+
+      final userResult = await RetryHelper.retry(() => 
+        supabase.from('users').select().eq('id', userId).single()
+      );
+
       user = u.User.fromJson(userResult);
+
       final results = await RetryHelper.retry(() => supabase
         .from('friendships')
         .select('''
