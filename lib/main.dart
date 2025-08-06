@@ -1,7 +1,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -26,6 +25,9 @@ void main() async {
     await Supabase.initialize(
       url: supabaseUrl, 
       anonKey: supabaseAnonKey,
+      authCallbackUrlHostname: 'login',
+      localStorage: const EmptyLocalStorage(),
+      authFlowType: AuthFlowType.pkce,
     );
 
     await Hive.initFlutter();

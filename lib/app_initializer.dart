@@ -34,6 +34,7 @@ class _AppInitializerState extends State<AppInitializer> {
   StreamSubscription? _uniLinksSub;
   late u.User user;
   bool _navigated = false;
+  bool _handledLink = false;
 
   String? _lastSessionId;
 
@@ -70,7 +71,8 @@ class _AppInitializerState extends State<AppInitializer> {
   }
 
   void _handleIncomingAuthLink(String link) async {
-    if (_navigated) return;
+    if (_navigated || _handledLink) return;
+    _handledLink = true;
     debugPrint('Received deep link: $link');
     final uri = Uri.parse(link);
     final fragment = uri.fragment;
@@ -79,7 +81,16 @@ class _AppInitializerState extends State<AppInitializer> {
     final params = Uri.splitQueryString(fragment);
 
     try {
-      if (params.containsKey('error_code')) {
+      if (params['error_code'] == 'otp_expired') {
+        if (mounted) {
+          context.read<NotificationQueue>().queue(
+            'Your email is already verified. Please log in.',
+            SnackType.info,
+          );
+          Navigator.of(context).pushReplacementNamed('/auth');
+        }
+        return;
+      } else if (params.containsKey('error_code')) {
         final errorDesc = params['error_description'] ?? 'Verification failed';
         debugPrint('Email verification error: ${params['error_code']} - $errorDesc');
         if (mounted) {
