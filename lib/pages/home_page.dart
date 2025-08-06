@@ -48,7 +48,11 @@ class _HomePageState extends State<HomePage> {
   String _selectedSort = 'favorite-asc';
   final _searchController = TextEditingController();
 
-  bool get isCurrentUser => widget.user.id == Supabase.instance.client.auth.currentUser!.id;
+  bool get isCurrentUser {
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    return currentUser != null && widget.user.id == currentUser.id;
+  }
+
 
   @override
   void initState() {
@@ -59,7 +63,13 @@ class _HomePageState extends State<HomePage> {
         context.read<NotificationQueue>().queue('Tap the + button below to add your first shop!', SnackType.info, duration: 4000);
       });
     }
-    _userShopsFuture = fetchUserShops(widget.user.id);
+
+    final id = widget.user.id;
+    if (id.isNotEmpty) {
+      _userShopsFuture = fetchUserShops(id);
+    } else {
+      _userShopsFuture = Future.value([]);
+    }
   }
 
   @override
@@ -71,7 +81,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void didUpdateWidget(covariant HomePage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.user.id != oldWidget.user.id) {
+    if (widget.user.id != oldWidget.user.id && widget.user.id.isNotEmpty) {
       _userShopsFuture = fetchUserShops(widget.user.id);
     }
   }
@@ -88,7 +98,10 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<List<Shop>> fetchUserShops(String userId) async {
+  Future<List<Shop>> fetchUserShops(String? userId) async {
+    if (userId == null || userId.isEmpty) {
+      return [];
+    }
     final response = await Supabase.instance.client
         .from('shops')
         .select()
@@ -462,6 +475,9 @@ class _HomePageState extends State<HomePage> {
               title: const Text('Sign out'),
               onTap: () async {
                 await Supabase.instance.client.auth.signOut();
+                if (context.mounted) {
+                  Navigator.of(context).pushReplacementNamed('/');
+                }
               },
             ),
           ],

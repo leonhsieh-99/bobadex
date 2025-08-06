@@ -33,6 +33,7 @@ class _AppInitializerState extends State<AppInitializer> {
   StreamSubscription? _achievementListener;
   StreamSubscription? _uniLinksSub;
   late u.User user;
+  bool _navigated = false;
 
   String? _lastSessionId;
 
@@ -69,22 +70,50 @@ class _AppInitializerState extends State<AppInitializer> {
   }
 
   void _handleIncomingAuthLink(String link) async {
+    if (_navigated) return;
     debugPrint('Received deep link: $link');
     final uri = Uri.parse(link);
-
     final fragment = uri.fragment;
     if (fragment.isEmpty) return;
 
     final params = Uri.splitQueryString(fragment);
-    if (params.containsKey('refresh_token')) {
-      try {
-        await Supabase.instance.client.auth.setSession(params['refresh_token']!);
-        debugPrint('Session restored!');
-      } catch (e) {
-        debugPrint('Failed to restore session: $e');
+
+    try {
+      if (params.containsKey('error_code')) {
+        final errorDesc = params['error_description'] ?? 'Verification failed';
+        debugPrint('Email verification error: ${params['error_code']} - $errorDesc');
+        if (mounted) {
+          context.read<NotificationQueue>().queue(errorDesc, SnackType.error);
+        }
+        return;
       }
-    } else {
-      debugPrint('Invalid or expired verification link');
+
+      // Handle successful confirmation
+      if (params.containsKey('access_token') && params.containsKey('refresh_token')) {
+        await Supabase.instance.client.auth.setSession(
+          params['refresh_token']!,
+        );
+        debugPrint('Session restored from confirmation link!');
+
+        if (mounted) await context.read<UserState>().loadFromSupabase();
+        
+        if (mounted) {
+          _navigated = true;
+          context.read<NotificationQueue>().queue('Email verified successfully!', SnackType.success);
+          Navigator.of(context).pushReplacementNamed('/home');
+        }
+        return;
+      }
+
+      debugPrint('Unknown deep link params: $params');
+      if (mounted) {
+        context.read<NotificationQueue>().queue('Invalid or expired verification link', SnackType.error);
+      }
+    } catch (e) {
+      debugPrint('Failed to handle auth deep link: $e');
+      if (mounted) {
+        context.read<NotificationQueue>().queue('Failed to verify your account. Please try again.', SnackType.error);
+      }
     }
   }
 

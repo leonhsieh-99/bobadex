@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
 
-Future<void> textFieldEditDialog ({
+Future<String?> textFieldEditDialog ({
   required BuildContext context,
   required String title,
   required String initalValue,
-  required Function(String) onSave,
   String? hintText,
   int? maxLength,
   FormFieldValidator<String>? validator,
   Future<String?> Function(String)? asyncValidator,
   int maxLines = 1,
-}) async {
+}) {
   final controller = TextEditingController(text: initalValue);
   final formKey = GlobalKey<FormState>();
   String? asyncError;
 
-  await showDialog(
+  return showDialog<String>(
     context: context,
     builder: (_) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
@@ -65,6 +64,7 @@ Future<void> textFieldEditDialog ({
 
               setState(() => asyncError = null);
               if (!formKey.currentState!.validate()) return;
+
               if (asyncValidator != null) {
                 final result = await asyncValidator(trimmedInput);
                 if (result != null) {
@@ -72,8 +72,7 @@ Future<void> textFieldEditDialog ({
                   return;
                 }
               }
-              onSave(controller.text.trim());
-              Navigator.pop(context);
+              if (context.mounted) Navigator.pop(context, trimmedInput);
             },
             child: Text('Save'),
           )

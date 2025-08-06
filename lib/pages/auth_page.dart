@@ -4,6 +4,7 @@ import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/forgot_password_dialog.dart';
 import 'package:flutter/material.dart';
+// import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 // Import your helper files here...
@@ -30,6 +31,7 @@ class _AuthPageState extends State<AuthPage> {
   bool _resend = false;
 
   Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
 
     final email = _emailController.text.trim();
@@ -66,7 +68,35 @@ class _AuthPageState extends State<AuthPage> {
           return;
         }
 
-        // Sign up with metadata
+        if (_resend) {
+          // resend verification email
+          try {
+            await supabase.auth.resend(
+              type: OtpType.signup,
+              email: email,
+            );
+            notifications.queue('Verification email resent. Check your inbox.', SnackType.success);
+          } on AuthException catch (e) {
+            if (e.statusCode.toString() == '429') {
+              // notifications.queue(e.message.toString(), SnackType.error);
+              debugPrint(e.message);
+            }
+            if (e.statusCode.toString() == '410') {
+              notifications.queue(
+                'This verification link has expired. Please request a new one.',
+                SnackType.error,
+              );
+            } else {
+              notifications.queue(
+                e.message,
+                SnackType.error,
+              );
+            }
+          }
+          return;
+        }
+
+        // First-time signup: pass metadata for the supabase trigger to make rows
         response = await supabase.auth.signUp(
           email: email,
           password: password,
@@ -76,23 +106,13 @@ class _AuthPageState extends State<AuthPage> {
           },
         );
 
+        // final box = await Hive.openBox('auth_cache');
+        // await box.put('username', username);
+        // await box.put('display_name', displayName);
+
         if (response.user != null && response.session == null) {
-          if (_resend) {
-            try {
-              await supabase.auth.resend(
-                type: OtpType.signup,
-                email: email,
-              );
-              notifications.queue('Verification email resent. Check your inbox.', SnackType.success);
-            } on AuthException catch (e) {
-              if (e.statusCode.toString() == '429') {
-                notifications.queue(e.message.toString(), SnackType.error);
-              }
-            }
-          } else {
-            notifications.queue('Check your email to confirm your account.', SnackType.success);
-            if (mounted) setState(() => _resend = true);
-          }
+          notifications.queue('Check your email to confirm your account.', SnackType.success);
+          if (mounted) setState(() => _resend = true);
           return;
         }
       } else {
@@ -115,7 +135,7 @@ class _AuthPageState extends State<AuthPage> {
 
       // Load user state
       await userState.loadFromSupabase();
-      if (!mounted) return;
+      if (!mounted || context.read<UserState>().isLoaded) return;
 
     } on AuthException catch (e) {
       final msg = e.message.toLowerCase();

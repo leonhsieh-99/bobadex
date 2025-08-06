@@ -41,6 +41,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
   _handleImagePick(UserState userState) async {
     bool imageExits = userState.user.profileImagePath != null && userState.user.profileImagePath!.isNotEmpty;
     final pickedFile = await pickImageWithDialog(context, _picker, imageExits);
+    final oldImagePath = userState.user.profileImagePath;
     if (pickedFile == null) return;
     if (pickedFile.path.isNotEmpty) _removeExistingImage = true;
 
@@ -53,13 +54,12 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
     } else {
       setState(() {
         _selectedImage = pickedFile;
-        _removeExistingImage = true;
+        _removeExistingImage = pickedFile.path != oldImagePath;
         _isLoading = true;
       });
     }
 
     final newImagePath = _selectedImage?.path;
-    final oldImagePath = userState.user.profileImagePath;
     String path = '';
 
     try {
@@ -144,21 +144,24 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                           fontSize: 18,
                         )
                     ),
-                    onTap: () => textFieldEditDialog(
-                      context: context,
-                      title: 'Edit Name',
-                      initalValue: user.displayName,
-                      maxLength: Constants.maxNameLength,
-                      maxLines: 1,
-                      onSave: (newName) async {
-                        try { 
+                    onTap: () async { 
+                      final newName = await textFieldEditDialog(
+                        context: context,
+                        title: 'Edit Name',
+                        initalValue: user.displayName,
+                        maxLength: Constants.maxNameLength,
+                        maxLines: 1,
+                      );
+
+                      if (newName != null && newName != user.displayName) {
+                        try {
                           await userState.setDisplayName(newName);
+                          if (context.mounted) context.read<NotificationQueue>().queue('Name updated', SnackType.success);
                         } catch (e) {
                           if (context.mounted) context.read<NotificationQueue>().queue('Error updating name.', SnackType.error);
                         }
-                      },
-                      validator: Validators.validateDisplayName,
-                    ),
+                      }
+                    }
                   ),
                   ListTile(
                     leading: const Text('Username', 
@@ -172,28 +175,32 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                           fontSize: 18,
                         )
                     ),
-                    onTap: () => textFieldEditDialog(
-                      context: context,
-                      title: 'Edit Username',
-                      initalValue: user.username,
-                      maxLength: Constants.maxUsernameLength,
-                      maxLines: 1,
-                      onSave: (newUsername) async {
+                    onTap: () async {
+                      final newUsername = await textFieldEditDialog(
+                        context: context,
+                        title: 'Edit Username',
+                        initalValue: user.username,
+                        maxLength: Constants.maxUsernameLength,
+                        maxLines: 1,
+                        validator: Validators.validateUsername,
+                        asyncValidator: (username) async {
+                          final exists = await userState.usernameExists(username);
+                          if (exists) {
+                            return 'Username is taken';
+                          }
+                          return null;
+                        },
+                      );
+
+                      if (newUsername != null && newUsername != user.username) {
                         try { 
                           await userState.setUsername(newUsername);
+                          if (context.mounted) context.read<NotificationQueue>().queue('Username updated', SnackType.success);
                         } catch (e) {
                           if (context.mounted) context.read<NotificationQueue>().queue('Error updating username.', SnackType.error);
                         }
-                      },
-                      validator: Validators.validateUsername,
-                      asyncValidator: (username) async {
-                        final exists = await userState.usernameExists(username);
-                        if (exists) {
-                          return 'Username is taken';
-                        }
-                        return null;
-                      },
-                    ),
+                      }
+                    }
                   ),
                   ListTile(
                     leading: const Text('Bio', 
@@ -201,26 +208,30 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                       )),
-                      trailing: Text(user.bio != null && user.bio!.isNotEmpty ? '${user.bio!.length < 10 ? user.bio! : user.bio?.substring(0, 10)}...' : 'Add bio',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w300,
-                          fontSize: 18,
-                        )
+                    trailing: Text(
+                      (user.bio != null && user.bio!.isNotEmpty)
+                          ? (user.bio!.length > 10 ? '${user.bio!.substring(0, 10)}...' : user.bio!)
+                          : 'Add bio',
+                      style: const TextStyle(fontWeight: FontWeight.w300, fontSize: 18),
                     ),
-                    onTap: () => textFieldEditDialog(
-                      context: context,
-                      title: 'Edit Bio',
-                      initalValue: user.bio ?? '',
-                      maxLength: 200,
-                      maxLines: 5,
-                      onSave: (newBio) async {
+                    onTap: () async {
+                      final newBio = await textFieldEditDialog(
+                        context: context,
+                        title: 'Edit Bio',
+                        initalValue: user.bio ?? '',
+                        maxLength: 200,
+                        maxLines: 5,
+                      );
+
+                      if (newBio != null && newBio != user.bio) {
                         try { 
                           await userState.setBio(newBio);
+                          if (context.mounted) context.read<NotificationQueue>().queue('Bio updated', SnackType.success);
                         } catch (e) {
-                          if (context.mounted) context.read<NotificationQueue>().queue('Error updating username.', SnackType.error);
+                          if (context.mounted) context.read<NotificationQueue>().queue('Error updating bio.', SnackType.error);
                         }
-                      },
-                    ),
+                      }
+                    }
                   ),
                   ListTile(
                     leading: const Text('Change Password', 
