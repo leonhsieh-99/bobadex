@@ -19,7 +19,7 @@ class AddOrEditDrinkDialog extends StatefulWidget {
 class _AddOrEditDrinkDialogState extends State<AddOrEditDrinkDialog> {
   late TextEditingController _nameController;
   late TextEditingController _notesController;
-  double _rating = 0;
+  late double _rating;
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -27,7 +27,7 @@ class _AddOrEditDrinkDialogState extends State<AddOrEditDrinkDialog> {
     super.initState();
     _nameController = TextEditingController(text: widget.initialData?.name ?? '');
     _notesController = TextEditingController(text: widget.initialData?.notes ?? '');
-    _rating = widget.initialData?.rating ?? 0;
+    _rating = widget.initialData?.rating ?? 3;
   }
 
   @override
@@ -53,56 +53,70 @@ class _AddOrEditDrinkDialogState extends State<AddOrEditDrinkDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final double maxWidth = 400;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double dialogWidth = screenWidth < maxWidth + 48
+      ? screenWidth - 48
+      : maxWidth;
+
     return AlertDialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       contentPadding: const EdgeInsets.all(16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Drink Name'),
-              maxLength: 25,
-              validator: (val) => val == null || val.isEmpty ? 'Enter a name' : null,
-            ),
-            const SizedBox(height: 12),
-            const Text('Rating', style: TextStyle(fontWeight: FontWeight.bold)),
-            RatingPicker(
-              rating: _rating,
-              onChanged: (val) => setState(() => _rating = val),
-            ),
-            const SizedBox(height: 24),
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Notes',
-                border: OutlineInputBorder(),
-                alignLabelWithHint: true,
+      content: SizedBox(
+        width: dialogWidth,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Drink Name'),
+                maxLength: 25,
+                validator: (val) => val == null || val.isEmpty ? 'Enter a name' : null,
               ),
-              keyboardType: TextInputType.multiline,
-              maxLength: 100,
-              maxLines: null,
-              minLines: 2,
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 12),
+                  child: Text('Rating', style: Theme.of(context).textTheme.labelLarge),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _handleSubmit,
-                  child: Text(widget.initialData == null ? 'Add Drink' : 'Save'),
+              ),
+              RatingPicker(
+                rating: _rating,
+                onChanged: (val) => setState(() => _rating = val),
+              ),
+              const SizedBox(height: 24),
+              TextFormField(
+                controller: _notesController,
+                decoration: const InputDecoration(
+                  labelText: 'Notes',
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
                 ),
-              ],
-            ),
-          ],
+                keyboardType: TextInputType.multiline,
+                maxLength: 100,
+                maxLines: null,
+                minLines: 2,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _handleSubmit,
+                    child: Text(widget.initialData == null ? 'Add Drink' : 'Save'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

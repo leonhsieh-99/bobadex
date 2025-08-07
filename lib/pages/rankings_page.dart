@@ -127,7 +127,7 @@ class _RankingsPageState extends State<RankingsPage> {
                       subtitle: Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
-                          '(${brand.shopCount} reviews)',
+                          '(${brand.shopCount} ratings)',
                           style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                         ),
                       ),

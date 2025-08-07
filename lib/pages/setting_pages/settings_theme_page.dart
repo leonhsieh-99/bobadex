@@ -12,12 +12,19 @@ class SettingsThemePage extends StatefulWidget{
 
 class _SettingsThemePageState extends State<SettingsThemePage> {
   final themeMap = Constants.themeMap;
+  late final String originalTheme;
+
+  @override
+  void initState() {
+    super.initState();
+    originalTheme = context.read<UserState>().user.themeSlug;
+  }
 
   @override
   Widget build(BuildContext context) {
     final userState = context.read<UserState>();
     return PopScope(
-      onPopInvokedWithResult: (didPop, result) => userState.saveTheme(),
+      onPopInvokedWithResult: (didPop, result) => originalTheme != userState.user.themeSlug ? userState.saveTheme() : null,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Manage Theme'),
@@ -49,6 +56,7 @@ class _SettingsThemePageState extends State<SettingsThemePage> {
                     onTap: () {
                       setState(() {
                         userState.setTheme(slug);
+                        print(userState.user.themeSlug);
                       });
                     }
                   );

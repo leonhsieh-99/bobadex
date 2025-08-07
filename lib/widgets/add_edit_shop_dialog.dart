@@ -38,7 +38,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
   late TextEditingController _nameController;
   late TextEditingController _notesController;
   String ? _brandSlug;
-  double _rating = 0;
+  late double _rating;
   bool _isSubmitting = false;
   final List<GalleryImage> _selectedImages = [];
 
@@ -52,7 +52,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
       _nameController = TextEditingController(text: widget.shop?.name ?? '');
     }
     _notesController = TextEditingController(text: widget.shop?.notes ?? '');
-    _rating = widget.shop?.rating ?? 0;
+    _rating = widget.shop?.rating ?? 3;
   }
 
   @override
@@ -290,7 +290,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Padding(
-                            padding: const EdgeInsets.only(top: 12, bottom: 4),
+                            padding: const EdgeInsets.only(top: 12, bottom: 12),
                             child: Text('Rating', style: Theme.of(context).textTheme.labelLarge),
                           ),
                         ),

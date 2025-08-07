@@ -73,7 +73,7 @@ class FeedEventCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(user.username, style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text(user.firstName, style: TextStyle(fontWeight: FontWeight.bold)),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [

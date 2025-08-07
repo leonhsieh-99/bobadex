@@ -17,8 +17,8 @@ class BrandStats extends Brand {
       slug: json['brand_slug'],
       display: json['brand_display'],
       iconPath: json['brand_icon'],
-      avgRating: json['avg_rating'],
-      shopCount: json['shop_count'],
+      avgRating: (json['avg_rating'] as num).toDouble(),
+      shopCount: (json['shop_count'] ?? 0) as int,
     );
   }
 }

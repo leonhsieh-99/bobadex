@@ -10,11 +10,22 @@ class SettingsLayoutPage extends StatefulWidget {
 }
 
 class _SettingsLayoutPageState extends State<SettingsLayoutPage> {
+  late final int originalColumns;
+  late final bool originalIcons;
+
+  @override
+  void initState() {
+    super.initState();
+    originalColumns = context.read<UserState>().user.gridColumns;
+    originalIcons = context.read<UserState>().user.useIcons;
+  }
+
   @override
   Widget build(BuildContext context) {
     final userState = context.read<UserState>();
     return PopScope(
-      onPopInvokedWithResult: (didPop, result) => userState.saveLayout(),
+      onPopInvokedWithResult: (didPop, result) => 
+        (originalColumns != userState.user.gridColumns || originalIcons != userState.user.useIcons) ? userState.saveLayout() : null,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Manage Layout'),

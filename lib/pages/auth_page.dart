@@ -123,9 +123,7 @@ class _AuthPageState extends State<AuthPage> {
       notifications.queue('An unexpected error occurred', SnackType.error);
       debugPrint('Postgres Error: $e');
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      if (mounted) setState(() { _loading = false; });
     }
   }
 
@@ -258,10 +256,14 @@ class _AuthPageState extends State<AuthPage> {
                         _submit();
                       }
                     },
-                    child: Text(
-                      _isSigningUp 
-                        ? (_resend ? 'Resend Verification Email' : 'Create Account') 
-                        : 'Log In',
+                  child: _loading
+                    ? const SizedBox(
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2)
+                      )
+                    : Text(_isSigningUp
+                        ? (_resend ? 'Resend Verification Email' : 'Create Account')
+                        : 'Log In'
                     ),
                   ),
                 ),

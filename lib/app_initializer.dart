@@ -256,9 +256,16 @@ class _AppInitializerState extends State<AppInitializer> {
 
   @override
   Widget build(BuildContext context) {
-    return
-      !_isReady
-        ? SplashPage()
-        : (_session == null ? const AuthPage() : HomePage(user: user));
+    if (!_isReady) return SplashPage();
+
+    if (_session == null) return const AuthPage();
+
+    if (!context.read<UserState>().isLoaded) {
+      return SplashPage();
+    }
+
+    return _isReady && _session != null && user.id.isNotEmpty
+      ? HomePage(user: user)
+      : SplashPage();
   }
 }

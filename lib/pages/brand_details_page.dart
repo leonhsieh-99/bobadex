@@ -79,7 +79,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
         slug: b.slug,
         display: b.display,
         iconPath: b.iconPath,
-        avgRating: data['avg_rating'],
+        avgRating: (data['avg_rating'] as num).toDouble(),
         shopCount: data['shop_count']
       );
     } catch (e) {
@@ -355,7 +355,9 @@ Widget _buildGlobalRatings(Brand brand, Future<BrandStats> statsFuture) {
           const Icon(Icons.star, color: Colors.orangeAccent),
           const SizedBox(width: 2),
           Text(
-            '${stats.avgRating.toStringAsFixed(1)} (${stats.shopCount} ratings)',
+            stats.avgRating == 0
+              ? 'Unrated'
+              : '${stats.avgRating.toStringAsFixed(1)} (${stats.shopCount} ratings)',
             style: const TextStyle(
               fontSize: 16,
               color: Colors.white,

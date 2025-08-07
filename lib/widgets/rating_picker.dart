@@ -1,4 +1,5 @@
 import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/widgets/outlined_star.dart';
 import 'package:flutter/material.dart';
 
 class RatingPicker extends StatelessWidget {
@@ -8,7 +9,7 @@ class RatingPicker extends StatelessWidget {
 
   const RatingPicker({
     super.key,
-    this.rating = 0.0,
+    this.rating = 3.0,
     this.onChanged,
     this.size,
   });
@@ -18,59 +19,66 @@ class RatingPicker extends StatelessWidget {
     final iconSize = size ?? 50.0;
     final color = Constants.starColor;
 
-    return Row(
-      children: List.generate(5, (index) {
-        double current = index + 1.0;
-        IconData iconData;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final starCount = 5;
+        final spacing = 12.0;
+        final totalSpacing = spacing * (starCount - 1);
+        final starSize = (width - totalSpacing) / starCount;
 
-        Widget outlinedStar(IconData filledIcon, double size, Color fillColor, {Color outlineColor = Colors.black}) {
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              Icon(
-                Icons.star_border,
-                size: size + 4,
-                color: outlineColor,
-              ),
-              // Filled Star (or half)
-              Icon(
-                filledIcon,
-                size: size,
-                color: fillColor,
-              ),
-            ],
-          );
-        }
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisSize: MainAxisSize.max,
+          children: List.generate(starCount, (index) {
+            double current = index + 1.0;
+            final bool filled = rating >= current;
+            final bool half = rating >= current - 0.5 && rating < current;
 
-        if (rating >= current) {
-          iconData = Icons.star;
-        } else if (rating >= current - 0.5) {
-          iconData = Icons.star_half;
-        } else {
-          iconData = Icons.star_border;
-        }
+            return Row(
+              children: [
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onPanDown: (details) {
+                    final localX = details.localPosition.dx;
+                    final width = iconSize;
+                    final isHalf = localX < width / 2;
+                    double value = isHalf ? current - 0.5 : current;
 
-        Widget icon = Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: outlinedStar(iconData, iconSize, color),
+                    if (value == 0.5) {
+                      value = 1.0;
+                    }
+
+                    onChanged!(value);
+                  },
+                  onTapDown: (details) {
+                    final localX = details.localPosition.dx;
+                    final width = iconSize;
+                    final isHalf = localX < width / 2;
+                    double value = isHalf ? current - 0.5 : current;
+                    if (value == 0.5) value = 1.0;
+                    value = value.clamp(1.0, 5.0);
+                    onChanged!(value);
+                  },
+                  child: SizedBox(
+                    width: starSize,
+                    height: starSize,
+                    child: OutlinedStar(
+                      size: starSize,
+                      filled: filled,
+                      half: half,
+                      fillColor: color,
+                      borderColor: Colors.black,
+                    ),
+                  )
+                ),
+                if (index != starCount - 1)
+                  SizedBox(width: spacing),
+              ],
+            );
+          }),
         );
-
-
-        if (onChanged != null) {
-          return GestureDetector(
-            onPanDown: (details) {
-              final localX = details.localPosition.dx;
-              final width = iconSize;
-              final isHalf = localX < width / 2;
-
-              onChanged!(isHalf ? current - 0.5 : current);
-            },
-            child: icon,
-          );
-        }
-
-        return icon;
-      }),
+      }
     );
   }
 }

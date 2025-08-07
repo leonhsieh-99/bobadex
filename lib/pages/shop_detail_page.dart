@@ -117,6 +117,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final screenHeight = constraints.maxHeight;
+          final screenWidth = constraints.maxWidth;
           final bannerRatio = 0.3;
           final bannerHeight = screenHeight * bannerRatio;
           final initialSheetSize = (1.0 - bannerRatio) + 0.03; // slightly overlap image
@@ -226,8 +227,14 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                   Positioned(
                     bottom: bannerHeight * 0.15,
                     left: 16,
-                    child: RatingPicker(rating: _shop.rating, size: 30)
-                  )
+                    child: SizedBox(
+                      width: screenWidth * 0.5,
+                      child: RatingPicker(
+                        rating: _shop.rating,
+                        size: 30,
+                      ),
+                    ),
+                  ),
                 ]
               ),
               DraggableScrollableSheet(
@@ -385,7 +392,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                           final updated = drink.copyWith(isFavorite: !drink.isFavorite);
                                                           try {
                                                             await drinkState.update(updated);
-                                                            if (context.mounted) context.read<NotificationQueue>().queue('Shop favorited.', SnackType.success);
+                                                            if (context.mounted) context.read<NotificationQueue>().queue(updated.isFavorite ? 'Drink favorited.' : 'Drink unfavorited', SnackType.success);
                                                           } catch (_) {
                                                             if (context.mounted) context.read<NotificationQueue>().queue('Error updating favorite status.', SnackType.error);
                                                           }
@@ -567,9 +574,9 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                           final updated = shopRead.copyWith(isFavorite: !shopRead.isFavorite);
                           try {
                             await shopState.update(updated);
-                            if (context.mounted) context.read<NotificationQueue>().queue('Favorite updated.', SnackType.success);
+                            if (context.mounted) context.read<NotificationQueue>().queue(updated.isFavorite ? 'Shop favorited.' : 'Shop unfavorited.', SnackType.success);
                           } catch (_) {
-                            if (context.mounted) context.read<NotificationQueue>().queue('Error updating favorite status.', SnackType.error);
+                            if (context.mounted) context.read<NotificationQueue>().queue('Error updating shop favorite status.', SnackType.error);
                           }
                         },
                         child: Stack(
