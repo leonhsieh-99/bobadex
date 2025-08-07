@@ -45,7 +45,7 @@ class BobadexApp extends StatelessWidget {
             },
             theme: ThemeData(
               scaffoldBackgroundColor: themeColor.shade50,
-              dialogTheme: DialogTheme(
+              dialogTheme: DialogThemeData(
                 backgroundColor: themeColor.shade50,
               ),
               appBarTheme: AppBarTheme(
@@ -62,7 +62,7 @@ class BobadexApp extends StatelessWidget {
                   )
                 )
               ),
-              cardTheme: CardTheme(color: themeColor.shade100),
+              cardTheme: CardThemeData(color: themeColor.shade100),
               textButtonTheme: TextButtonThemeData(
                 style: ButtonStyle(
                   foregroundColor: WidgetStatePropertyAll<Color>(Colors.black),
