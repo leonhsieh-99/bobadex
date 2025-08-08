@@ -19,7 +19,7 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
     try {
       await Supabase.instance.client.auth.resetPasswordForEmail(email);
       setState(() {
-        _message = "Check your email for a password reset link!";
+        _message = "If an account exists for this email, a password reset link has been sent.";
       });
     } catch (e) {
       setState(() {
@@ -48,7 +48,7 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
             SizedBox(height: 16),
             Text(
               _message!,
-              style: TextStyle(color: _message!.startsWith("Error") ? Colors.red : Colors.green),
+              style: TextStyle(color: _message!.startsWith("Error") ? Colors.red : Colors.blue),
             ),
           ]
         ],

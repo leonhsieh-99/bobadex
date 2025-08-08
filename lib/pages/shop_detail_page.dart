@@ -440,6 +440,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                                     await drinkState.update(updatedDrink.toDrink(id: drink.id, shopId: drink.shopId));
                                                                     await achievementState.checkAndUnlockDrinkAchievement(drinkState);
                                                                     await achievementState.checkAndUnlockNotesAchievement(drinkState);
+                                                                    if (context.mounted) context.read<NotificationQueue>().queue('Drink updated.', SnackType.success);
                                                                   } catch (_) {
                                                                     if (context.mounted) context.read<NotificationQueue>().queue('Error updating drink.', SnackType.error);
                                                                   }

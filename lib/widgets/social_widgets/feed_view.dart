@@ -1,3 +1,4 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/state/feed_state.dart';
 import 'package:bobadex/widgets/social_widgets/feed_event_card.dart';
 import 'package:flutter/material.dart';
@@ -48,7 +49,7 @@ class _FeedViewState extends State<FeedView> {
     }
 
     if (feedState.feed.isEmpty) {
-      return Center(child: Text("No activity yet!"));
+      return Center(child: Text("No activity yet!", style: Constants.emptyListTextStyle,));
     }
 
     return RefreshIndicator(

@@ -35,6 +35,20 @@ class RatingPicker extends StatelessWidget {
             final bool filled = rating >= current;
             final bool half = rating >= current - 0.5 && rating < current;
 
+            final star = SizedBox(
+              width: starSize,
+              height: starSize,
+              child: OutlinedStar(
+                size: starSize,
+                filled: filled,
+                half: half,
+                fillColor: color,
+                borderColor: Colors.black,
+              ),
+            );
+
+            if (onChanged == null) return star;
+
             return Row(
               children: [
                 GestureDetector(
@@ -60,17 +74,7 @@ class RatingPicker extends StatelessWidget {
                     value = value.clamp(1.0, 5.0);
                     onChanged!(value);
                   },
-                  child: SizedBox(
-                    width: starSize,
-                    height: starSize,
-                    child: OutlinedStar(
-                      size: starSize,
-                      filled: filled,
-                      half: half,
-                      fillColor: color,
-                      borderColor: Colors.black,
-                    ),
-                  )
+                  child: star,
                 ),
                 if (index != starCount - 1)
                   SizedBox(width: spacing),
