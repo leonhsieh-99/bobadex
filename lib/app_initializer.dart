@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:bobadex/helpers/show_snackbar.dart';
+import 'package:bobadex/main.dart';
 import 'package:bobadex/models/feed_event.dart';
+import 'package:bobadex/pages/reset_password_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/feed_state.dart';
 import 'package:bobadex/state/friend_state.dart';
@@ -31,6 +33,7 @@ class _AppInitializerState extends State<AppInitializer> {
   Session? _session;
   Session? _lastHandledSession;
   String? _lastUserId;
+  bool _showResetPassword = false;
   StreamSubscription? _achievementListener;
   late u.User user;
 
@@ -76,6 +79,15 @@ class _AppInitializerState extends State<AppInitializer> {
       final session = data.session;
 
       debugPrint('Auth state changed: $event');
+
+      if (event == AuthChangeEvent.passwordRecovery) {
+        if (navigatorKey.currentState?.canPop() ?? false) {
+          navigatorKey.currentState?.pop();
+        }
+        Future.delayed(Duration(milliseconds: 100), () {
+          if (mounted) setState(() => _showResetPassword = true);
+        });
+      }
 
       if (event == AuthChangeEvent.signedIn && session != null) {
         await _handleSignedIn(session);
@@ -257,6 +269,13 @@ class _AppInitializerState extends State<AppInitializer> {
   @override
   Widget build(BuildContext context) {
     if (!_isReady) return SplashPage();
+
+    print('reset pw: $_showResetPassword');
+    if (_showResetPassword) {
+      return ResetPasswordPage(
+        onDone: () => setState(() => _showResetPassword = false),
+      );
+    }
 
     if (_session == null) return const AuthPage();
 

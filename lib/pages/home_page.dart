@@ -12,6 +12,7 @@ import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/shop_media_state.dart';
+import 'package:bobadex/widgets/confirmation_dialog.dart';
 import 'package:bobadex/widgets/onboarding_wizard.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
@@ -474,9 +475,19 @@ class _HomePageState extends State<HomePage> {
               leading: const Icon(Icons.logout),
               title: const Text('Sign out'),
               onTap: () async {
-                await Supabase.instance.client.auth.signOut();
-                if (context.mounted) {
-                  Navigator.of(context).pushReplacementNamed('/');
+                final confirmed = await showConfirmDialog(
+                  context,
+                  message: 'Are you sure you want to sign out?',
+                  title: 'Sign Out',
+                  confirmText: 'Sign Out',
+                  confirmColor: themeColor.shade400
+                );
+
+                if (confirmed) {
+                  await Supabase.instance.client.auth.signOut();
+                  if (context.mounted) {
+                    Navigator.of(context).pushReplacementNamed('/');
+                  }
                 }
               },
             ),

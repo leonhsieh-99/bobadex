@@ -1,3 +1,4 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -16,6 +17,13 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
   Future<void> _sendReset() async {
     setState(() { _isLoading = true; _message = null; });
     final email = _emailController.text.trim();
+    if (!Constants.emailRegex.hasMatch(email)) {
+      setState(() {
+        _isLoading = false;
+        _message = "Enter a valid email address.";
+      });
+      return;
+    }
     try {
       await Supabase.instance.client.auth.resetPasswordForEmail(email);
       setState(() {

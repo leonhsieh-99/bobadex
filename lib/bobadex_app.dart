@@ -1,3 +1,4 @@
+import 'package:bobadex/main.dart';
 import 'package:bobadex/pages/home_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
@@ -43,6 +44,7 @@ class BobadexApp extends StatelessWidget {
             routes: {
               '/home': (context) => HomePage(user: userState.user),
             },
+            navigatorKey: navigatorKey,
             theme: ThemeData(
               scaffoldBackgroundColor: themeColor.shade50,
               dialogTheme: DialogThemeData(
