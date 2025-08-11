@@ -1,11 +1,13 @@
+import 'package:bobadex/navigation.dart';
 import 'package:bobadex/widgets/top_snack_bar.dart';
 import 'package:flutter/material.dart';
 
 enum SnackType { info, success, error, achievement }
 
 // Place this function anywhere (eg. in a helpers file)
-void showAppSnackBar(BuildContext context, String message, {SnackType type = SnackType.info, int duration = 1900}) {
-  final overlay = Overlay.of(context, rootOverlay: true);
+void showAppSnackBar(String message, {SnackType type = SnackType.info, int duration = 1900}) {
+  final overlay = navigatorKey.currentState?.overlay;
+  if (overlay == null) return;
 
   Color bgColor;
   IconData? icon;

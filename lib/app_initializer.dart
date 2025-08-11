@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'package:bobadex/helpers/show_snackbar.dart';
-import 'package:bobadex/main.dart';
 import 'package:bobadex/models/feed_event.dart';
-import 'package:bobadex/pages/reset_password_page.dart';
+import 'package:bobadex/navigation.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/feed_state.dart';
 import 'package:bobadex/state/friend_state.dart';
@@ -12,14 +11,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'state/user_state.dart';
-import 'pages/splash_page.dart';
 import 'state/drink_state.dart';
 import 'state/user_stats_cache.dart';
 import 'state/brand_state.dart';
 import 'state/shop_state.dart';
-import 'pages/auth_page.dart';
 import 'models/user.dart' as u;
-import 'pages/home_page.dart';
 
 class AppInitializer extends StatefulWidget {
   const AppInitializer({super.key});
@@ -29,11 +25,8 @@ class AppInitializer extends StatefulWidget {
 }
 
 class _AppInitializerState extends State<AppInitializer> {
-  bool _isReady = false;
-  Session? _session;
   Session? _lastHandledSession;
   String? _lastUserId;
-  bool _showResetPassword = false;
   StreamSubscription? _achievementListener;
   late u.User user;
 
@@ -73,6 +66,16 @@ class _AppInitializerState extends State<AppInitializer> {
   Future<void> _initializeSession() async {
     final auth = Supabase.instance.client.auth;
 
+    final currentSession = auth.currentSession;
+
+    // initial route on cold start
+    if (currentSession != null) {
+      await _handleSignedIn(currentSession);
+      navigatorKey.currentState?.pushNamedAndRemoveUntil('/home', (_) => false);
+    } else {
+      navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
+    }
+
     // Listen to auth state changes
     auth.onAuthStateChange.listen((data) async {
       final event = data.event;
@@ -84,69 +87,38 @@ class _AppInitializerState extends State<AppInitializer> {
         if (navigatorKey.currentState?.canPop() ?? false) {
           navigatorKey.currentState?.pop();
         }
-        Future.delayed(Duration(milliseconds: 100), () {
-          if (mounted) setState(() => _showResetPassword = true);
-        });
+        navigatorKey.currentState?.pushReplacementNamed('/reset');
+        return;
       }
 
       if (event == AuthChangeEvent.signedIn && session != null) {
         await _handleSignedIn(session);
-      } else if (event == AuthChangeEvent.signedOut) {
+        navigatorKey.currentState?.pushNamedAndRemoveUntil('/home', (_) => false);
+        return;
+      } 
+      
+      if (event == AuthChangeEvent.signedOut) {
         _resetAllStates();
         _achievementListener?.cancel();
         _achievementListener = null;
-        if (mounted) {
-          setState(() {
-            _session = null;
-            _isReady = true;
-          });
-        }
+        navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
+        return;
       }
+
       if (event == AuthChangeEvent.tokenRefreshed && session != null) {
         if (_lastUserId == session.user.id) {
           debugPrint('Token refreshed for same user, skipping reload');
-          setState(() {
-            _session = session;
-            _isReady = true;
-          });
           return;
         }
         await _handleSignedIn(session);
       }
     });
-
-    final currentSession = auth.currentSession;
-    if (currentSession != null) {
-      await _handleSignedIn(currentSession);
-    } else {
-      setState(() {
-        _session = null;
-        _isReady = true;
-      });
-    }
   }
 
   Future<void> _handleSignedIn(Session session) async {
-    if (!mounted) return;
     if (_lastHandledSession?.accessToken == session.accessToken) return;
     _lastHandledSession = session;
-    final currentUserId = session.user.id;
-
-    if (_lastUserId == currentUserId && _session != null) {
-      debugPrint('Same user signed in, skipping full reload');
-      setState(() {
-        _session = session;
-        _isReady = true;
-      });
-      return;
-    }
-
-    _lastUserId = currentUserId;
-
-    setState(() {
-      _isReady = false;
-      _session = session;
-    });
+    _lastUserId = session.user.id;
 
     final userState = context.read<UserState>();
     final drinkState = context.read<DrinkState>();
@@ -162,12 +134,7 @@ class _AppInitializerState extends State<AppInitializer> {
     final user = userState.user;
     if (user.id.isEmpty) {
       debugPrint('No valid user loaded — skipping rest');
-      if (mounted) {
-        setState(() {
-          _session = null;
-          _isReady = true;
-        });
-      }
+      navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
       return;
     }
     this.user = user;
@@ -256,35 +223,9 @@ class _AppInitializerState extends State<AppInitializer> {
     } catch (e) {
       debugPrint('Error loading feed state: $e');
     }
-
-    if (mounted) {
-      setState(() {
-        this.user = user;
-        _session = session;
-        _isReady = true;
-      });
-    }
   }
+
 
   @override
-  Widget build(BuildContext context) {
-    if (!_isReady) return SplashPage();
-
-    print('reset pw: $_showResetPassword');
-    if (_showResetPassword) {
-      return ResetPasswordPage(
-        onDone: () => setState(() => _showResetPassword = false),
-      );
-    }
-
-    if (_session == null) return const AuthPage();
-
-    if (!context.read<UserState>().isLoaded) {
-      return SplashPage();
-    }
-
-    return _isReady && _session != null && user.id.isNotEmpty
-      ? HomePage(user: user)
-      : SplashPage();
-  }
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

@@ -1,5 +1,8 @@
-import 'package:bobadex/main.dart';
+import 'package:bobadex/navigation.dart';
+import 'package:bobadex/pages/auth_page.dart';
 import 'package:bobadex/pages/home_page.dart';
+import 'package:bobadex/pages/reset_password_page.dart';
+import 'package:bobadex/pages/splash_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/city_data_provider.dart';
@@ -42,7 +45,9 @@ class BobadexApp extends StatelessWidget {
           return MaterialApp(
             title: 'Bobadex',
             routes: {
-              '/home': (context) => HomePage(user: userState.user),
+              '/auth': (_) => const AuthPage(),
+              '/reset': (_) => const ResetPasswordPage(),
+              '/home': (_) => HomePage(user: userState.user),
             },
             navigatorKey: navigatorKey,
             theme: ThemeData(
@@ -77,14 +82,15 @@ class BobadexApp extends StatelessWidget {
             builder: (context, child) => GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () => FocusScope.of(context).unfocus(),
-              child: child!,
+              child: Stack(
+                children: [
+                  child ?? const SizedBox.shrink(),
+                  const NotificationConsumer(),
+                  const AppInitializer(),
+                ],
+              ),
             ),
-            home: Stack(
-              children: [
-                AppInitializer(),
-                NotificationConsumer(),
-              ]
-            ),
+            home: SplashPage(),
           );
         },
       ),

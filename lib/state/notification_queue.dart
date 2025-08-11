@@ -30,13 +30,14 @@ class NotificationQueue extends ChangeNotifier {
     return all;
   }
 
-  Future<void> drainQueue(BuildContext context) async {
+  Future<void> drainQueue() async {
     if (_draining) return;
     _draining = true;
     try {
       while (_queue.isNotEmpty) {
         final note = _queue.removeAt(0);
-        if (context.mounted) showAppSnackBar(context, note.message, type: note.type, duration: note.duration);
+        debugPrint('note: $note');
+        showAppSnackBar(note.message, type: note.type, duration: note.duration);
         await Future.delayed(Duration(milliseconds: note.duration + 100));
       }
     } finally {

@@ -482,12 +482,8 @@ class _HomePageState extends State<HomePage> {
                   confirmText: 'Sign Out',
                   confirmColor: themeColor.shade400
                 );
-
                 if (confirmed) {
                   await Supabase.instance.client.auth.signOut();
-                  if (context.mounted) {
-                    Navigator.of(context).pushReplacementNamed('/');
-                  }
                 }
               },
             ),

@@ -10,42 +10,55 @@ class NotificationConsumer extends StatefulWidget {
 }
 
 class _NotificationConsumerState extends State<NotificationConsumer> {
-  bool _isDraining = false;
+  NotificationQueue? _queue;
+  late final VoidCallback _listener;
+  bool _draining = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _drainQueueIfNeeded();
-    });
+    _listener = _onQueueChanged;
   }
 
-  void _drainQueueIfNeeded() {
-    if (!_isDraining && mounted) {
-      final queue = Provider.of<NotificationQueue>(context, listen: false);
-      if (queue.hasNotifications) {
-        _isDraining = true;
-        queue.drainQueue(context).then((_) {
-          if (mounted) {
-            setState(() {
-              _isDraining = false;
-            });
-          }
-        });
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final newQueue = context.read<NotificationQueue>();
+    if (_queue != newQueue) {
+      _queue?.removeListener(_listener);
+      _queue = newQueue..addListener(_listener);
+    }
+
+    _onQueueChanged();
+  }
+
+  void _onQueueChanged() {
+    if (!mounted || _draining) return;
+    if (!(_queue?.hasNotifications ?? false)) return;
+    _drain();
+  }
+
+  Future<void> _drain() async {
+    if (!mounted) return;
+    _draining = true;
+    try {
+      await _queue?.drainQueue();
+    } finally {
+      _draining = false;
+      if (mounted && (_queue?.hasNotifications ?? false)) {
+        _drain();
       }
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    context.watch<NotificationQueue>();
-    
-    // Only drain queue when notifications are added
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _drainQueueIfNeeded();
-    });
-    
-    return const SizedBox.shrink();
+  void dispose() {
+    _queue?.removeListener(_listener);
+    super.dispose();
   }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
