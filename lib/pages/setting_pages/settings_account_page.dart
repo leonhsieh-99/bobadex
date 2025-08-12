@@ -1,7 +1,6 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/helpers/image_uploader_helper.dart';
-import 'package:bobadex/helpers/show_snackbar.dart';
-import 'package:bobadex/state/notification_queue.dart';
+import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/utils/validators.dart';
 import 'package:bobadex/widgets/change_password_dialong.dart';
 import 'package:flutter/material.dart';
@@ -76,7 +75,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
 
         userState.setProfileImagePath(path);
 
-        if (mounted) context.read<NotificationQueue>().queue('Image uploaded', SnackType.success);
+        notify('Image uploaded', SnackType.success);
       }
       if (_removeExistingImage && oldImagePath != null && oldImagePath.isNotEmpty) {
         try {
@@ -93,7 +92,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
         .update({'profile_image_path': path})
         .eq('id', userState.user.id);
     } catch (e) {
-      if (mounted) context.read<NotificationQueue>().queue('Error updating profile picture', SnackType.error);
+      notify('Error updating profile picture', SnackType.error);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -156,9 +155,9 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                       if (newName != null && newName != user.displayName) {
                         try {
                           await userState.setDisplayName(newName);
-                          if (context.mounted) context.read<NotificationQueue>().queue('Name updated', SnackType.success);
+                          notify('Name updated', SnackType.success);
                         } catch (e) {
-                          if (context.mounted) context.read<NotificationQueue>().queue('Error updating name.', SnackType.error);
+                          notify('Error updating name.', SnackType.error);
                         }
                       }
                     }
@@ -195,9 +194,9 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                       if (newUsername != null && newUsername != user.username) {
                         try { 
                           await userState.setUsername(newUsername);
-                          if (context.mounted) context.read<NotificationQueue>().queue('Username updated', SnackType.success);
+                          notify('Username updated', SnackType.success);
                         } catch (e) {
-                          if (context.mounted) context.read<NotificationQueue>().queue('Error updating username.', SnackType.error);
+                          notify('Error updating username.', SnackType.error);
                         }
                       }
                     }
@@ -226,9 +225,9 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                       if (newBio != null && newBio != user.bio) {
                         try { 
                           await userState.setBio(newBio);
-                          if (context.mounted) context.read<NotificationQueue>().queue('Bio updated', SnackType.success);
+                          notify('Bio updated', SnackType.success);
                         } catch (e) {
-                          if (context.mounted) context.read<NotificationQueue>().queue('Error updating bio.', SnackType.error);
+                          notify('Error updating bio.', SnackType.error);
                         }
                       }
                     }

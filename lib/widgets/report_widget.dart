@@ -1,7 +1,5 @@
-import 'package:bobadex/helpers/show_snackbar.dart';
-import 'package:bobadex/state/notification_queue.dart';
+import 'package:bobadex/notification_bus.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ReportDialog extends StatefulWidget {
@@ -32,7 +30,7 @@ class _ReportDialogState extends State<ReportDialog> {
       'message': _controller.text.trim(),
     });
     if (mounted) Navigator.of(context).pop();
-    if(mounted) context.read<NotificationQueue>().queue('Report submitted', SnackType.info);
+    notify('Report submitted', SnackType.info);
   }
 
 @override

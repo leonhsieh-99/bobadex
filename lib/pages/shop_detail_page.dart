@@ -1,9 +1,8 @@
-import 'package:bobadex/helpers/show_snackbar.dart';
+import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/feed_state.dart';
-import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
@@ -131,11 +130,9 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                   onSetBanner: (mediaId) async {
                     try {
                       await shopMediaState.setBanner(shopRead.id!, mediaId);
-                      if(context.mounted) { context.read<NotificationQueue>().queue('New banner set', SnackType.success);
-                      }
+                      notify('New banner set', SnackType.success);
                     } catch (e) {
-                      if(context.mounted) { context.read<NotificationQueue>().queue('Banner update failed', SnackType.error);
-                      }
+                      notify('Banner update failed', SnackType.error);
                     }
                     setState(() {}); // refresh
                   },
@@ -284,19 +281,18 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                 backgroundColor: Constants.getThemeColor(user.themeSlug).shade100,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                 onPressed: () async {
-                                  final parentContext = context;
                                   await showDialog(
-                                    context: parentContext,
+                                    context: context,
                                     builder: (_) => AddOrEditDrinkDialog(
                                       onSubmit: (drink) async {
                                         try {
                                           await drinkState.add(drink.toDrink(shopId: shopRead.id), shopRead.id!);
                                           await achievementState.checkAndUnlockDrinkAchievement(drinkState);
                                           await achievementState.checkAndUnlockNotesAchievement(drinkState);
-                                          if (parentContext.mounted) parentContext.read<NotificationQueue>().queue('Drink added.', SnackType.success);
+                                          notify('Drink added.', SnackType.success);
                                         } catch (e) {
                                           debugPrint('Error adding drink: $e');
-                                          if (parentContext.mounted) parentContext.read<NotificationQueue>().queue('Error adding drink.', SnackType.error);
+                                          notify('Error adding drink.', SnackType.error);
                                         }
                                       },
                                     ),
@@ -392,9 +388,9 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                           final updated = drink.copyWith(isFavorite: !drink.isFavorite);
                                                           try {
                                                             await drinkState.update(updated);
-                                                            if (context.mounted) context.read<NotificationQueue>().queue(updated.isFavorite ? 'Drink favorited.' : 'Drink unfavorited', SnackType.success);
+                                                            notify(updated.isFavorite ? 'Drink favorited.' : 'Drink unfavorited', SnackType.success);
                                                           } catch (_) {
-                                                            if (context.mounted) context.read<NotificationQueue>().queue('Error updating favorite status.', SnackType.error);
+                                                            notify('Error updating favorite status.', SnackType.error);
                                                           }
                                                         }
                                                       : null,
@@ -420,9 +416,9 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                               } else {
                                                                 await shopState.update(shop!.copyWith(pinnedDrinkId: drink.id));
                                                               }
-                                                              if (context.mounted) context.read<NotificationQueue>().queue('Pinned drink updated', SnackType.success);
+                                                              notify('Pinned drink updated', SnackType.success);
                                                             } catch (_) {
-                                                              if (context.mounted) { context.read<NotificationQueue>().queue('Error pinning drink', SnackType.error); }
+                                                              notify('Error pinning drink', SnackType.error);
                                                             }
                                                             break;
                                                           case 'edit':
@@ -440,9 +436,9 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                                     await drinkState.update(updatedDrink.toDrink(id: drink.id, shopId: drink.shopId));
                                                                     await achievementState.checkAndUnlockDrinkAchievement(drinkState);
                                                                     await achievementState.checkAndUnlockNotesAchievement(drinkState);
-                                                                    if (context.mounted) context.read<NotificationQueue>().queue('Drink updated.', SnackType.success);
+                                                                    notify('Drink updated.', SnackType.success);
                                                                   } catch (_) {
-                                                                    if (context.mounted) context.read<NotificationQueue>().queue('Error updating drink.', SnackType.error);
+                                                                    notify('Error updating drink.', SnackType.error);
                                                                   }
                                                                 },
                                                               ),
@@ -464,7 +460,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                               try {
                                                                 await drinkState.remove(drink.id!);
                                                               } catch (_) {
-                                                                if (context.mounted) context.read<NotificationQueue>().queue('Error removing drink', SnackType.error);
+                                                                notify('Error removing drink', SnackType.error);
                                                               }
                                                             }
                                                             break;
@@ -575,9 +571,9 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                           final updated = shopRead.copyWith(isFavorite: !shopRead.isFavorite);
                           try {
                             await shopState.update(updated);
-                            if (context.mounted) context.read<NotificationQueue>().queue(updated.isFavorite ? 'Shop favorited.' : 'Shop unfavorited.', SnackType.success);
+                            notify(updated.isFavorite ? 'Shop favorited.' : 'Shop unfavorited.', SnackType.success);
                           } catch (_) {
-                            if (context.mounted) context.read<NotificationQueue>().queue('Error updating shop favorite status.', SnackType.error);
+                            notify('Error updating shop favorite status.', SnackType.error);
                           }
                         },
                         child: Stack(
@@ -630,8 +626,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                       final persistedShop = await shopState.update(submittedShop);
                                       return persistedShop;
                                     } catch (e) {
-                                      if (context.mounted) { context.read<NotificationQueue>().queue('Error updating shop.', SnackType.error);
-                                      }
+                                      notify('Error updating shop.', SnackType.error);
                                       rethrow;
                                     }
                                   },
@@ -659,12 +654,12 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                   await shopState.remove(widget.shop.id!);
                                   await feedState.removeFeedEvent(widget.shop.id!);
                                   if (context.mounted) {
-                                    context.read<NotificationQueue>().queue('Shop deleted', SnackType.success);
+                                    notify('Shop deleted', SnackType.success);
                                     Navigator.pop(context);
                                   }
                                 } catch (e) {
                                   debugPrint("Error deleting shop");
-                                  if (context.mounted) context.read<NotificationQueue>().queue('Error deleting shop', SnackType.error);
+                                  notify('Error deleting shop', SnackType.error);
                                 }
                               }
                               break;

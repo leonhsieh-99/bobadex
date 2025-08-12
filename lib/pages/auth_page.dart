@@ -1,6 +1,5 @@
 import 'package:bobadex/config/constants.dart';
-import 'package:bobadex/helpers/show_snackbar.dart';
-import 'package:bobadex/state/notification_queue.dart';
+import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/forgot_password_dialog.dart';
 import 'package:flutter/material.dart';
@@ -43,18 +42,17 @@ class _AuthPageState extends State<AuthPage> {
     final username = _usernameController.text.trim();
     final displayName = _displayNameController.text.trim();
     final userState = context.read<UserState>();
-    final notifications = context.read<NotificationQueue>();
 
     try {
       if (_isSigningUp) {
         // Validate password match
         if (_confirmPwController.text.trim() != password) {
-          notifications.queue('Passwords do not match', SnackType.error);
+          notify('Passwords do not match', SnackType.error);
           return;
         }
 
         if (username.isEmpty || displayName.isEmpty) {
-          notifications.queue('Username and name are required', SnackType.error);
+          notify('Username and name are required', SnackType.error);
           return;
         }
 
@@ -65,7 +63,7 @@ class _AuthPageState extends State<AuthPage> {
         );
 
         if (usernameExists == true) {
-          notifications.queue('Username already taken', SnackType.error);
+          notify('Username already taken', SnackType.error);
           return;
         }
 
@@ -81,7 +79,7 @@ class _AuthPageState extends State<AuthPage> {
         );
 
         if (response.user != null && response.session == null) {
-          notifications.queue('Check your email to confirm your account.', SnackType.success);
+          notify('Check your email to confirm your account.', SnackType.success);
           if (mounted) setState(() => _resend = true);
           return;
         }
@@ -110,17 +108,17 @@ class _AuthPageState extends State<AuthPage> {
     } on AuthException catch (e) {
       final msg = e.message.toLowerCase();
       if (msg.contains('invalid email')) {
-        notifications.queue('Please enter a valid email address.', SnackType.error);
+        notify('Please enter a valid email address.', SnackType.error);
       } else if (msg.contains('invalid login credentials') || msg.contains('invalid password')) {
-        notifications.queue('Incorrect email or password.', SnackType.error);
+        notify('Incorrect email or password.', SnackType.error);
       } else {
-        notifications.queue(e.message, SnackType.error);
+        notify(e.message, SnackType.error);
         debugPrint('Auth Error: $e');
       }
     } on PostgrestException catch (e) {
-      notifications.queue(e.message, SnackType.error);
+      notify(e.message, SnackType.error);
     } catch (e) {
-      notifications.queue('An unexpected error occurred', SnackType.error);
+      notify('An unexpected error occurred', SnackType.error);
       debugPrint('Postgres Error: $e');
     } finally {
       if (mounted) setState(() { _loading = false; });
@@ -128,7 +126,6 @@ class _AuthPageState extends State<AuthPage> {
   }
 
   Future<void> _resendVerificationEmail(String email) async {
-    final notifications = context.read<NotificationQueue>();
     final supabase = Supabase.instance.client;
 
     try {
@@ -137,12 +134,12 @@ class _AuthPageState extends State<AuthPage> {
         email: email,
       );
 
-      notifications.queue('Verification email resent. Check your inbox.', SnackType.success);
+      notify('Verification email resent. Check your inbox.', SnackType.success);
     } on AuthException catch (e) {
-      notifications.queue(e.message, SnackType.error);
+      notify(e.message, SnackType.error);
       debugPrint('Auth resend error: $e');
     } catch (e) {
-      notifications.queue('Failed to resend verification email.', SnackType.error);
+      notify('Failed to resend verification email.', SnackType.error);
       debugPrint('Unexpected resend error: $e');
     }
   }

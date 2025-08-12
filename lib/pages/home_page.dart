@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/shop_media.dart';
+import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/achievements_page.dart';
 import 'package:bobadex/pages/about_page.dart';
@@ -10,7 +10,6 @@ import 'package:bobadex/pages/social_page.dart';
 import 'package:bobadex/pages/splash_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
-import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/widgets/confirmation_dialog.dart';
 import 'package:bobadex/widgets/onboarding_wizard.dart';
@@ -61,7 +60,7 @@ class _HomePageState extends State<HomePage> {
     if (isCurrentUser) _showOnboardingIfNeeded(Supabase.instance.client.auth.currentUser!.id);
     if (widget.showAddShopSnackBar) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.read<NotificationQueue>().queue('Tap the + button below to add your first shop!', SnackType.info, duration: 4000);
+        notify('Tap the + button below to add your first shop!', SnackType.info, duration: 4000);
       });
     }
 

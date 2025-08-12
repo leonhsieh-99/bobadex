@@ -1,9 +1,7 @@
 import 'package:bobadex/config/constants.dart';
-import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/navigation.dart';
-import 'package:bobadex/state/notification_queue.dart';
+import 'package:bobadex/notification_bus.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ResetPasswordPage extends StatefulWidget {
@@ -27,12 +25,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       );
       debugPrint('Password reset');
       if (mounted) {
-        context.read<NotificationQueue>().queue('Password successfully reset', SnackType.success);
+        notify('Password successfully reset', SnackType.success);
         navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
       }
     } catch (e) {
       debugPrint('Error resetting password: $e');
-      if (mounted) context.read<NotificationQueue>().queue('Error resetting password, please try again.', SnackType.error);
+      if (mounted) notify('Error resetting password, please try again.', SnackType.error);
     }
   }
 

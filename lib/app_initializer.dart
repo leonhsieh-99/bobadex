@@ -1,11 +1,10 @@
 import 'dart:async';
-import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/feed_event.dart';
 import 'package:bobadex/navigation.dart';
+import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/feed_state.dart';
 import 'package:bobadex/state/friend_state.dart';
-import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as p;
@@ -160,7 +159,7 @@ class _AppInitializerState extends State<AppInitializer> {
     if (hasErrors) {
       debugPrint('Some providers failed to load. Showing partial data.');
       if(mounted) {
-        context.read<NotificationQueue>().queue(
+        notify(
           'Some data failed to load. Try refreshing.',
           SnackType.error,
         );
@@ -178,7 +177,7 @@ class _AppInitializerState extends State<AppInitializer> {
     _achievementListener = achievementsState.unlockedAchievementsStream.listen((achievement) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted) return;
-        context.read<NotificationQueue>().queueAchievement(achievement.name);
+        notifyAchievement(achievement.name);
         try {
           await feedState.addFeedEvent(
             FeedEvent(

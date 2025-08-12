@@ -1,8 +1,6 @@
-import 'package:bobadex/helpers/show_snackbar.dart';
-import 'package:bobadex/state/notification_queue.dart';
+import 'package:bobadex/notification_bus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 // import 'package:url_launcher/url_launcher.dart';
 
 class AboutPage extends StatelessWidget {
@@ -127,7 +125,7 @@ class AboutPage extends StatelessWidget {
                     label: const Text('Contact Me'),
                     onPressed: () {
                       Clipboard.setData(const ClipboardData(text: 'leonchsieh@gmail.com'));
-                      context.read<NotificationQueue>().queue('Email copied to clipboard!', SnackType.info);
+                      notify('Email copied to clipboard!', SnackType.info);
                     }
                   ),
                 ],

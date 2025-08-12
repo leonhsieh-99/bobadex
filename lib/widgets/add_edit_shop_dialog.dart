@@ -1,9 +1,8 @@
-import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/feed_event.dart';
 import 'package:bobadex/models/shop_media.dart';
+import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/feed_state.dart';
-import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
@@ -165,9 +164,9 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
           debugPrint('Error uploading images: $e');
           shopMediaState.removePendingMedia(tempId);
           if (e.toString().contains('statusCode: 409')) {
-            if (mounted) context.read<NotificationQueue>().queue('Image already exists, skipping', SnackType.info);
+            notify('Image already exists, skipping', SnackType.info);
           } else if (mounted) {
-            context.read<NotificationQueue>().queue('Error uploading images', SnackType.error);
+            notify('Error uploading images', SnackType.error);
           }
         }
       }));
@@ -201,14 +200,14 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
         if (!isNewShop) {
           Navigator.of(context).pop();
         } else {
-          context.read<NotificationQueue>().queue('Shop added', SnackType.success);
+          notify('Shop added', SnackType.success);
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
       }
     } catch (e) {
       if (mounted) {
         debugPrint('Failed to submit shop: $e');
-        context.read<NotificationQueue>().queue('Failed to add shop', SnackType.error);
+        notify('Failed to add shop', SnackType.error);
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } finally {

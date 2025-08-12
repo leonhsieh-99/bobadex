@@ -1,9 +1,8 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/helpers/image_uploader_helper.dart';
-import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/shop_media.dart';
+import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/state/achievements_state.dart';
-import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
 import 'package:bobadex/widgets/image_widgets/gallery_grid.dart';
@@ -85,9 +84,9 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
         _selecting = false;
         _selected = [];
       });
-      if (mounted) context.read<NotificationQueue>().queue('Photos deleted', SnackType.success);
+      notify('Photos deleted', SnackType.success);
     } catch (e) {
-      if (mounted) context.read<NotificationQueue>().queue('Error deleting photos', SnackType.error);
+      notify('Error deleting photos', SnackType.error);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -159,13 +158,13 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
         } catch (e) {
           debugPrint('Error uploading image $idx: $e');
           shopMediaState.removePendingMedia(tempId);
-          if (mounted) context.read<NotificationQueue>().queue('Upload failed', SnackType.error);
+          notify('Upload failed', SnackType.error);
         }
       }),
     );
     
     setState(() => _isLoading = false);
-    if (mounted) context.read<NotificationQueue>().queue('Images uploaded', SnackType.success);
+    notify('Images uploaded', SnackType.success);
   }
 
   @override

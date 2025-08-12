@@ -1,8 +1,7 @@
 import 'package:bobadex/config/constants.dart';
-import 'package:bobadex/helpers/show_snackbar.dart';
+import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/state/friend_state.dart';
-import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/custom_search_bar.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
@@ -101,7 +100,7 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
                       try {
                         friendState.addUser(addressee);
                       } catch (e) {
-                        if (mounted) { context.read<NotificationQueue>().queue('Error adding friend', SnackType.error); }
+                        if (mounted) { notify('Error adding friend', SnackType.error); }
                       }
                     },
                     style: ElevatedButton.styleFrom(

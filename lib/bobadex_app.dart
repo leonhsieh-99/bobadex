@@ -9,7 +9,6 @@ import 'package:bobadex/state/city_data_provider.dart';
 import 'package:bobadex/state/drink_state.dart';
 import 'package:bobadex/state/feed_state.dart';
 import 'package:bobadex/state/friend_state.dart';
-import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
@@ -37,7 +36,6 @@ class BobadexApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AchievementsState()),
         ChangeNotifierProvider(create: (_) => FeedState()),
         ChangeNotifierProvider(create: (_) => CityDataProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationQueue()),
       ],
       child: Consumer<UserState>(
         builder: (context, userState, _) {
@@ -85,8 +83,8 @@ class BobadexApp extends StatelessWidget {
               child: Stack(
                 children: [
                   child ?? const SizedBox.shrink(),
-                  const NotificationConsumer(),
                   const AppInitializer(),
+                  const NotificationConsumer(),
                 ],
               ),
             ),

@@ -1,12 +1,11 @@
 import 'package:bobadex/config/constants.dart';
-import 'package:bobadex/helpers/show_snackbar.dart';
 import 'package:bobadex/models/brand.dart';
 import 'package:bobadex/models/brand_stats.dart';
 import 'package:bobadex/models/feed_event.dart';
 import 'package:bobadex/models/shop_media.dart';
+import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/shop_gallery_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
-import 'package:bobadex/state/notification_queue.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/image_widgets/horizontal_photo_preview.dart';
@@ -245,7 +244,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                                 }
                               } catch (e) {
                                 debugPrint('error: $e');
-                                if (context.mounted) { context.read<NotificationQueue>().queue('Failed to update shop.', SnackType.error); }
+                                notify('Failed to update shop.', SnackType.error);
                                 rethrow;
                               }
                             },
@@ -265,10 +264,10 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                           case 'report':
                             final result = await reportBrandClosed();
                             if (result != null && (result == 'incremented' || result == 'created')) {
-                              if(context.mounted) context.read<NotificationQueue>().queue('Report pending review', SnackType.info);
+                              notify('Report pending review', SnackType.info);
                             } else if (result != null ) {
                               debugPrint(result);
-                              if(context.mounted) context.read<NotificationQueue>().queue(result, SnackType.error);
+                              notify(result, SnackType.error);
                             }
                             break;
                         }
