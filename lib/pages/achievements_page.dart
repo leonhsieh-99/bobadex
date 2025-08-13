@@ -1,3 +1,4 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/drink_state.dart';
 import 'package:bobadex/state/friend_state.dart';
@@ -109,7 +110,7 @@ class AchievementsPage extends StatelessWidget {
                   backgroundImage: (a.iconPath != null && a.iconPath!.isNotEmpty)
                       ? AssetImage(a.iconPath!)
                       : const AssetImage('lib/assets/badges/default_badge.png'),
-                  backgroundColor: count == min ? Colors.amber : Colors.grey[300],
+                  backgroundColor: count == min ? Colors.amber : Constants.badgeBgColor,
                 ),
             title: Text(a.isHidden && (count != min) ? 'Hidden' : a.name),
             subtitle: Text(a.isHidden && (count != min) ? '? ? ?' : a.description),

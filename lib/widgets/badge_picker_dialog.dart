@@ -1,3 +1,4 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/achievement.dart';
 // import 'package:bobadex/state/achievements_state.dart';
 import 'package:flutter/material.dart';
@@ -73,6 +74,7 @@ Widget build(BuildContext context) {
                       shape: BoxShape.circle,
                     ),
                     child: CircleAvatar(
+                      backgroundColor: Constants.badgeBgColor,
                       backgroundImage: AssetImage((a.iconPath != null && a.iconPath!.isNotEmpty)
                         ? a.iconPath!
                         : 'lib/assets/badges/default_badge.png'

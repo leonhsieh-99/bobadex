@@ -5,187 +5,343 @@ import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/widgets/image_widgets/horizontal_photo_preview.dart';
 import 'package:bobadex/widgets/number_rating.dart';
-import 'package:bobadex/widgets/thumb_pic.dart';
+import 'package:bobadex/widgets/social_widgets/feed_card_options.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class FeedEventCard extends StatelessWidget {
   final FeedEvent event;
+  final FeedCardVariant variant;
 
-  const FeedEventCard({super.key, required this.event});
+  const FeedEventCard({
+    super.key,
+    required this.event,
+    this.variant = FeedCardVariant.friends,
+  });
 
-  String _eventTypeToText(String eventType, bool? isHidden) {
-    switch (eventType) {
-      case 'shop_add': return 'added a shop ';
-      case 'drink_add': return 'added a drink ';
-      case 'achievement':
-        if (isHidden != null && isHidden == true) {
-          return 'unlocked a hidden achievement ';
-        }
-        return 'unlocked an achievement ';
-      default: return eventType;
+  String _verb(String type, bool hidden) {
+    switch (type) {
+      case 'shop_add': return 'added a shop';
+      case 'drink_add': return 'added a drink';
+      case 'achievement': return hidden ? 'unlocked a hidden achievement' : 'unlocked an achievement';
+      default: return type;
     }
   }
 
-  String _formatTimeAgo(DateTime dt) {
-    final now = DateTime.now();
-    final diff = now.difference(dt);
-    if (diff.inMinutes < 1) return "just now";
-    if (diff.inMinutes < 60) return "${diff.inMinutes}m ago";
-    if (diff.inHours < 24) return "${diff.inHours}h ago";
-    return "${dt.month}/${dt.day}/${dt.year}";
+  IconData _verbIcon(String type, bool hidden) {
+    switch (type) {
+      case 'shop_add': return Icons.storefront_rounded;
+      case 'drink_add': return Icons.local_drink_rounded;
+      case 'achievement': return hidden ? Icons.lock_outline : Icons.emoji_events_outlined;
+      default: return Icons.bolt; // fallback
+    }
+  }
+
+  String _timeAgo(DateTime dt) {
+    final d = DateTime.now().difference(dt);
+    if (d.inMinutes < 1) return 'just now';
+    if (d.inMinutes < 60) return '${d.inMinutes}m ago';
+    if (d.inHours < 24) return '${d.inHours}h ago';
+    return '${dt.month}/${dt.day}/${dt.year}';
   }
 
   @override
   Widget build(BuildContext context) {
+    final opts = FeedCardOptions.forVariant(variant);
+    final theme = Theme.of(context);
     final brandState = context.read<BrandState>();
-    final payload = event.payload;
+    final p = event.payload;
     final user = event.feedUser;
-    final name = event.eventType == 'shop_add'
-      ? payload['shop_name']
-      : event.eventType == 'achievement'
-        ? payload['achievement_name']
-        : 'Unknown';
-    final images = (payload['images'] as List?) ?? [];
-    final rating = double.tryParse('${payload['rating'] ?? ''}') ?? 0.0;
-    final createdAt = event.createdAt ?? DateTime.now();
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                ThumbPic(
-                  url: user.thumbUrl,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => AccountViewPage(user: event.feedUser))
-                    );
-                  },
+
+    final isHidden = p['is_hidden'] == true;
+    final titleText = switch (event.eventType) {
+      'shop_add'    => (p['shop_name'] ?? 'Unknown') as String,
+      'achievement' => (p['achievement_name'] ?? 'Achievement') as String,
+      _             => 'Details'
+    };
+    final rating = double.tryParse('${p['rating'] ?? ''}') ?? 0.0;
+    final images = (p['images'] as List?) ?? const [];
+    final shopName = (p['shop_name'] as String?)?.trim() ?? '';
+    final brandSlug = (event.brandSlug ?? '').trim();
+
+    // --- header row (friends/brand) OR verb pill (userProfile) ----------------
+    Widget headerArea;
+    if (opts.showVerbPill) {
+      final brandState = context.read<BrandState>();
+      headerArea = Row(
+        children: [
+          _VerbPill(
+            icon: _verbIcon(event.eventType, isHidden),
+            text: _verb(event.eventType, isHidden),
+          ),
+          const SizedBox(width: 8),
+          if (event.eventType == 'shop_add' && shopName.isNotEmpty)
+            _ShopLink(
+              text: shopName,
+              onTap: (brandSlug.isNotEmpty && brandState.getBrand(brandSlug) != null)
+                  ? () {
+                      final brand = brandState.getBrand(brandSlug)!;
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand)),
+                      );
+                    }
+                  : null,
+            ),
+        ],
+      );
+    } else {
+      headerArea = Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (opts.showAvatar)
+            Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => AccountViewPage(user: user))),
+                child: CircleAvatar(
+                  radius: 20,
+                  backgroundImage: (user.thumbUrl.isNotEmpty) ? NetworkImage(user.thumbUrl) : null,
+                  child: (user.thumbUrl.isEmpty) ? Text(user.firstName.isNotEmpty ? user.firstName[0].toUpperCase() : '?') : null,
                 ),
-                const SizedBox(width: 10),
-                Expanded( // <-- this is what you want, not inside a button!
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+            ),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (opts.showUsername)
+                  Text(
+                    user.firstName,
+                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+
+                if (opts.showVerbInline)
+                  Row(
                     children: [
-                      Text(user.firstName, style: TextStyle(fontWeight: FontWeight.bold)),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Text(
-                            _eventTypeToText(event.eventType, payload['is_hidden']),
-                            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                      Expanded(
+                        child: Text.rich(
+                          TextSpan(
+                            children: [
+                              // Verb
+                              TextSpan(
+                                text: _verb(event.eventType, isHidden),
+                                style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+                              ),
+
+                              // Space + clickable shop name (shop_add)
+                              if (event.eventType == 'shop_add') const TextSpan(text: ' '),
+                              if (event.eventType == 'shop_add')
+                                TextSpan(
+                                  text: titleText, // shop name
+                                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                                  recognizer: (() {
+                                    final slug = (event.brandSlug ?? '').trim();
+                                    final brand = slug.isNotEmpty ? brandState.getBrand(slug) : null;
+                                    if (brand == null) return null;
+                                    return TapGestureRecognizer()
+                                      ..onTap = () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand)),
+                                        );
+                                      };
+                                  })(),
+                                ),
+
+                              // Space + bold achievement name (non-clickable)
+                              if (event.eventType == 'achievement' && !isHidden && titleText.isNotEmpty)
+                                const TextSpan(text: ' '),
+                              if (event.eventType == 'achievement' && !isHidden && titleText.isNotEmpty)
+                                TextSpan(
+                                  text: titleText,
+                                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                            ],
                           ),
-                          SizedBox(width: 6),
-                          if (event.eventType != 'shop_add')
-                            Flexible(
-                              child: Text(
-                                name,
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                            )
-                          else
-                            Flexible(
-                              child: TextButton(
-                                style: TextButton.styleFrom(
-                                  padding: EdgeInsets.all(0),
-                                  minimumSize: Size(0, 0),
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                onPressed: () {
-                                  final slug = event.brandSlug?.toString() ?? '';
-                                  if (slug.isNotEmpty) {
-                                    final brand = brandState.getBrand(slug);
-                                    if (brand != null) {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand))
-                                      );
-                                    }
-                                  }
-                                },
-                                child: Text(
-                                  name,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  maxLines: 1,
-                                  softWrap: false,
-                                ),
-                              ),
-                            )
-                        ],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
+                        ),
                       ),
                     ],
                   ),
-                ),
-                if (event.eventType == 'shop_add')
-                  rating != 0.0
-                    ? NumberRating(rating: rating.toString())
-                    : NumberRating(rating: 'N/A'),
               ],
             ),
-            const SizedBox(height: 10),
+          ),
+          if (event.eventType == 'shop_add')
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: NumberRating(rating: rating == 0 ? 'N/A' : rating.toString()),
+            ),
+        ],
+      );
+    }
 
-            // Main content
-            if (event.eventType == 'shop_add')
-              if (payload['shop_name'] != null && payload['notes'].toString().isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Text(
-                    payload['notes'] ?? '',
-                    style: TextStyle(fontSize: 15),
-                  ),
-                ),
-            if (event.eventType == 'shop_add')
-              if (images.isNotEmpty)
-                HorizontalPhotoPreview(
-                  shopMediaList: images.map((img) {
-                    final path = img['path']?.toString() ?? '';
-                    final comment = img['comment']?.toString() ?? '';
-                    return ShopMedia.galleryViewMedia(imagePath: path, comment: comment);
-                  }).toList(),
-                ),
-            if (event.eventType == 'achievement')
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircleAvatar(
-                    backgroundImage: (payload['achievement_badge_path'] != null && payload['achievement_badge_path'].isNotEmpty)
-                      ? AssetImage(payload['achievement_badge_path'])
-                      : AssetImage('lib/assets/badges/default_badge.png'),
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    (payload['is_hidden'] != null && payload['is_hidden'] == true)
-                      ? '? ? ?'
-                      : payload['achievement_desc'] ?? '',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w400,
-                      fontSize: 16,
-                    ),
-                  )
-                ],
+    // --- body (notes + images OR achievement row) -----------------------------
+    final body = switch (event.eventType) {
+      'achievement' => _AchievementRow(
+        description: isHidden ? '? ? ?' : (p['achievement_desc'] ?? '') as String,
+        iconAssetPath: (p['achievement_badge_path'] ?? '') as String,
+      ),
+      'shop_add' => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if ((p['notes'] ?? '').toString().trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 8),
+              child: Text(
+                p['notes'],
+                style: theme.textTheme.bodyMedium,
               ),
+            ),
+          if (images.isNotEmpty)
+            HorizontalPhotoPreview(
+              shopMediaList: images.map((img) {
+                final path = (img['path'] ?? '').toString();
+                final comment = (img['comment'] ?? '').toString();
+                return ShopMedia.galleryViewMedia(imagePath: path, comment: comment);
+              }).toList(),
+              height: 110,
+              width: 90,
+            ),
+        ],
+      ),
+      _ => const SizedBox.shrink(),
+    };
+
+    // --- card shell -----------------------------------------------------------
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2.5,
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: opts.padding,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            headerArea,
+            const SizedBox(height: 10),
+            body,
+            const SizedBox(height: 10),
             Row(
               children: [
-                Spacer(),
+                const Spacer(),
                 Text(
-                  _formatTimeAgo(createdAt),
-                  style: TextStyle(fontSize: 12, color: Colors.green.shade500),
+                  _timeAgo(event.createdAt),
+                  style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary.withOpacity(0.75)),
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+// ================= helpers =================
+
+class _VerbPill extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _VerbPill({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceVariant.withOpacity(0.7),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AchievementRow extends StatelessWidget {
+  final String description;
+  final String iconAssetPath;
+  const _AchievementRow({required this.description, required this.iconAssetPath});
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 18,
+          backgroundImage: (iconAssetPath.isNotEmpty)
+              ? AssetImage(iconAssetPath)
+              : const AssetImage('lib/assets/badges/default_badge.png'),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            description,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w400),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ShopLink extends StatelessWidget {
+  final String text;
+  final VoidCallback? onTap;
+  const _ShopLink({required this.text, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final child = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: onTap == null
+                ? theme.textTheme.bodyMedium?.color?.withOpacity(0.7)
+                : theme.colorScheme.primary,
+          ),
+        ),
+        if (onTap != null) ...[
+          const SizedBox(width: 4),
+          Icon(Icons.chevron_right, size: 16, color: theme.colorScheme.primary),
+        ]
+      ],
+    );
+
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 220), // keeps row tidy
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceVariant.withOpacity(onTap == null ? 0.4 : 0.55),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: onTap == null
+          ? child
+          : InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(999),
+              child: child,
+            ),
     );
   }
 }

@@ -8,8 +8,8 @@ import 'package:bobadex/pages/shop_gallery_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
+import 'package:bobadex/widgets/social_widgets/brand_feed_view.dart';
 import 'package:bobadex/widgets/image_widgets/horizontal_photo_preview.dart';
-import 'package:bobadex/widgets/social_widgets/feed_event_card.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -36,7 +36,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
     super.initState();
     _statsFuture = fetchStats();
     _globalGalleryFuture = fetchGallery();
-    fetchFeed();
+    // fetchFeed();
   }
 
   Future<String?> reportBrandClosed() async {
@@ -102,20 +102,6 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
       debugPrint('Error fetching gallery: $e');
       return [];
     }
-  }
-
-  Future<void> fetchFeed() async {
-    setState(() => isLoading = true);
-    try {
-      final response = await Supabase.instance.client.rpc('get_brand_feed', params: {
-        'brand_slug': widget.brand.slug,
-        'limit_count': 50,
-      });
-      feed = (response as List).map((json) => FeedEvent.fromJson(json)).toList();
-    } catch (e) {
-      debugPrint('Error loading feed: $e');
-    }
-    setState(() => isLoading = false);
   }
 
   @override
@@ -294,35 +280,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                   ],
                 ),
               ),
-              // Feed section: make it scrollable horizontally if needed
-              Builder(
-                builder: (context) {
-                  if (isLoading) {
-                    return Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: List.generate(3, (_) => FeedEventCardSkeleton()),
-                    );
-                  }
-                  if (feed.isEmpty) {
-                    return SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.25,
-                      child: Center(
-                        child: Text("No activity yet!", style: Constants.emptyListTextStyle),
-                      ),
-                    );
-                  }
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    itemCount: feed.length,
-                    itemBuilder: (context, index) {
-                      final event = feed[index];
-                      return FeedEventCard(event: event);
-                    },
-                  );
-                },
-              ),
+              BrandFeedView(brandSlug: widget.brand.slug),
             ]
           ),
         ),

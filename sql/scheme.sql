@@ -71,7 +71,7 @@ CREATE TABLE friendships (
 );
 
 CREATE TABLE achievements (
-    uuid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     description TEXT,
     icon_path TEXT,
@@ -101,6 +101,7 @@ create table feed_events (
   created_at timestamptz default now(),
   payload jsonb,       -- flexible, stores extra event data
   is_backfill boolean default false
+  seq bigint default nextval('feed_events_seq')
 );
 
 create table reports (

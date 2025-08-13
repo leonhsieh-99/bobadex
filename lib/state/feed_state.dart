@@ -3,11 +3,12 @@ import 'package:bobadex/helpers/retry_helper.dart';
 import 'package:bobadex/models/feed_event.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uuid/uuid.dart';
+import 'package:bobadex/models/user.dart' as u;
 
 class FeedState extends ChangeNotifier {
   final List<FeedEvent> _feed = [];
-  bool _hasMore = false;
+  final Set<String> _seenIds = {};
+  bool _hasMore = true;
   bool _isFetchingMore = false;
   final int _limit = Constants.defaultFeedLimit;
 
@@ -15,15 +16,20 @@ class FeedState extends ChangeNotifier {
   bool get hasMore => _hasMore;
   bool get isLoading => _isFetchingMore;
 
+  DateTime? cursorTs;
+  int? cursorSeq;
+
   Future<void> fetchFeed({bool refresh = false}) async {
     final supabase = Supabase.instance.client;
     if (_isFetchingMore) return;
 
     if (refresh) {
       _feed.clear();
+      _seenIds.clear();
       _hasMore = true;
+      cursorTs = null;
+      cursorSeq = null;
     }
-
     if (!_hasMore) return;
 
     _isFetchingMore = true;
@@ -32,15 +38,25 @@ class FeedState extends ChangeNotifier {
     try {
       final response = await RetryHelper.retry(() => supabase
         .rpc('get_feed', params: {
-          'user_id': supabase.auth.currentUser!.id,
-          'offset_count': _feed.length,
-          'limit_count': _limit,
+          '_user_id': supabase.auth.currentUser!.id,
+          '_limit': _limit,
+          '_before_ts': cursorTs?.toIso8601String(),
+          '_before_seq': cursorSeq,
         }));
 
-      final newFeed = (response as List).map((json) => FeedEvent.fromJson(json)).toList();
-      _feed.addAll(newFeed);
+      final list = (response is List) ? response : <dynamic>[];
+      final newFeed = list
+        .map((j) => FeedEvent.fromJson(j as Map<String, dynamic>))
+        .toList();
 
-      if (newFeed.length < _limit) _hasMore = false;
+      if (newFeed.isNotEmpty) {
+        final last = newFeed.last;
+        cursorTs = last.createdAt;
+        cursorSeq = last.seq;
+      }
+
+      _feed.addAll(newFeed);
+      _hasMore = newFeed.length == _limit;
     } catch (e) {
       debugPrint('Error fetching feed: $e');
     } finally {
@@ -49,63 +65,67 @@ class FeedState extends ChangeNotifier {
     }
   }
 
-  Future<FeedEvent> addFeedEvent(FeedEvent event) async {
-    final tempId = Uuid().v4();
-    _feed.insert(0, event.copyWith(id: tempId));
-    notifyListeners();
+  Future<FeedEvent> finalizeShopAdd({
+    required u.User currentUser,
+    required String shopId,
+  }) async {
     try {
-      final response = await Supabase.instance.client
-        .from('feed_events')
-        .insert({
-          'user_id': event.feedUser.id,
-          'object_id': event.objectId,
-          'event_type': event.eventType,
-          'payload': event.payload,
-          'brand_slug': event.brandSlug,
-          'is_backfill': event.isBackfill,
+      final row = await Supabase.instance.client
+        .rpc('finalize_shop_add_event', params: {
+          '_shop_id': shopId,
+          '_user_id': currentUser.id,
         })
-        .select()
         .single();
 
-      final insertedEvent = FeedEvent.fromJson(response);
-      insertedEvent.feedUser = event.feedUser;
-      final index = _feed.indexWhere((e) => e.id == tempId);
-      if (index != -1) {
-        _feed[index] = insertedEvent;
+      final event = FeedEvent.fromJson({
+        ...(row),
+        'feed_user': currentUser.toJson(),
+      });
+
+      if (_seenIds.add(event.id)) {
+        _feed.insert(0, event);
+        if (cursorTs == null || event.createdAt.isAfter(cursorTs!)) {
+          cursorTs = event.createdAt;
+          cursorSeq = event.seq;
+        }
         notifyListeners();
-        return insertedEvent;
       }
-      throw StateError('Error with temp id');
+
+      return event;
     } catch (e) {
       debugPrint('Insert feed event failed: $e');
-      _feed.removeWhere((e) => e.id == tempId);
-      notifyListeners();
       rethrow;
     }
   }
 
   Future<void> removeFeedEvent(String objectId) async {
-    final index = _feed.indexWhere((f) => f.objectId == objectId);
-    if (index != -1) {
-      final feedEvenet = _feed[index];
-      _feed.removeAt(index);
-      notifyListeners();
+    final idx = _feed.indexWhere((f) => f.objectId == objectId);
+    if (idx == -1) return;
+    final item = _feed.removeAt(idx);
+    _seenIds.remove(item.id);
+    notifyListeners();
 
-      try {
-        await Supabase.instance.client
+    try {
+      await Supabase.instance.client
           .from('feed_events')
           .delete()
           .eq('object_id', objectId);
-      } catch (e) {
-        debugPrint('Error removing feed event: $e');
-        _feed.insert(index, feedEvenet);
-        notifyListeners();
-        rethrow;
-      }
+    } catch (e) {
+      debugPrint('Error removing feed event: $e');
+      _feed.insert(idx, item);
+      _seenIds.add(item.id);
+      notifyListeners();
+      rethrow;
     }
   }
 
   void reset() {
     _feed.clear();
+    _seenIds.clear();
+    _hasMore = true;
+    _isFetchingMore = false;
+    cursorTs = null;
+    cursorSeq = null;
+    notifyListeners();
   }
 }

@@ -16,6 +16,7 @@ import 'package:bobadex/widgets/badge_picker_dialog.dart';
 import 'package:bobadex/widgets/report_widget.dart';
 import 'package:bobadex/widgets/stat_box.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
+import 'package:bobadex/widgets/social_widgets/user_feed_view.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -309,6 +310,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     CircleAvatar(
+                                      backgroundColor: Constants.badgeBgColor,
                                       backgroundImage: AssetImage(
                                         (a.iconPath != null && a.iconPath!.isNotEmpty)
                                           ? a.iconPath!
@@ -335,6 +337,17 @@ class _AccountViewPageState extends State<AccountViewPage> {
                           ],
                     ),
                 ),
+              ),
+              const Divider(height: 32),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Recent Activity', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 8),
+              UserFeedView(
+                userId: user.id,
+                isOwner: isCurrentUser,
+                pageSize: 10,
               ),
             ],
           ),

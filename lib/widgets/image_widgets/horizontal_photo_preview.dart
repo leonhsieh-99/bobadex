@@ -19,7 +19,7 @@ class HorizontalPhotoPreview extends StatelessWidget {
     this.width = 100,
   });
 
-  void _onTap(context, List<ShopMedia> mediaList, int idx) {
+  void _onTap(BuildContext context, List<ShopMedia> mediaList, int idx) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => FullscreenImageViewer(

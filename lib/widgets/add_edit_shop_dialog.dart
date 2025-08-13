@@ -1,4 +1,3 @@
-import 'package:bobadex/models/feed_event.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/state/achievements_state.dart';
@@ -173,23 +172,11 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
 
       uploadedImages = uploadedImages.whereType<Map<String, dynamic>>().toList();
 
-      if (isNewShop) {
+      if (isNewShop && submittedShop.id != null) {
         try {
-          await feedState.addFeedEvent(
-            FeedEvent(
-              feedUser: user,
-              id: '',
-              objectId: submittedShop.id ?? '',
-              eventType: 'shop_add',
-              brandSlug: widget.brand?.slug != null && widget.brand!.slug.isNotEmpty ? widget.brand!.slug : null,
-              payload: {
-                "shop_name": submittedShop.name,
-                "notes": submittedShop.notes,
-                "images": uploadedImages,
-                "rating": submittedShop.rating,
-              },
-              isBackfill: false,
-            ),
+          await feedState.finalizeShopAdd(
+            currentUser: user,
+            shopId: submittedShop.id!
           );
         } catch (e) {
           debugPrint('Error adding feed event: $e');

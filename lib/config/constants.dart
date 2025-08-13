@@ -22,6 +22,7 @@ class Constants {
   static const defaultTheme = 'grey';
   static const heartColor = Color(0xFFE49B9B);
   static const starColor = Color(0xFFF8EE9B);
+  static final badgeBgColor = Colors.grey.shade300;
   static const TextStyle emptyListTextStyle = TextStyle(
     fontSize: 16,
     color: Colors.grey,
@@ -29,6 +30,7 @@ class Constants {
     fontWeight: FontWeight.w400
   );
   static const TextStyle badgeLabelStyle = TextStyle(fontSize: 10, color: Colors.white);
+
   static const int maxFileSize = 10 * 1024 * 1024;
   static const int defaultFeedLimit = 50;
   static const int defaultGalleryLimit = 20;
@@ -36,7 +38,6 @@ class Constants {
 
   static const int maxUsernameLength = 20;
   static const int maxNameLength = 40;
-
   static final passwordRegex = RegExp(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$');
   static final emailRegex = RegExp(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$");
 }

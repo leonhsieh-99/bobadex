@@ -62,7 +62,7 @@ class TappableImage extends StatelessWidget {
               },
               errorBuilder: (context, error, stackTrace) {
                 debugPrint("Failed to load image: $error");
-                return Icon(Icons.broken_image, size: 40);
+                return const SizedBox.shrink();
               }
             ),
           );
@@ -89,7 +89,7 @@ class TappableImage extends StatelessWidget {
             },
             errorBuilder: (context, error, stackTrace) {
               debugPrint("Failed to load image: $error");
-              return Icon(Icons.broken_image, size: 40);
+              return const SizedBox.shrink();
             }
           );
         }

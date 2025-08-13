@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:bobadex/models/feed_event.dart';
 import 'package:bobadex/navigation.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/state/achievements_state.dart';
@@ -176,27 +175,8 @@ class _AppInitializerState extends State<AppInitializer> {
     }
     _achievementListener = achievementsState.unlockedAchievementsStream.listen((achievement) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!mounted) return;
         notifyAchievement(achievement.name);
-        try {
-          await feedState.addFeedEvent(
-            FeedEvent(
-              feedUser: this.user, // Use class field
-              id: '',
-              objectId: achievement.id,
-              eventType: 'achievement',
-              payload: {
-                'achievement_name': achievement.name,
-                'achievement_desc': achievement.description,
-                'achievement_badge_path': achievement.iconPath,
-                'is_hidden': achievement.isHidden,
-              },
-              isBackfill: false
-            )
-          );
-        } catch (e) {
-          debugPrint('Error adding achievement feed event: $e');
-        }
+        context.read<FeedState>().fetchFeed(refresh: true);
       });
     });
     
