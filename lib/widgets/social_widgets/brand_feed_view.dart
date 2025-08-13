@@ -94,9 +94,11 @@ class _BrandFeedViewState extends State<BrandFeedView> {
     }
 
     if (_items.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Text("No activity yet!", style: Constants.emptyListTextStyle, textAlign: TextAlign.center),
+      return SizedBox(
+        height: MediaQuery.of(context).size.height * 0.2,
+        child: Center(
+          child: Text("No activity yet", style: Constants.emptyListTextStyle, textAlign: TextAlign.center),
+        ),
       );
     }
 
