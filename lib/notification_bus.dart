@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/navigation.dart';
 import 'package:bobadex/widgets/top_snack_bar.dart';
@@ -18,18 +19,32 @@ class NotificationBus extends ChangeNotifier {
 
   final List<QueuedNotification> _queue = [];
   bool _draining = false;
+  bool _disposed = false;
 
   void queue(String message, SnackType type, {int duration = Constants.snackBarDuration}) {
+    if (_disposed) return;
     _queue.add(QueuedNotification(message, type, duration: duration));
     notifyListeners();
+    _kick();
   }
 
   void queueAchievement(String achievementName) {
+    if (_disposed) return;
     _queue.add(QueuedNotification('Achievement unlocked: $achievementName', SnackType.achievement));
     notifyListeners();
+    _kick();
   }
 
   bool get hasNotifications => _queue.isNotEmpty;
+
+
+  void _kick() {
+    if (_draining) return;
+    // Schedule on next frame so Overlay is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_draining && !_disposed) drain();
+    });
+  }
 
   Future<void> drain() async {
     if (_draining) return;

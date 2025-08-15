@@ -56,7 +56,6 @@ class _SettingsThemePageState extends State<SettingsThemePage> {
                     onTap: () {
                       setState(() {
                         userState.setTheme(slug);
-                        print(userState.user.themeSlug);
                       });
                     }
                   );

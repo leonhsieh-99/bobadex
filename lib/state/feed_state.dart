@@ -77,10 +77,7 @@ class FeedState extends ChangeNotifier {
         })
         .single();
 
-      final event = FeedEvent.fromJson({
-        ...(row),
-        'feed_user': currentUser.toJson(),
-      });
+      final event = FeedEvent.fromJson(row);
 
       if (_seenIds.add(event.id)) {
         _feed.insert(0, event);

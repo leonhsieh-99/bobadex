@@ -14,13 +14,16 @@ class AchievementsState extends ChangeNotifier {
   final List<UserAchievement> _userAchievements = [];
   final Map<String, UserAchievement> _progressMap = {};
   final List<Achievement> _pendingAchievements = [];
-  final _unlockedAchievementController = StreamController<Achievement>.broadcast();
+
+  final StreamController<Achievement> _unlockedCtrl =
+    StreamController<Achievement>.broadcast();
+
   bool _hasError = false;
 
   List<Achievement> get achievements => _achievements;
   List<UserAchievement> get userAchievements => _userAchievements;
   Map<String, UserAchievement> get progressMap => _progressMap;
-  Stream<Achievement> get unlockedAchievementsStream => _unlockedAchievementController.stream;
+  Stream<Achievement> get unlockedAchievementsStream => _unlockedCtrl.stream;
   bool get hasError => _hasError;
 
   String normalizer(String name) {
@@ -28,6 +31,14 @@ class AchievementsState extends ChangeNotifier {
       .toLowerCase()
       .replaceAll('_', '')
       .replaceAll(RegExp(r'\s+'), '');
+  }
+
+  void _emitUnlocked(Achievement a) {
+    if (!_unlockedCtrl.isClosed) {
+      _unlockedCtrl.add(a);
+    } else {
+      debugPrint('unlockedAchievements stream is closed; dropping ${a.name}');
+    }
   }
 
   String getBadgeAssetPath(String? path) {
@@ -79,7 +90,7 @@ class AchievementsState extends ChangeNotifier {
       final newAchievement = UserAchievement(achievementId: a.id, unlocked: true, progress: count, pinned: false);
       _progressMap[a.id] = newAchievement;
       notifyListeners();
-      _unlockedAchievementController.add(a);
+      _emitUnlocked(a);
       try {
         await Supabase.instance.client
           .from('user_achievements')
@@ -227,13 +238,21 @@ class AchievementsState extends ChangeNotifier {
     _achievements.clear();
     _userAchievements.clear();
     _progressMap.clear();
-    _unlockedAchievementController.close();
+    _pendingAchievements.clear();
+    _hasError = false;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    if (!_unlockedCtrl.isClosed) {
+      _unlockedCtrl.close();
+    }
+    super.dispose();
   }
 
   Future<void> loadFromSupabase() async {
     try {
-      // Clear existing data to avoid duplicates if reloading
       _achievements.clear();
       _userAchievements.clear();
       _progressMap.clear();
@@ -257,11 +276,11 @@ class AchievementsState extends ChangeNotifier {
       _userAchievements.addAll(
         (userAchievements as List).map((json) => UserAchievement.fromJson(json))
       );
-      for (var ua in _userAchievements) {
+      for (final ua in _userAchievements) {
         _progressMap[ua.achievementId] = ua;
       }
+      _hasError = false;
       notifyListeners();
-      debugPrint('Loaded ${achievements.length} achievements');
     } catch (e) {
       if (!_hasError) {
         _hasError = true;

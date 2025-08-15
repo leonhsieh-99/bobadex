@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/brand.dart';
 import 'package:bobadex/models/brand_stats.dart';
@@ -55,13 +57,22 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
 
       if ((status == 200 || status == 201) && data != null) {
         return data['result'];
-      } else if ((status == 400 || status == 500) && data != null) {
-        return data['error'];
-      } else {
-        return 'Unknown error occurred. ($status)';
       }
-    } catch (e, stack) {
-      debugPrint('reportBrandClosed error: $e\n$stack');
+      return 'Unknown error occurred. ($status)';
+    } on FunctionException catch (e) {
+      debugPrint('report-brand failed: status=${e.status}, details=${e.details}, reason=${e.reasonPhrase}');
+
+      Map<String, dynamic>? details;
+      if (e.details is Map<String, dynamic>) {
+        details = e.details as Map<String, dynamic>;
+      } else if (e.details is String) {
+        try { details = json.decode(e.details as String) as Map<String, dynamic>; } catch (_) {}
+      }
+
+      final message = details?['message'] as String? ?? e.reasonPhrase ?? 'Request failed';
+      return message;
+    } catch (e) {
+      debugPrint('report-brand unexpected error: $e');
       return 'Failed to report brand';
     }
   }
@@ -228,10 +239,11 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                                   await achievementState.checkAndUnlockBrandAchievement(shopState);
                                   return persistedShop;
                                 }
-                              } catch (e) {
-                                debugPrint('error: $e');
+                              } catch (e, st) {
+                                debugPrint('error in onSubmit: $e');
+                                debugPrintStack(stackTrace: st);
                                 notify('Failed to update shop.', SnackType.error);
-                                rethrow;
+                                return Future.error(e);
                               }
                             },
                             brand: widget.brand,

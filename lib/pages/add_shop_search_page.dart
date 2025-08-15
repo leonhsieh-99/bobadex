@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
@@ -95,17 +96,31 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
           // Any other "status" (like duplicate, pending, etc)
           return data['message'] ?? 'Something went wrong';
         }
-      } else if (status == 409 && data != null) {
-        // Duplicate or pending
-        return data['message'] ?? 'Duplicate or pending brand';
-      } else if (status == 422 && data != null) {
-        return 'This brand could not be verified';
-      } else if (data != null && data['error'] != null) {
-        return data['error'];
-      } else {
-        return 'Unknown error occurred. (${res.status})';
       }
+      return 'Unknown response ($status).';
+    } on FunctionException catch (e) {
+      debugPrint('verify-brand failed: status=${e.status}, details=${e.details}, reason=${e.reasonPhrase}');
+
+      Map<String, dynamic>? details;
+      if (e.details is Map<String, dynamic>) {
+        details = e.details as Map<String, dynamic>;
+      } else if (e.details is String) {
+        try { details = json.decode(e.details as String) as Map<String, dynamic>; } catch (_) {}
+      }
+
+      final message = details?['message'] as String? ?? e.reasonPhrase ?? 'Request failed';
+
+      if (e.status == 409) {
+        return message;
+      }
+
+      if (e.status == 422) {
+        return details?['message'] as String? ?? 'This brand could not be verified';
+      }
+
+      return message;
     } catch (e) {
+      debugPrint('verify-brand unexpected error: $e');
       return 'Failed to verify brand';
     }
   }
