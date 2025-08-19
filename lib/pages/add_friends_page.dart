@@ -91,7 +91,7 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
                   subtitle: Text(addressee.displayName),
                   leading: ThumbPic(url: addressee.imageUrl),
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => AccountViewPage(user: addressee))
+                    MaterialPageRoute(builder: (_) => AccountViewPage(userId: addressee.id, user: addressee))
                   ), 
                   trailing: ElevatedButton(
                     onPressed: isDisabled

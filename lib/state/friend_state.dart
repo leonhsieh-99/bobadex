@@ -34,11 +34,11 @@ class FriendState extends ChangeNotifier {
 
   bool get hasError => _hasError;
 
-  String getDisplayName(userId) {
+  String getDisplayName(String userId) {
     return friends.firstWhere((f) => f.id == userId).displayName;
   }
 
-  String getThumbUrl(userId) {
+  String getThumbUrl(String userId) {
     return friends.firstWhere((f) => f.id == userId).thumbUrl;
   }
 

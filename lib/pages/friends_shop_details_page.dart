@@ -20,9 +20,9 @@ class FriendsShopDetailsPage extends StatelessWidget {
     this.mostDrinksUser,
   });
 
-  String getThumbUrl(imagePath) {
-    return imagePath != null && imagePath!.isNotEmpty
-        ? Supabase.instance.client.storage.from('media-uploads').getPublicUrl('thumbs/${imagePath!.trim()}')
+  String getThumbUrl(String? imagePath) {
+    return imagePath != null && imagePath.isNotEmpty
+        ? Supabase.instance.client.storage.from('media-uploads').getPublicUrl('thumbs/${imagePath.trim()}')
         : '';
   }
 
@@ -108,7 +108,7 @@ class FriendsShopDetailsPage extends StatelessWidget {
                   onTap: userId == Supabase.instance.client.auth.currentUser!.id
                     ? null
                     : () =>  Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => AccountViewPage(user: friendState.getFriend(userId)))
+                      MaterialPageRoute(builder: (_) => AccountViewPage(userId: userId, user: friendState.getFriend(userId)))
                     ),
                   child: CircleAvatar(
                     backgroundImage: thumbUrl.isNotEmpty

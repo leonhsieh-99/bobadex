@@ -99,7 +99,7 @@ class FeedEventCard extends StatelessWidget {
               padding: const EdgeInsets.only(right: 10),
               child: GestureDetector(
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => AccountViewPage(user: user))),
+                  MaterialPageRoute(builder: (_) => AccountViewPage(userId: user.id, user: user))),
                 child: CircleAvatar(
                   radius: 20,
                   backgroundImage: (user.thumbUrl.isNotEmpty) ? NetworkImage(user.thumbUrl) : null,
@@ -205,6 +205,7 @@ class FeedEventCard extends StatelessWidget {
               }).toList(),
               height: 110,
               width: 90,
+              showUserInfo: false,
             ),
         ],
       ),
@@ -329,7 +330,7 @@ class _ShopLink extends StatelessWidget {
     );
 
     return Container(
-      constraints: const BoxConstraints(maxWidth: 220), // keeps row tidy
+      constraints: const BoxConstraints(maxWidth: 220),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceVariant.withOpacity(onTap == null ? 0.4 : 0.55),

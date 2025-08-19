@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/widgets/compact_text_row.dart';
 import 'package:bobadex/widgets/report_widget.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
@@ -21,6 +21,7 @@ class GalleryImage {
   String visibility;
   String? userThumbUrl;
   String? userName;
+  String? userId;
 
   GalleryImage({
     this.url,
@@ -31,6 +32,7 @@ class GalleryImage {
     this.visibility = 'private',
     this.userThumbUrl,
     this.userName,
+    this.userId,
   });
 }
 
@@ -42,6 +44,7 @@ class FullscreenImageViewer extends StatefulWidget {
   final bool isCurrentUser;
   final Future<void> Function(GalleryImage img, String comment, String visibility)? onEdit;
   final void Function(List<GalleryImage> images)? onUpload;
+  final bool showUserInfo;
 
   const FullscreenImageViewer({
     super.key,
@@ -51,6 +54,7 @@ class FullscreenImageViewer extends StatefulWidget {
     this.isCurrentUser = false,
     this.onEdit,
     this.onUpload,
+    this.showUserInfo = true,
   });
 
   @override
@@ -117,10 +121,11 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
     final uploadMode = widget.mode == FullscreenImageMode.upload;
     final editMode = widget.mode == FullscreenImageMode.edit;
     final canEdit = widget.isCurrentUser && (editMode || uploadMode);
+    final bgColor = Colors.grey[50];
 
     final infoEditArea = Container(
       width: double.infinity,
-      color: Colors.white.withOpacity(0.97),
+      color: bgColor,
       padding: EdgeInsets.only(
         left: 16,
         right: 16,
@@ -166,15 +171,27 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
             ? Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (!canEdit)
-                  ThumbPic(url: img.userThumbUrl, size: 40),
-                if (!canEdit) SizedBox(width: 12),
-                if (!canEdit)
+                if (!canEdit && widget.showUserInfo)
+                  ThumbPic(
+                    url: img.userThumbUrl ?? '',
+                    size: 40,
+                    onTap: img.userId == null
+                        ? null // disables tap + ripple in most GestureDetectors
+                        : () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => AccountViewPage(userId: img.userId!),
+                              ),
+                            );
+                          },
+                  ),
+                if (!canEdit && widget.showUserInfo) SizedBox(width: 12),
+                if (!canEdit && widget.showUserInfo)
                   Text(
                     img.userName ?? '',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                   ),
-                if (!canEdit) SizedBox(width: 12),
+                if (!canEdit && widget.showUserInfo) SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     img.comment,
@@ -204,19 +221,32 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
           : Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  ThumbPic(url: img.userThumbUrl, size: 40),
-                  SizedBox(width: 12),
-                  Text(
-                    img.userName ?? '',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 20
+              if (widget.showUserInfo)
+                Row(
+                  children: [
+                    ThumbPic(
+                      url: img.userThumbUrl ?? '',
+                      size: 40,
+                      onTap: img.userId == null
+                          ? null
+                          : () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => AccountViewPage(userId: img.userId!),
+                                ),
+                              );
+                            },
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 4),
+                    SizedBox(width: 12),
+                    Text(
+                      img.userName ?? '',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 20
+                      ),
+                    ),
+                  ],
+                ),
+              if (widget.showUserInfo) SizedBox(height: 4),
               Text(
                 img.comment,
                 style: TextStyle(fontSize: 20, color: Colors.grey[800]),
@@ -231,7 +261,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
 
     return Scaffold(
       appBar: PreferredSize(preferredSize: Size.fromHeight(30), child: AppBar()),
-      backgroundColor: Colors.grey[50],
+      backgroundColor: bgColor,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Column(
@@ -242,7 +272,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                 children: [
                   uploadMode
                   ? PhotoViewGallery.builder(
-                      backgroundDecoration: BoxDecoration(color: Colors.grey[50]),
+                      backgroundDecoration: BoxDecoration(color: bgColor),
                       itemCount: widget.images.length,
                       pageController: _pageController,
                       onPageChanged: (index) {

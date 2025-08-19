@@ -24,12 +24,17 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AccountViewPage extends StatefulWidget {
-  final u.User user;
+  final String userId;
+  final u.User? user; // user snapshot for fast ui
 
   const AccountViewPage ({
     super.key,
-    required this.user,
+    required this.userId,
+    this.user,
   });
+
+  factory AccountViewPage.fromUser(u.User user) =>
+    AccountViewPage(userId: user.id, user: user);
 
   @override
   State<AccountViewPage> createState() => _AccountViewPageState() ;
@@ -39,10 +44,13 @@ class _AccountViewPageState extends State<AccountViewPage> {
   bool _isLoading = false;
   AccountStats stats = AccountStats.emptyStats();
   List<Achievement> readOnlyBadges  = [];
+  u.User? _user;
 
   @override
   void initState() {
     super.initState();
+    _user = widget.user; // paint snapshot if provided
+    _fetchUser();
     _fetchData();
   }
 
@@ -56,12 +64,12 @@ class _AccountViewPageState extends State<AccountViewPage> {
     final supabase = Supabase.instance.client;
     setState(() => _isLoading = true);
     try {
-      final stats = await context.read<UserStatsCache>().getStats(widget.user.id);
-      if (widget.user.id != supabase.auth.currentUser!.id) {
+      final stats = await context.read<UserStatsCache>().getStats(widget.userId);
+      if (widget.userId != supabase.auth.currentUser!.id) {
         final response = await supabase
           .from('user_achievements')
           .select('achievement:achievement_id(*)')
-          .eq('user_id', widget.user.id)
+          .eq('user_id', widget.userId)
           .eq('pinned', true);
 
         readOnlyBadges = (response as List)
@@ -74,21 +82,44 @@ class _AccountViewPageState extends State<AccountViewPage> {
       });
     } catch (e) {
       debugPrint('Error loading stats: $e');
-      _isLoading = false;
+      if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  Future<void> _fetchUser() async {
+    try {
+      // skip if current user is self
+      final selfId = context.read<UserState>().user.id;
+      if (widget.userId == selfId) return;
+      
+      final row = await Supabase.instance.client
+          .from('users')
+          .select('id, username, display_name, profile_image_path, bio')
+          .eq('id', widget.userId)
+          .single();
+
+      if (!mounted) return;
+      setState(() {
+        _user = u.User.fromJson(row);
+      });
+    } catch (e) {
+      debugPrint('Error loading user: $e');
+    }
+}
 
   @override
   Widget build(BuildContext context) {
     final userState = context.watch<UserState>();
     final brandState = context.read<BrandState>();
     final friendState = context.watch<FriendState>();
+
+    final currentUser = userState.user;
+    final isCurrentUser = currentUser.id == widget.userId;
+    final user = isCurrentUser ? currentUser : (_user ?? u.User.empty());
+
     final brand = brandState.getBrand(stats.topShopSlug);
     final drinkName = stats.topDrinkName;
-    final currentUser = userState.user;
-    final isCurrentUser = currentUser.id == widget.user.id;
-    final user = isCurrentUser ? currentUser : widget.user;
-    final friendStatus = friendState.allFriendships.firstWhereOrNull((f) => f.requester.id == user.id || f.addressee.id == user.id);
+    final friendStatus = friendState.allFriendships.firstWhereOrNull((f) => f.requester.id == widget.userId || f.addressee.id == widget.userId);
     final achievementState = context.watch<AchievementsState>();
     final unlockedBadges = achievementState.achievements
         .where((a) => achievementState.progressMap[a.id]?.unlocked == true)
@@ -116,6 +147,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
     }
 
     bool isFriendButtonEnabled(Friendship? friendStatus, String currentUserId, String targetUserId) {
+      if (_user == null) return false;
       if (friendStatus == null) {
         return true;
       }
@@ -139,7 +171,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
                       context: context,
                       builder: (_) => ReportDialog(
                         contentType: 'user',
-                        contentId: user.id,
+                        contentId: widget.userId,
                       ),
                     );
                     break;
@@ -162,8 +194,8 @@ class _AccountViewPageState extends State<AccountViewPage> {
               ThumbPic(
                 url: user.thumbUrl,
                 size: 140, 
-                onTap: () => isCurrentUser 
-                  ?  Navigator.of(context).push(
+                onTap: isCurrentUser 
+                  ?  () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => SettingsAccountPage()))
                   : null
                 ),
@@ -174,31 +206,31 @@ class _AccountViewPageState extends State<AccountViewPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (user.id != currentUser.id)
+                  if (widget.userId != currentUser.id)
                     Padding(
                       padding: const EdgeInsets.only(right: 12),
                       child: ElevatedButton(
                         style: ButtonStyle(
                           backgroundColor: WidgetStatePropertyAll(
-                            !isFriendButtonEnabled(friendStatus, currentUser.id, user.id)
+                            !isFriendButtonEnabled(friendStatus, currentUser.id, widget.userId)
                               ? Colors.grey
                               : Constants.getThemeColor(userState.user.themeSlug).shade300
                           ),
                           foregroundColor: WidgetStatePropertyAll(Colors.white)
                         ),
-                        onPressed: isFriendButtonEnabled(friendStatus, currentUser.id, user.id)
+                        onPressed: isFriendButtonEnabled(friendStatus, currentUser.id, widget.userId)
                           ? () async {
                             if (friendStatus == null) {
-                              await friendState.addUser(widget.user);
-                            } else if (friendStatus.status == 'pending' && friendStatus.requester.id == user.id) {
-                              await friendState.acceptUser(widget.user.id);
+                              await friendState.addUser(user);
+                            } else if (friendStatus.status == 'pending' && friendStatus.requester.id == widget.userId) {
+                              await friendState.acceptUser(widget.userId);
                             }
                           }
                           : null,
-                        child: Text(getFriendButtonText(friendStatus, currentUser.id, user.id)),
+                        child: Text(getFriendButtonText(friendStatus, currentUser.id, widget.userId)),
                       ),
                     ),
-                  if (user.id == currentUser.id)
+                  if (widget.userId == currentUser.id)
                     Padding(
                       padding: const EdgeInsets.only(right: 12),
                       child: ElevatedButton(
@@ -208,21 +240,24 @@ class _AccountViewPageState extends State<AccountViewPage> {
                         child: Text('Edit Profile')
                       ),
                     ),
-                  if (user.id != currentUser.id)
-                  ElevatedButton(
-                    onPressed: () {
-                      isCurrentUser
-                        ? Navigator.of(context).pop()
-                        : Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => HomePage(user: user))
-                        );
-                    },
-                    child: const Text('View Bobadex')
-                  ),
+                  if (widget.userId != currentUser.id)
+                    ElevatedButton(
+                      onPressed: (!isCurrentUser && _user != null)
+                          ? () => Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => HomePage(user: _user!)))
+                          : null,
+                      child: const Text('View Bobadex'),
+                    ),
                 ],
               ),
               SizedBox(height: 16),
-              Text(user.bio ?? 'No bio set', textAlign: TextAlign.center),
+              Text(
+                (user.bio == null || user.bio!.trim().isEmpty)
+                    ? 'No bio set'
+                    : user.bio!,
+                textAlign: TextAlign.center,
+                style: user.bio == null ? Constants.emptyListTextStyle : null,
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: _isLoading
@@ -267,7 +302,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
               Text('Badges', style: TextStyle(fontWeight: FontWeight.bold)),
               SizedBox(height: 12),
               GestureDetector(
-                onTap: user.id == currentUser.id
+                onTap: widget.userId == currentUser.id
                   ? () {
                     showDialog(
                       context: context,
@@ -345,7 +380,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
               ),
               const SizedBox(height: 8),
               UserFeedView(
-                userId: user.id,
+                userId: widget.userId,
                 isOwner: isCurrentUser,
                 pageSize: 10,
               ),

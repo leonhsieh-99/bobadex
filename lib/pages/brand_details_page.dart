@@ -182,8 +182,8 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                         isCurrentUser: false,
                         onFetchMore: (offset, limit) => fetchGallery(offset: offset, limit: limit),
                       )
-                    )
-                  ))
+                    )),
+                  )
               ),
             ],
           );

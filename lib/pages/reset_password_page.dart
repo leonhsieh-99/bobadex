@@ -24,13 +24,11 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         UserAttributes(password: newPassword),
       );
       debugPrint('Password reset');
-      if (mounted) {
-        notify('Password successfully reset', SnackType.success);
-        navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
-      }
+      notify('Password successfully reset', SnackType.success);
+      navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
     } catch (e) {
       debugPrint('Error resetting password: $e');
-      if (mounted) notify('Error resetting password, please try again.', SnackType.error);
+      notify('Error resetting password, please try again.', SnackType.error);
     }
   }
 

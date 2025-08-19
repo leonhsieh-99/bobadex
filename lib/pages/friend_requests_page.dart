@@ -50,7 +50,7 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> {
                     leading: ThumbPic(url: requester.imageUrl, size: 60),
                     minLeadingWidth: 60,
                     onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => AccountViewPage(user: requester))
+                      MaterialPageRoute(builder: (_) => AccountViewPage(userId: requester.id, user: requester))
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,

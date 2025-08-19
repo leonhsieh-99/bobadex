@@ -9,6 +9,7 @@ class HorizontalPhotoPreview extends StatelessWidget {
   final VoidCallback? onViewAll;
   final double height;
   final double width;
+  final bool showUserInfo;
 
   const HorizontalPhotoPreview ({
     super.key,
@@ -17,6 +18,7 @@ class HorizontalPhotoPreview extends StatelessWidget {
     this.onViewAll,
     this.height = 100,
     this.width = 100,
+    this.showUserInfo = true,
   });
 
   void _onTap(BuildContext context, List<ShopMedia> mediaList, int idx) {
@@ -30,11 +32,13 @@ class HorizontalPhotoPreview extends StatelessWidget {
               id: m.id,
               comment: m.comment ?? '',
               userThumbUrl: m.userThumbUrl,
-              userName: m.userDisplayName
+              userName: m.userDisplayName,
+              userId: m.userId,
             )
           ).toList(),
           initialIndex: idx,
           isCurrentUser: false,
+          showUserInfo: showUserInfo,
         ),
       ),
     );

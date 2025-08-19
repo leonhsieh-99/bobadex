@@ -82,7 +82,7 @@ class _RankingsPageState extends State<RankingsPage> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountViewPage(user: user))),
+                      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountViewPage(userId: user.id, user: user))),
                     );
                   }
                 ),

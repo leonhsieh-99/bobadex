@@ -150,7 +150,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _navigateToPage(page) {
+  void _navigateToPage(Widget page) {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => page),
@@ -589,7 +589,7 @@ class _HomePageState extends State<HomePage> {
                     ),
 
                     CommandIcon(icon: Icons.leaderboard, label: "Rankings", onTap: () => _navigateToPage(RankingsPage())),
-                    CommandIcon(icon: Icons.person, label: "Profile", onTap: () => _navigateToPage(AccountViewPage(user: user))),
+                    CommandIcon(icon: Icons.person, label: "Profile", onTap: () => _navigateToPage(AccountViewPage(userId: user.id, user: user))),
                   ],
                 ),
               ),

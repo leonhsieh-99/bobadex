@@ -106,7 +106,7 @@ class _FriendsPageState extends State<FriendsPage> {
                   title: Text(friend.displayName),
                   leading: ThumbPic(url: friend.thumbUrl),
                   subtitle: Text('@${friend.username}'),
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountViewPage(user: friend))),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountViewPage(userId: friend.id, user: friend))),
                 );
               },
             ),
