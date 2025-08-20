@@ -256,7 +256,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
                     ? 'No bio set'
                     : user.bio!,
                 textAlign: TextAlign.center,
-                style: user.bio == null ? Constants.emptyListTextStyle : null,
+                style: (user.bio == null || user.bio!.isEmpty) ? Constants.emptyListTextStyle : null,
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,

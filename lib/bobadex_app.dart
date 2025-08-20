@@ -75,7 +75,19 @@ class BobadexApp extends StatelessWidget {
                     TextStyle(fontWeight: FontWeight.w500)
                   )
                 )
-              )
+              ),
+              popupMenuTheme: PopupMenuThemeData(
+                color: Colors.white.withOpacity(0.95), // soft translucent
+                elevation: 8, // stronger shadow
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
             ),
             builder: (context, child) => GestureDetector(
               behavior: HitTestBehavior.translucent,
