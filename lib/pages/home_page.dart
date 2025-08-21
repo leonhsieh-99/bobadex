@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:bobadex/models/shop_media.dart';
-import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/achievements_page.dart';
 import 'package:bobadex/pages/about_page.dart';
@@ -12,6 +11,7 @@ import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/widgets/confirmation_dialog.dart';
+import 'package:bobadex/widgets/onboarding_gate.dart';
 import 'package:bobadex/widgets/onboarding_wizard.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
@@ -34,8 +34,7 @@ import '../models/user.dart' as u;
 
 class HomePage extends StatefulWidget {
   final u.User user;
-  final bool showAddShopSnackBar;
-  const HomePage({super.key, required this.user, this.showAddShopSnackBar = false});
+  const HomePage({super.key, required this.user});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -58,11 +57,6 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     if (isCurrentUser) _showOnboardingIfNeeded(Supabase.instance.client.auth.currentUser!.id);
-    if (widget.showAddShopSnackBar) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notify('Tap the + button below to add your first shop!', SnackType.info, duration: 4000);
-      });
-    }
 
     final id = widget.user.id;
     if (id.isNotEmpty) {
@@ -489,113 +483,119 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ) : null,
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8),
-                child: FilterSortBar(
-                  controller: _searchController,
-                  sortOptions: [
-                    SortOption('favorite', Icons.favorite),
-                    SortOption('rating', Icons.star),
-                    SortOption('name', Icons.sort_by_alpha),
-                    SortOption('createdAt', Icons.access_time),
-                  ],
-                  onSearchChanged: (query) {
-                    setState(() => _searchQuery = query);
-                  },
-                  onSortSelected: (sortKey) {
-                    setState(() => _selectedSort = sortKey);
-                  }
-                ),
-              ),
-              Expanded(
-                child: isCurrentUser
-                    ? provider.Consumer<ShopState>(
-                        builder: (context, shopState, _) {
-                          return shopGrid(shopState.all, shopMediaState.all.where((sm) => sm.isBanner).toList());
-                        },
-                      )
-                    : FutureBuilder<List<Shop>>(
-                        future: _userShopsFuture,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return Center(child: SplashPage());
-                          }
-                          if (snapshot.hasError) {
-                            return Center(child: Text('Error: ${snapshot.error}'));
-                          }
-                          final shops = snapshot.data ?? [];
-                          final shopIds = getVisibleShops(shops).map((s) => s.id).whereType<String>().toList();
-                          return FutureBuilder<List<ShopMedia>>(
-                            future: fetchBannersForShops(shopIds),
-                            builder: (context, bannerSnapshot) {
-                              if (bannerSnapshot.connectionState == ConnectionState.waiting) {
-                                return Center(child: CircularProgressIndicator());
-                              }
-                              if (bannerSnapshot.hasError) {
-                                return Center(child: Text('Error: ${bannerSnapshot.error}'));
-                              }
-                              final banners = bannerSnapshot.data ?? [];
-                              return shopGrid(shops, banners);
-                            },
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
-          if (isCurrentUser && MediaQuery.of(context).viewInsets.bottom == 0)
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 24,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: themeColor.shade50,
-                  borderRadius: BorderRadius.circular(40),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey,
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    CommandIcon(icon: Icons.group, label: "Friends", notificationCount: friendState.incomingRequests.length, onTap: () => _navigateToPage(FriendsPage())),
-                    CommandIcon(icon: Icons.people, label: "Social", onTap: () => _navigateToPage(SocialPage())),
-
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        GestureDetector(
-                          onTap: () => _navigateToPage(AddShopSearchPage()),
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: themeColor == Colors.grey ? themeColor.shade400 : themeColor.shade300,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.add, color: Colors.white, size: 24),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    CommandIcon(icon: Icons.leaderboard, label: "Rankings", onTap: () => _navigateToPage(RankingsPage())),
-                    CommandIcon(icon: Icons.person, label: "Profile", onTap: () => _navigateToPage(AccountViewPage(userId: user.id, user: user))),
-                  ],
-                ),
-              ),
-            )
-          ]
+      body: OnboardingGate(
+        isCurrentUser: isCurrentUser,
+        onAddShop: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => AddShopSearchPage()),
         ),
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: FilterSortBar(
+                    controller: _searchController,
+                    sortOptions: [
+                      SortOption('favorite', Icons.favorite),
+                      SortOption('rating', Icons.star),
+                      SortOption('name', Icons.sort_by_alpha),
+                      SortOption('createdAt', Icons.access_time),
+                    ],
+                    onSearchChanged: (query) {
+                      setState(() => _searchQuery = query);
+                    },
+                    onSortSelected: (sortKey) {
+                      setState(() => _selectedSort = sortKey);
+                    }
+                  ),
+                ),
+                Expanded(
+                  child: isCurrentUser
+                      ? provider.Consumer<ShopState>(
+                          builder: (context, shopState, _) {
+                            return shopGrid(shopState.all, shopMediaState.all.where((sm) => sm.isBanner).toList());
+                          },
+                        )
+                      : FutureBuilder<List<Shop>>(
+                          future: _userShopsFuture,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return Center(child: SplashPage());
+                            }
+                            if (snapshot.hasError) {
+                              return Center(child: Text('Error: ${snapshot.error}'));
+                            }
+                            final shops = snapshot.data ?? [];
+                            final shopIds = getVisibleShops(shops).map((s) => s.id).whereType<String>().toList();
+                            return FutureBuilder<List<ShopMedia>>(
+                              future: fetchBannersForShops(shopIds),
+                              builder: (context, bannerSnapshot) {
+                                if (bannerSnapshot.connectionState == ConnectionState.waiting) {
+                                  return Center(child: CircularProgressIndicator());
+                                }
+                                if (bannerSnapshot.hasError) {
+                                  return Center(child: Text('Error: ${bannerSnapshot.error}'));
+                                }
+                                final banners = bannerSnapshot.data ?? [];
+                                return shopGrid(shops, banners);
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+            if (isCurrentUser && MediaQuery.of(context).viewInsets.bottom == 0)
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 24,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: themeColor.shade50,
+                    borderRadius: BorderRadius.circular(40),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey,
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      CommandIcon(icon: Icons.group, label: "Friends", notificationCount: friendState.incomingRequests.length, onTap: () => _navigateToPage(FriendsPage())),
+                      CommandIcon(icon: Icons.people, label: "Social", onTap: () => _navigateToPage(SocialPage())),
+
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () => _navigateToPage(AddShopSearchPage()),
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: themeColor == Colors.grey ? themeColor.shade400 : themeColor.shade300,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.add, color: Colors.white, size: 24),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      CommandIcon(icon: Icons.leaderboard, label: "Rankings", onTap: () => _navigateToPage(RankingsPage())),
+                      CommandIcon(icon: Icons.person, label: "Profile", onTap: () => _navigateToPage(AccountViewPage(userId: user.id, user: user))),
+                    ],
+                  ),
+                ),
+              )
+            ]
+          ),
+        )
       );
     }
 }

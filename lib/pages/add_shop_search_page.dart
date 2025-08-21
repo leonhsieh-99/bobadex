@@ -70,58 +70,62 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
     }
   }
 
-  Future<String?> verifyBrand(String brand, String city, String state) async {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
+  Future<String?> requestBrand(String name, String city, String state) async {
     try {
       final res = await Supabase.instance.client.functions.invoke(
-        'verify-brand',
-        body: {
-          'name': brand,
-          'city': city,
-          'state': state,
-          'user_id': userId,
-        },
+        'request-brand',
+        body: {'name': name, 'city': city, 'state': state},
       );
 
-      final status = res.status;
-      final data = res.data as Map<String, dynamic>?;
-
-      if (status == 200 && data != null) {
-        final apiStatus = data['status'];
-        if (apiStatus == 'ok') {
-          return null; // No error, success
-        } else if (apiStatus == 'rejected') {
-          return data['message'] ?? 'Could not verify shop.';
-        } else {
-          // Any other "status" (like duplicate, pending, etc)
-          return data['message'] ?? 'Something went wrong';
-        }
+      // Only 2xx reaches here. Treat anything not explicit "ok" as unexpected.
+      final data = res.data;
+      if (data is Map<String, dynamic> && data['status'] == 'ok') {
+        return null; // success
       }
-      return 'Unknown response ($status).';
+      return 'Unexpected server response.';
     } on FunctionException catch (e) {
-      debugPrint('verify-brand failed: status=${e.status}, details=${e.details}, reason=${e.reasonPhrase}');
-
+      // Non-2xx landed here. Try to parse the JSON payload for details.
       Map<String, dynamic>? details;
-      if (e.details is Map<String, dynamic>) {
-        details = e.details as Map<String, dynamic>;
-      } else if (e.details is String) {
-        try { details = json.decode(e.details as String) as Map<String, dynamic>; } catch (_) {}
+      final raw = e.details;
+      if (raw is Map<String, dynamic>) {
+        details = raw;
+      } else if (raw is String) {
+        try {
+          final decoded = json.decode(raw);
+          if (decoded is Map<String, dynamic>) details = decoded;
+        } catch (_) {}
       }
 
-      final message = details?['message'] as String? ?? e.reasonPhrase ?? 'Request failed';
+      final statusStr = details?['status'] as String?;
+      final message   = details?['message'] as String?;
+      final dupsNum   = (details?['duplicates'] as num?)?.toInt();
+
+      if (e.status == 401) return 'Please sign in to request a brand.';
+      if (e.status == 403) return 'You don’t have permission to do that.';
 
       if (e.status == 409) {
-        return message;
+        if (statusStr == 'duplicate') {
+          return message ?? 'Brand already exists.';
+        }
+        if (statusStr == 'pending') {
+          if (dupsNum != null) {
+            return message != null
+                ? '$message ($dupsNum requests)'
+                : 'A similar brand is already pending review ($dupsNum requests).';
+          }
+          return message ?? 'A similar brand is already pending review.';
+        }
+        return message ?? 'Brand already requested or exists.';
       }
 
       if (e.status == 422) {
-        return details?['message'] as String? ?? 'This brand could not be verified';
+        return message ?? 'Invalid request.';
       }
 
-      return message;
-    } catch (e) {
-      debugPrint('verify-brand unexpected error: $e');
-      return 'Failed to verify brand';
+      // Fallback
+      return message ?? 'Request failed (${e.status}).';
+    } catch (_) {
+      return 'Failed to request brand';
     }
   }
 
@@ -129,14 +133,13 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
     final result = await showDialog<String?>(
       context: context,
       builder: (_) => AddNewBrandDialog(
-        onSubmit: (name, city) => verifyBrand(name, city.name, city.state),
+        onSubmit: (name, city) => requestBrand(name, city.name, city.state),
       ),
     );
     if (!mounted) return;
     if (result == 'success') {
       notify('Brand pending for review', SnackType.info);
     } else if (result != null) {
-      debugPrint(result);
       notify(result, SnackType.error); // error message
     }
   }
@@ -158,11 +161,10 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
               itemBuilder: (context, i) {
                 if (i == 0) {
                   return ListTile(
-                    title: Text('Submit new brand',
-                      style: TextStyle(fontWeight: FontWeight.bold)
-                    ),
-                    leading: Icon(Icons.add),
-                    onTap: () => _handleAddNewBrand()
+                    leading: const Icon(Icons.outlined_flag),
+                    title: const Text('Request a new brand', style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: const Text('Not in the list? Send a request.'),
+                    onTap: _handleAddNewBrand,
                   );
                 }
                 final brand = _filteredBrands[i - 1];

@@ -163,6 +163,14 @@ create table brand_staging (
   reason text
 );
 
+create table if not exists brand_staging_requests (
+  id uuid primary key default gen_random_uuid(),
+  staging_id uuid not null references brand_staging(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique (staging_id, user_id)
+);
+
 create table brand_metadata (
   id int primary key,
   last_updated timestamptz not null default now()

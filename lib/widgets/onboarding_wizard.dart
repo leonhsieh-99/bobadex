@@ -273,7 +273,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                             if (context.mounted) {
                               Navigator.of(context).pushReplacement(
                                 MaterialPageRoute(
-                                  builder: (_) => HomePage(showAddShopSnackBar: true, user: userState.user),
+                                  builder: (_) => HomePage(user: userState.user),
                                 ),
                               );
                             }
