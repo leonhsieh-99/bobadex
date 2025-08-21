@@ -46,6 +46,7 @@ class BobadexApp extends StatelessWidget {
               '/auth': (_) => const AuthPage(),
               '/reset': (_) => const ResetPasswordPage(),
               '/home': (_) => HomePage(user: userState.user),
+              '/splash': (_) => SplashPage(),
             },
             navigatorKey: navigatorKey,
             theme: ThemeData(

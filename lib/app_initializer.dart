@@ -25,7 +25,9 @@ class AppInitializer extends StatefulWidget {
 class _AppInitializerState extends State<AppInitializer> {
   Session? _lastHandledSession;
   String? _lastUserId;
-  StreamSubscription? _achievementListener;
+  bool _routingLock = false;
+  StreamSubscription? _achievmentSub;
+  StreamSubscription<AuthState>? _authSub;
   late u.User user;
 
   @override
@@ -36,7 +38,8 @@ class _AppInitializerState extends State<AppInitializer> {
 
   @override
   void dispose() {
-    _achievementListener?.cancel();
+    _achievmentSub?.cancel();
+    _authSub?.cancel();
     super.dispose();
   }
 
@@ -64,18 +67,26 @@ class _AppInitializerState extends State<AppInitializer> {
   Future<void> _initializeSession() async {
     final auth = Supabase.instance.client.auth;
 
-    final currentSession = auth.currentSession;
+    navigatorKey.currentState?.pushNamedAndRemoveUntil('/splash', (_) => false);
 
-    // initial route on cold start
-    if (currentSession != null) {
-      await _handleSignedIn(currentSession);
-      navigatorKey.currentState?.pushNamedAndRemoveUntil('/home', (_) => false);
-    } else {
+    try {
+      final currentSession = auth.currentSession;
+      if (currentSession != null) {
+        _routingLock = true;
+        await _handleSignedIn(currentSession);
+        _lastUserId = currentSession.user.id;
+        _routingLock = false;
+        navigatorKey.currentState?.pushNamedAndRemoveUntil('/home', (_) => false);
+      } else {
+        navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
+      }
+    } catch (e) {
       navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
     }
 
     // Listen to auth state changes
-    auth.onAuthStateChange.listen((data) async {
+    _authSub?.cancel();
+    _authSub = auth.onAuthStateChange.listen((data) async {
       final event = data.event;
       final session = data.session;
 
@@ -90,25 +101,41 @@ class _AppInitializerState extends State<AppInitializer> {
       }
 
       if (event == AuthChangeEvent.signedIn && session != null) {
-        await _handleSignedIn(session);
-        navigatorKey.currentState?.pushNamedAndRemoveUntil('/home', (_) => false);
+        if (_routingLock) return;
+        _routingLock = true;
+
+        navigatorKey.currentState?.pushNamedAndRemoveUntil('/splash', (_) => false);
+        try {
+          await _handleSignedIn(session);
+          _lastUserId = session.user.id;
+          navigatorKey.currentState?.pushNamedAndRemoveUntil('/home', (_) => false);
+        } catch (_) {
+          navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
+        } finally {
+          _routingLock = false;
+        }
         return;
-      } 
+      }
       
       if (event == AuthChangeEvent.signedOut) {
+        if (_routingLock) return;
+        _routingLock = true;
         _resetAllStates();
-        _achievementListener?.cancel();
-        _achievementListener = null;
+        _achievmentSub?.cancel();
+        _achievmentSub = null;
         navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
+        _routingLock = false;
         return;
       }
 
       if (event == AuthChangeEvent.tokenRefreshed && session != null) {
-        if (_lastUserId == session.user.id) {
-          debugPrint('Token refreshed for same user, skipping reload');
-          return;
+        if (_lastUserId == session.user.id) return;
+        try {
+          await _handleSignedIn(session);
+          _lastUserId = session.user.id;
+        } catch (e) {
+          debugPrint('Token refresh reload failed: $e');
         }
-        await _handleSignedIn(session);
       }
     });
   }
@@ -165,15 +192,15 @@ class _AppInitializerState extends State<AppInitializer> {
       }
     }
 
-    if (_achievementListener != null) {
+    if (_achievmentSub != null) {
       try {
-        await _achievementListener!.cancel();
+        await _achievmentSub!.cancel();
       } catch (e) {
         debugPrint('Error canceling achievement listener: $e');
       }
-      _achievementListener = null;
+      _achievmentSub = null;
     }
-    _achievementListener = achievementsState.unlockedAchievementsStream.listen((achievement) {
+    _achievmentSub = achievementsState.unlockedAchievementsStream.listen((achievement) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         notifyAchievement(achievement.name);
         context.read<FeedState>().fetchFeed(refresh: true);

@@ -19,83 +19,91 @@ const List<String> funFacts = [
   "The 🧋 emoji was added to Unicode in 2020 thanks to a campaign by milk tea fans!",
   "April 30 is officially “National Bubble Tea Day” in the US.",
   "There’s an online movement called the “Milk Tea Alliance”—a meme-based, pro-democracy internet community named after the popularity of milk tea across Taiwan, Hong Kong, Thailand, and more.",
-  "Called “trà sữa,” milk tea exploded in popularity in Vietnam over the past decade. Some shops serve unique toppings like flan, grass jelly, or even mochi cubes.",
   "“Yuan yang” (鸳鸯, meaning “mandarin ducks”) is a popular drink that mixes milk tea and coffee in one cup. It’s both rich and highly caffeinated!",
   "Globally, the bubble tea market is projected to exceed \$6 billion by 2027.",
 ];
 
-class SplashPage extends StatelessWidget {
-  SplashPage({super.key});
+class SplashPage extends StatefulWidget {
+  const SplashPage({super.key});
 
-  final String randomFact = funFacts[Random().nextInt(funFacts.length)];
+  @override
+  State<SplashPage> createState() => _SplashPageState();
+}
+
+class _SplashPageState extends State<SplashPage> {
+  late final String randomFact;
+
+  @override
+  void initState() {
+    super.initState();
+    randomFact = funFacts[Random().nextInt(funFacts.length)];
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // or your preferred color
-      body: SafeArea(
+      backgroundColor: Colors.white,
+      body: const SafeArea(
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Logo Placeholder
-              Center(
-                child: SvgPicture.asset(
-                  'lib/assets/logo.svg',
-                  width: 200,
-                  height: 200,
-                  fit: BoxFit.contain,
-                ),
-              ),
-              const SizedBox(height: 32),
-              // App Name
-              // const Text(
-              //   'Bobadex',
-              //   style: TextStyle(
-              //     fontSize: 36,
-              //     fontWeight: FontWeight.bold,
-              //     letterSpacing: 1.5,
-              //     color: Colors.deepPurple,
-              //   ),
-              // ),
-              // const SizedBox(height: 32),
-              // Fun Fact
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.amber.shade100.withOpacity(0.4),
-                        blurRadius: 12,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.lightbulb, color: Colors.orangeAccent),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          randomFact,
-                          style: const TextStyle(
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+          child: _SplashContent(),
         ),
       ),
+    );
+  }
+}
+
+// Split out static layout so rebuilds are cheap and non-janky.
+class _SplashContent extends StatelessWidget {
+  const _SplashContent();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.findAncestorStateOfType<_SplashPageState>()!;
+    final fact = state.randomFact;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Logo
+        Center(
+          child: SvgPicture.asset(
+            'lib/assets/logo.svg',
+            width: 200,
+            height: 200,
+            fit: BoxFit.contain,
+          ),
+        ),
+        SizedBox(height: 32),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.amber.shade100.withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(18),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.lightbulb, color: Colors.orangeAccent),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(fact, style: TextStyle(fontSize: 16)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
