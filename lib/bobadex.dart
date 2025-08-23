@@ -50,6 +50,17 @@ class BobadexApp extends StatelessWidget {
             },
             navigatorKey: navigatorKey,
             theme: ThemeData(
+              colorScheme: ColorScheme(
+                brightness: Brightness.light,
+                primary: themeColor,
+                onPrimary: Colors.black,
+                secondary: Colors.grey.shade500,
+                onSecondary: Colors.black,
+                error: Colors.grey.shade500,
+                onError: Colors.black,
+                surface: themeColor.shade50,
+                onSurface: Colors.black
+              ),
               scaffoldBackgroundColor: themeColor.shade50,
               dialogTheme: DialogThemeData(
                 backgroundColor: themeColor.shade50,
@@ -62,7 +73,8 @@ class BobadexApp extends StatelessWidget {
               ),
               elevatedButtonTheme: ElevatedButtonThemeData(
                 style: ButtonStyle(
-                  foregroundColor: WidgetStatePropertyAll<Color>(Colors.black),
+                  backgroundColor: WidgetStatePropertyAll<Color>(themeColor.shade400),
+                  foregroundColor: WidgetStatePropertyAll<Color>(Colors.white),
                   textStyle: WidgetStatePropertyAll<TextStyle>(
                     TextStyle(fontWeight: FontWeight.w500)
                   )
@@ -71,7 +83,8 @@ class BobadexApp extends StatelessWidget {
               cardTheme: CardThemeData(color: themeColor.shade100),
               textButtonTheme: TextButtonThemeData(
                 style: ButtonStyle(
-                  foregroundColor: WidgetStatePropertyAll<Color>(Colors.black),
+                  backgroundColor: WidgetStatePropertyAll<Color>(themeColor.shade400),
+                  foregroundColor: WidgetStatePropertyAll<Color>(Colors.white),
                   textStyle: WidgetStatePropertyAll<TextStyle>(
                     TextStyle(fontWeight: FontWeight.w500)
                   )

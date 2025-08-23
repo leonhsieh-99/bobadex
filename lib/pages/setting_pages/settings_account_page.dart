@@ -37,7 +37,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
   }
 
 
-  _handleImagePick(UserState userState) async {
+  void _handleImagePick(UserState userState) async {
     bool imageExits = userState.user.profileImagePath != null && userState.user.profileImagePath!.isNotEmpty;
     final pickedFile = await pickImageWithDialog(context, _picker, imageExits);
     final oldImagePath = userState.user.profileImagePath;
@@ -100,61 +100,109 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
 
   Future<bool> deleteConfirmationDialog(BuildContext context) async {
     final deleteKey = 'DELETE';
+
     final controller = TextEditingController();
+    final focusNode = FocusNode();
+
+    Future<void> closeKeyboard() async {
+      FocusManager.instance.primaryFocus?.unfocus();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+
+    FocusScope.of(context).unfocus();
+
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text(
-            'Delete Account',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'This action is irreversible. All your data will be permanently deleted.',
-              ),
-              const SizedBox(height: 12),
-              Text("Type '$deleteKey' in ALL CAPS to confirm:"),
-              const SizedBox(height: 8),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Type here...',
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+      barrierDismissible: true,
+      useRootNavigator: true,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setState) => PopScope(
+          onPopInvokedWithResult: (didPop, result) async {
+            await closeKeyboard();
+          },
+          child: AlertDialog(
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text(
+              'Delete Account',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
             ),
-            ElevatedButton(
-              onPressed: () {
-                if (controller.text.trim() == deleteKey) {
-                  Navigator.of(context).pop(true);
-                } else {
-                  notify('Please enter \'DELETE\' in all caps', SnackType.error);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            content: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const Text(
+                    'This action is irreversible. All your data will be permanently deleted.',
+                  ),
+                  const SizedBox(height: 12),
+                  Text("Type '$deleteKey' in ALL CAPS to confirm:"),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'Type here...',
+                    ),
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) async {
+                      if (controller.text.trim() == deleteKey) {
+                        await closeKeyboard();
+                        if (context.mounted) Navigator.of(context).pop(true);
+                      }
+                    },
+                  ),
+                  SizedBox(height: 32),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            onPressed: () async {
+                              await closeKeyboard();
+                              if (context.mounted) Navigator.of(context).pop(false);
+                            },
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              if (controller.text.trim() == deleteKey) {
+                                await closeKeyboard();
+                                if (context.mounted) Navigator.of(context).pop(true);
+                              } else {
+                                notify("Please enter 'DELETE' in all caps", SnackType.error);
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: const Text('Delete'),
+                          ),
+                        ),
+                      ]
+                    )
+                  )
+                ],
               ),
-              child: const Text('Delete'),
             ),
-          ],
-        );
-      }
+          ),
+        )
+      )
     );
+
     controller.dispose();
+    focusNode.dispose();
+
     return result ?? false;
   }
 
@@ -183,6 +231,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
     return Stack(
       children: [
         Scaffold(
+          resizeToAvoidBottomInset: false,
           appBar: AppBar(title: const Text('Manage Account')),
           body: Column(
             children: [

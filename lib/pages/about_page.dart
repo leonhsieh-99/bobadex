@@ -1,21 +1,37 @@
 import 'package:bobadex/notification_bus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:url_launcher/url_launcher.dart';
 // import 'package:url_launcher/url_launcher.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage ({super.key});
 
-  // void _launchEmail() async {
-  //   final Uri emailUri = Uri(
-  //     scheme: 'mailto',
-  //     path: 'leonchsieh@gmail.com',
-  //     query: 'subject=Feedback%20for%20Bobadex%20App'
-  //   );
-  //   if (await canLaunchUrl(emailUri)) {
-  //     launchUrl(emailUri);
-  //   }
-  // }
+  static const _privacyUrl = 'https://leonhsieh-99.github.io/bobadex-legal/privacy.html';
+  static const _termsUrl   = 'https://leonhsieh-99.github.io/bobadex-legal/terms.html';
+  static const _supportEmail = 'leonchsieh@gmail.com';
+
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _emailSupport() async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: _supportEmail,
+      query: Uri(queryParameters: {
+        'subject': 'Feedback for Bobadex',
+      }).query,
+    );
+    if (!await launchUrl(uri)) {
+      // Fallback: copy to clipboard
+      Clipboard.setData(const ClipboardData(text: _supportEmail));
+      notify('Email copied to clipboard!', SnackType.info);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +48,11 @@ class AboutPage extends StatelessWidget {
           Center(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
-              child: Icon(Icons.coffee), // use logo later
+              child: SvgPicture.asset(
+                'lib/assets/logo.svg',
+                width: 96,
+                height: 96,
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -92,7 +112,7 @@ class AboutPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          // Contact section
+          // Contact
           Card(
             elevation: 0,
             color: theme.colorScheme.primary.withOpacity(0.07),
@@ -101,16 +121,14 @@ class AboutPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
               child: Column(
                 children: [
-                  Text(
-                    'Contact',
+                  Text('Contact',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.primary,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Text(
-                    'Questions, bugs, or suggestions?\nTap below to email me!',
+                  Text('Questions, bugs, or suggestions?\nTap below to email me!',
                     style: theme.textTheme.bodySmall,
                     textAlign: TextAlign.center,
                   ),
@@ -123,16 +141,85 @@ class AboutPage extends StatelessWidget {
                     ),
                     icon: const Icon(Icons.email),
                     label: const Text('Contact Me'),
-                    onPressed: () {
-                      Clipboard.setData(const ClipboardData(text: 'leonchsieh@gmail.com'));
-                      notify('Email copied to clipboard!', SnackType.info);
-                    }
+                    onPressed: _emailSupport,
+                  ),
+                ],
+              ),
+            )
+          ),
+          const SizedBox(height: 16),
+          // Legal links
+          Card(
+            elevation: 0,
+            color: theme.colorScheme.primary.withOpacity(0.07),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+              child: Column(
+                children: [
+                  Text('Legal',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          onPressed: () => _openUrl(_privacyUrl),
+                          child: Text(
+                            'Privacy Policy',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12
+                            )
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          onPressed: () => _openUrl(_termsUrl),
+                          child: Text(
+                            'Terms of Service',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12
+                            )
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
-        ],
+          Center(
+            child: Text(
+              '© OpenStreetMap contributors',
+              style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+            ),
+          ),
+        ]
       ),
     );
   }
