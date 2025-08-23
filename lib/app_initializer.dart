@@ -33,7 +33,7 @@ class _AppInitializerState extends State<AppInitializer> {
   @override
   void initState() {
     super.initState();
-    _initializeSession();
+    initializeAuthFlow();
   }
 
   @override
@@ -63,85 +63,93 @@ class _AppInitializerState extends State<AppInitializer> {
     });
   }
 
+  Future<void> _go(String route) async {
+    // Ensure navigator is ready before pushing
+    while (navigatorKey.currentState == null) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+    navigatorKey.currentState!.pushNamedAndRemoveUntil(route, (_) => false);
+  }
 
-  Future<void> _initializeSession() async {
+  Future<void> initializeAuthFlow() async {
     final auth = Supabase.instance.client.auth;
 
-    navigatorKey.currentState?.pushNamedAndRemoveUntil('/splash', (_) => false);
+    // Show splash once
+    unawaited(_go('/splash'));
 
-    try {
-      final currentSession = auth.currentSession;
-      if (currentSession != null) {
-        _routingLock = true;
-        await _handleSignedIn(currentSession);
-        _lastUserId = currentSession.user.id;
-        _routingLock = false;
-        navigatorKey.currentState?.pushNamedAndRemoveUntil('/home', (_) => false);
-      } else {
-        navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
-      }
-    } catch (e) {
-      navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
-    }
-
-    // Listen to auth state changes
-    _authSub?.cancel();
+    // (Re)subscribe
+    await _authSub?.cancel();
     _authSub = auth.onAuthStateChange.listen((data) async {
-      final event = data.event;
+      final event   = data.event;
       final session = data.session;
 
       debugPrint('Auth state changed: $event');
 
       if (event == AuthChangeEvent.passwordRecovery) {
         if (navigatorKey.currentState?.canPop() ?? false) {
-          navigatorKey.currentState?.pop();
+          navigatorKey.currentState!.pop();
         }
-        navigatorKey.currentState?.pushReplacementNamed('/reset');
+        await _go('/reset');
         return;
       }
 
-      if (event == AuthChangeEvent.signedIn && session != null) {
-        if (_routingLock) return;
-        _routingLock = true;
+      if (_routingLock) return;
+      _routingLock = true;
+      try {
+        switch (event) {
+          case AuthChangeEvent.initialSession:
+            if (session != null) {
+              unawaited(_go('/splash'));
+              final ok = await _handleSignedIn(session);
+              await _go(ok ? '/home' : '/auth');
+            } else {
+              await _go('/auth');
+            }
+            break;
 
-        navigatorKey.currentState?.pushNamedAndRemoveUntil('/splash', (_) => false);
-        try {
-          await _handleSignedIn(session);
-          _lastUserId = session.user.id;
-          navigatorKey.currentState?.pushNamedAndRemoveUntil('/home', (_) => false);
-        } catch (_) {
-          navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
-        } finally {
-          _routingLock = false;
+          case AuthChangeEvent.signedIn:
+            if (session != null) {
+              unawaited(_go('/splash'));
+              final ok = await _handleSignedIn(session);
+              await _go(ok ? '/home' : '/auth');
+            } else {
+              await _go('/auth');
+            }
+            break;
+
+          case AuthChangeEvent.signedOut:
+            _resetAllStates();
+            await _achievmentSub?.cancel();
+            _achievmentSub = null;
+            await _go('/auth');
+            break;
+
+          case AuthChangeEvent.tokenRefreshed:
+            if (session != null && _lastUserId != session.user.id) {
+              try {
+                // refresh data quietly; no nav here
+                await _handleSignedIn(session);
+                _lastUserId = session.user.id;
+              } catch (e) {
+                debugPrint('Token refresh reload failed: $e');
+              }
+            }
+            break;
+
+          default:
+            break;
         }
-        return;
-      }
-      
-      if (event == AuthChangeEvent.signedOut) {
-        if (_routingLock) return;
-        _routingLock = true;
-        _resetAllStates();
-        _achievmentSub?.cancel();
-        _achievmentSub = null;
-        navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
+      } catch (e, st) {
+        debugPrint('Auth flow error: $e\n$st');
+        await _go('/auth');
+      } finally {
         _routingLock = false;
-        return;
-      }
-
-      if (event == AuthChangeEvent.tokenRefreshed && session != null) {
-        if (_lastUserId == session.user.id) return;
-        try {
-          await _handleSignedIn(session);
-          _lastUserId = session.user.id;
-        } catch (e) {
-          debugPrint('Token refresh reload failed: $e');
-        }
       }
     });
   }
 
-  Future<void> _handleSignedIn(Session session) async {
-    if (_lastHandledSession?.accessToken == session.accessToken) return;
+  Future<bool> _handleSignedIn(Session session) async {
+    if (_lastHandledSession?.accessToken == session.accessToken) return true;
     _lastHandledSession = session;
     _lastUserId = session.user.id;
 
@@ -159,8 +167,7 @@ class _AppInitializerState extends State<AppInitializer> {
     final user = userState.user;
     if (user.id.isEmpty) {
       debugPrint('No valid user loaded — skipping rest');
-      navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
-      return;
+      return false;
     }
     this.user = user;
 
@@ -193,11 +200,7 @@ class _AppInitializerState extends State<AppInitializer> {
     }
 
     if (_achievmentSub != null) {
-      try {
-        await _achievmentSub!.cancel();
-      } catch (e) {
-        debugPrint('Error canceling achievement listener: $e');
-      }
+      try { await _achievmentSub!.cancel(); } catch (_) {}
       _achievmentSub = null;
     }
     _achievmentSub = achievementsState.unlockedAchievementsStream.listen((achievement) {
@@ -229,6 +232,8 @@ class _AppInitializerState extends State<AppInitializer> {
     } catch (e) {
       debugPrint('Error loading feed state: $e');
     }
+
+    return true;
   }
 
 

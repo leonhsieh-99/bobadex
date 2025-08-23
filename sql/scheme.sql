@@ -8,7 +8,8 @@ create table shops (
   notes text,
   pinned_drink_id uuid,
   place_id text -- FUTURE USE (MAYBE)
-  brand_slug text references ref.brands(slug)
+  brand_slug text references brands(slug) on delete cascade
+  pending_brand_id uuid references brand_staging(id) on delete set null
   created_at timestamptz default now()
 );
 
@@ -84,7 +85,7 @@ CREATE TABLE achievements (
 CREATE TABLE user_achievements (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL,
-    achievement_uuid UUID NOT NULL REFERENCES achievements(uuid),
+    achievement_id UUID NOT NULL REFERENCES achievements(id),
     unlocked BOOLEAN DEFAULT FALSE,
     unlocked_at TIMESTAMPTZ,
     pinned BOOLEAN DEFAULT FALSE,
@@ -130,7 +131,7 @@ create index on drinks(visibility);
 create index on feed_events(user_id, created_at desc);
 create index on reports(content_type, content_id);
 
-----------READ ONLY TABLES------------
+----------BRAND TABLES------------
 
 -- Brands Table
 create table brands (
@@ -153,14 +154,14 @@ create table brand_staging (
   suggested_name text not null,
   location text,
   submitted_by uuid,
-  created_at timestamp with time zone default timezone('utc', now()),
-  updated_at timestamp with time zone default timezone('utc', now()),
   status brand_staging_status default 'pending',
-  slug text,
-  raw_payload jsonb,
   source text default 'user',
   duplicates int default 1,
-  reason text
+  created_at timestamp with time zone default timezone('utc', now()),
+  updated_at timestamp with time zone default timezone('utc', now()),
+  approved_by uuid,
+  approved_at timestamptz,
+  approved_slug text;
 );
 
 create table if not exists brand_staging_requests (
@@ -196,3 +197,9 @@ create table ref.boundaries (
 );
 
 CREATE INDEX boundary_gix ON ref.boundaries USING GIST (geom);
+
+----------ADMIN-----------
+
+create table if not exists admin_users (
+  user_id uuid primary key references auth.users(id) on delete cascade
+);
