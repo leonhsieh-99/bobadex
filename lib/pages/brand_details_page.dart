@@ -205,6 +205,16 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                     _globalGalleryFuture,
                     buildBannerContent(context, widget.brand, _statsFuture),
                   ),
+                  // back button
+                  Positioned(
+                    top: 40,
+                    left: 4,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                  // add visit button
                   Positioned(
                     bottom: 20,
                     right: 20,

@@ -46,3 +46,32 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+# Flutter & Android
+/build/
+/android/build/
+/android/app/build/
+/android/.gradle/
+/android/.idea/
+/android/local.properties
+*.iml
+
+# iOS (if present)
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.podspec
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Generated.xcconfig
+ios/build/
+
+# Dart/Flutter tooling
+.dart_tool/
+.packages
+
+# Crash/heap dumps & logs
+*.hprof
+*.log
+
+# Secrets (never commit your keystore)
+*.keystore
+key.properties
