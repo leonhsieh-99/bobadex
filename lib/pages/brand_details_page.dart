@@ -151,6 +151,10 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                   Spacer(),
                   if(medias.isNotEmpty)
                     TextButton(
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStatePropertyAll(Colors.transparent),
+                        foregroundColor: WidgetStatePropertyAll(Colors.black),
+                      ),
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(    
@@ -193,6 +197,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
 
     return Scaffold(
       body: SafeArea(
+        top: false,
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,10 +212,10 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                   ),
                   // back button
                   Positioned(
-                    top: 40,
+                    top: 25,
                     left: 4,
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ),
@@ -220,7 +225,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                     right: 20,
                     child: TextButton(
                       style: TextButton.styleFrom(
-                        backgroundColor: themeColor == Colors.grey ? themeColor.shade500 : themeColor.shade200,
+                        backgroundColor: themeColor == Colors.grey ? themeColor.shade500 : themeColor,
                         shape: const StadiumBorder(),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         elevation: 3,

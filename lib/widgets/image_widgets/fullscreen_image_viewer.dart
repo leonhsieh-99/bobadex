@@ -476,6 +476,7 @@ class VisibilityToggleButton extends StatelessWidget {
     return TextButton.icon(
       style: TextButton.styleFrom(
         foregroundColor: isPublic ? Colors.green[800] : Colors.grey[700],
+        backgroundColor: Colors.transparent,
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
       icon: Icon(

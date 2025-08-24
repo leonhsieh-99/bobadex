@@ -101,6 +101,7 @@ class FeedEventCard extends StatelessWidget {
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => AccountViewPage(userId: user.id, user: user))),
                 child: CircleAvatar(
+                  backgroundColor: Colors.grey.shade400,
                   radius: 20,
                   backgroundImage: (user.thumbUrl.isNotEmpty) ? NetworkImage(user.thumbUrl) : null,
                   child: (user.thumbUrl.isEmpty) ? Text(user.firstName.isNotEmpty ? user.firstName[0].toUpperCase() : '?') : null,
