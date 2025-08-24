@@ -19,7 +19,7 @@ class NotificationBus extends ChangeNotifier {
 
   final List<QueuedNotification> _queue = [];
   bool _draining = false;
-  bool _disposed = false;
+  final bool _disposed = false;
 
   void queue(String message, SnackType type, {int duration = Constants.snackBarDuration}) {
     if (_disposed) return;

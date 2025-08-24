@@ -34,7 +34,7 @@ class Constants {
   static const int maxFileSize = 10 * 1024 * 1024;
   static const int defaultFeedLimit = 50;
   static const int defaultGalleryLimit = 20;
-  static const int snackBarDuration = 1900; // milliseconds
+  static const int snackBarDuration = 2900; // milliseconds
 
   static const int maxUsernameLength = 20;
   static const int maxNameLength = 40;

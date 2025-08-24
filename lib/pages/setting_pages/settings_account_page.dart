@@ -1,4 +1,5 @@
 import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/helpers/export_data.dart';
 import 'package:bobadex/helpers/image_uploader_helper.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/utils/validators.dart';
@@ -339,6 +340,16 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                     ),
 
                     const SizedBox(height: 8),
+
+                    ListTile(
+                      leading: const Icon(Icons.file_download_outlined),
+                      title: const Text('Export my data'),
+                      subtitle: const Text('Copy a JSON export to clipboard'),
+                      onTap: () async {
+                        final res = await exportMyData(context); // your helper
+                        if (res == true) notify('Export copied!', SnackType.success);
+                      },
+                    ),
                   ],
                 ),
               ),
