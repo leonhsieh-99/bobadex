@@ -228,6 +228,7 @@ class _AuthPageState extends State<AuthPage> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
+                    style: AppButtonStyles.textButton,
                     onPressed: () {
                       showDialog(
                         context: context,
@@ -241,6 +242,7 @@ class _AuthPageState extends State<AuthPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.teal.shade200),
                     onPressed: () {
                       if (_loading) {
                         return;
@@ -266,6 +268,7 @@ class _AuthPageState extends State<AuthPage> {
                     _isSigningUp = !_isSigningUp;
                     _resend = false;
                   }),
+                  style: AppButtonStyles.textButton,
                   child: Text(
                     _isSigningUp
                       ? 'Already have an account? Log in'

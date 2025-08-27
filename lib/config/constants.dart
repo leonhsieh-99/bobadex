@@ -51,4 +51,8 @@ class AppButtonStyles {
       borderRadius: BorderRadius.all(Radius.circular(8)),
     ),
   );
+  static final ButtonStyle textButton = TextButton.styleFrom(
+    backgroundColor: Colors.transparent,
+    foregroundColor: Colors.black,
+  );
 }
