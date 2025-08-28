@@ -39,9 +39,9 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
 
 
   void _handleImagePick(UserState userState) async {
-    bool imageExits = userState.user.profileImagePath != null && userState.user.profileImagePath!.isNotEmpty;
+    bool imageExits = userState.current.profileImagePath != null && userState.current.profileImagePath!.isNotEmpty;
     final pickedFile = await pickImageWithDialog(context, _picker, imageExits);
-    final oldImagePath = userState.user.profileImagePath;
+    final oldImagePath = userState.current.profileImagePath;
     if (pickedFile == null) return;
     if (pickedFile.path.isNotEmpty) _removeExistingImage = true;
 
@@ -91,7 +91,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
       await Supabase.instance.client
         .from('users')
         .update({'profile_image_path': path})
-        .eq('id', userState.user.id);
+        .eq('id', userState.current.id);
     } catch (e) {
       notify('Error updating profile picture', SnackType.error);
     } finally {
@@ -227,7 +227,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
   @override
   Widget build(BuildContext context) {
     final userState = context.watch<UserState>();
-    final user = userState.user;
+    final user = userState.current;
 
     return Stack(
       children: [

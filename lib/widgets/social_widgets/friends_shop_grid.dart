@@ -133,7 +133,7 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
     final brandState = context.read<BrandState>();
     final brand = brandState.getBrand(shop.brandSlug);
     final userState = context.read<UserState>();
-    final themeColor = Constants.getThemeColor(userState.user.themeSlug);
+    final themeColor = Constants.getThemeColor(userState.current.themeSlug);
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(

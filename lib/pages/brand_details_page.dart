@@ -120,9 +120,9 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
     final shopState = context.watch<ShopState>();
     final achievementState = context.read<AchievementsState>();
     final userState = context.watch<UserState>();
-    final hasVisit = shopState.all.map((s) => s.brandSlug).contains(widget.brand.slug);
-    final userShop = shopState.getShopByBrand(widget.brand.slug);
-    final themeColor = Constants.getThemeColor(userState.user.themeSlug);
+    final hasVisit = shopState.shopsForCurrentUser().map((s) => s.brandSlug).contains(widget.brand.slug);
+    final userShop = shopState.getShopByBrand(userState.current.id, widget.brand.slug);
+    final themeColor = Constants.getThemeColor(userState.current.themeSlug);
 
     Widget buildGlobalGallery(Brand brand, Future<List<ShopMedia>> galleryFuture) {
       return FutureBuilder<List<ShopMedia>>(

@@ -106,6 +106,7 @@ class User {
   }
 
   User copyWith({
+    String? id,
     String? username,
     String? displayName,
     String? bio,
@@ -116,7 +117,7 @@ class User {
     bool? onboarded,
   }) {
     return User(
-      id: id,
+      id: id ?? this.id,
       username: username ?? this.username,
       displayName: displayName ?? this.displayName,
       bio:  bio ?? this.bio,

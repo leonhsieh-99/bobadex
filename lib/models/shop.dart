@@ -3,6 +3,7 @@ import '../helpers/sortable_entry.dart';
 
 class Shop extends SortableEntry {
   final String? id;
+  final String userId;
   String _name;
   double _rating;
   bool _isFavorite;
@@ -32,6 +33,7 @@ class Shop extends SortableEntry {
 
   Shop({
     this.id,
+    required this.userId,
     required String name,
     required double rating,
     bool isFavorite = false,
@@ -47,6 +49,7 @@ class Shop extends SortableEntry {
 
   Shop copyWith({
     String? id,
+    String? userId,
     String? name,
     double? rating,
     String? imagePath,
@@ -60,6 +63,7 @@ class Shop extends SortableEntry {
   }) {
     return Shop(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       name: name ?? this.name,
       rating: rating ?? this.rating,
       isFavorite: isFavorite ?? this.isFavorite,
@@ -74,6 +78,7 @@ class Shop extends SortableEntry {
   factory Shop.fromJson(Map<String, dynamic> json) {
     return Shop(
       id: json['id'],
+      userId: json['user_id'],
       name: json['name'] ?? 'Unnamed',
       rating: (json['rating'] ?? 0).toDouble(),
       notes: json['notes'] as String?,
@@ -90,6 +95,7 @@ class Shop extends SortableEntry {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'user_id': userId,
       'name': name,
       'rating': rating,
       'notes': notes,

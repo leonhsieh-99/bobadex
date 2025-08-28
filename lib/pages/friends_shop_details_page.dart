@@ -31,7 +31,7 @@ class FriendsShopDetailsPage extends StatelessWidget {
     final friendState = context.read<FriendState>();
     final userState = context.read<UserState>();
     final brandState = context.read<BrandState>();
-    final themeColor = Constants.getThemeColor(userState.user.themeSlug);
+    final themeColor = Constants.getThemeColor(userState.current.themeSlug);
 
     // Split crown/mostDrinks entry out
     final entries = shop.friendsInfo.entries.toList();
@@ -83,9 +83,9 @@ class FriendsShopDetailsPage extends StatelessWidget {
 
       String displayName;
       String thumbUrl;
-      if (userId == userState.user.id) {
+      if (userId == userState.current.id) {
         displayName = 'You';
-        thumbUrl = userState.user.thumbUrl;
+        thumbUrl = userState.current.thumbUrl;
       } else {
         displayName = friendState.getDisplayName(userId);
         thumbUrl = friendState.getThumbUrl(userId);

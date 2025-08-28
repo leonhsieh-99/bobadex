@@ -66,7 +66,7 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.read<UserState>().user;
+    final user = context.read<UserState>().current;
     final friendState = context.watch<FriendState>();
     return Scaffold(
       appBar: AppBar(

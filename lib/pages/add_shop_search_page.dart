@@ -171,7 +171,7 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
                 return ListTile(
                   title: Text(brand.display),
                   trailing: CircleAvatar(
-                    child: shopState.all.map((s) => s.brandSlug).contains(brand.slug)
+                    child: shopState.shopsForCurrentUser().map((s) => s.brandSlug).contains(brand.slug)
                       ? Icon(Icons.check)
                       : Icon(Icons.add)
                   ),

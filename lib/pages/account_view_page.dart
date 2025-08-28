@@ -89,7 +89,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
   Future<void> _fetchUser() async {
     try {
       // skip if current user is self
-      final selfId = context.read<UserState>().user.id;
+      final selfId = context.read<UserState>().current.id;
       if (widget.userId == selfId) return;
       
       final row = await Supabase.instance.client
@@ -113,7 +113,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
     final brandState = context.read<BrandState>();
     final friendState = context.watch<FriendState>();
 
-    final currentUser = userState.user;
+    final currentUser = userState.current;
     final isCurrentUser = currentUser.id == widget.userId;
     final user = isCurrentUser ? currentUser : (_user ?? u.User.empty());
 
@@ -214,7 +214,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
                           backgroundColor: WidgetStatePropertyAll(
                             !isFriendButtonEnabled(friendStatus, currentUser.id, widget.userId)
                               ? Colors.grey
-                              : Constants.getThemeColor(userState.user.themeSlug).shade300
+                              : Constants.getThemeColor(userState.current.themeSlug).shade300
                           ),
                           foregroundColor: WidgetStatePropertyAll(Colors.white)
                         ),
@@ -244,7 +244,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
                     ElevatedButton(
                       onPressed: (!isCurrentUser && _user != null)
                           ? () => Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => HomePage(user: _user!)))
+                                MaterialPageRoute(builder: (_) => HomePage(userId: _user!.id)))
                           : null,
                       child: const Text('View Bobadex'),
                     ),

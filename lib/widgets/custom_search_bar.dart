@@ -15,7 +15,7 @@ class CustomSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<UserState>().user;
+    final user = context.watch<UserState>().current;
     final themeColor = Constants.getThemeColor(user.themeSlug);
 
     return Padding(

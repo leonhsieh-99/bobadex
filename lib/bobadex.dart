@@ -39,17 +39,18 @@ class BobadexApp extends StatelessWidget {
       ],
       child: Consumer<UserState>(
         builder: (context, userState, _) {
-          final themeColor = Constants.getThemeColor(userState.user.themeSlug);
+          final themeColor = Constants.getThemeColor(userState.current.themeSlug);
           return MaterialApp(
             title: 'Bobadex',
             routes: {
               '/auth': (_) => const AuthPage(),
               '/reset': (_) => const ResetPasswordPage(),
-              '/home': (_) => HomePage(user: userState.user),
+              '/home': (_) => HomePage(userId: userState.current.id),
               '/splash': (_) => SplashPage(),
             },
             navigatorKey: navigatorKey,
             theme: ThemeData(
+              primarySwatch: themeColor,
               colorScheme: ColorScheme(
                 brightness: Brightness.light,
                 primary: themeColor,

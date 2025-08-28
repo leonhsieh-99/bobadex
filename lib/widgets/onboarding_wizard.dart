@@ -101,13 +101,13 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                                 color: color.shade100,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: userState.user.themeSlug == slug
+                                  color: userState.current.themeSlug == slug
                                       ? Colors.black
                                       : Colors.transparent,
                                   width: 2,
                                 ),
                               ),
-                              child: userState.user.themeSlug == slug
+                              child: userState.current.themeSlug == slug
                                 ? Icon(Icons.check, color: Colors.black)
                                 : null,
                             ),
@@ -131,14 +131,14 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                           padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: userState.user.gridColumns == 2
+                              color: userState.current.gridColumns == 2
                                   ? Colors.deepPurple
                                   : Colors.grey[300]!,
                               width: 2,
                             ),
                             borderRadius: BorderRadius.circular(12),
                             color: Colors.white,
-                            boxShadow: [if (userState.user.gridColumns == 2)
+                            boxShadow: [if (userState.current.gridColumns == 2)
                               BoxShadow(color: Colors.deepPurple.withOpacity(0.1), blurRadius: 4)]
                           ),
                           child: Column(
@@ -158,14 +158,14 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                           padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: userState.user.gridColumns == 3
+                              color: userState.current.gridColumns == 3
                                   ? Colors.deepPurple
                                   : Colors.grey[300]!,
                               width: 2,
                             ),
                             borderRadius: BorderRadius.circular(12),
                             color: Colors.white,
-                            boxShadow: [if (userState.user.gridColumns == 3)
+                            boxShadow: [if (userState.current.gridColumns == 3)
                               BoxShadow(color: Colors.deepPurple.withOpacity(0.1), blurRadius: 4)]
                           ),
                           child: Column(
@@ -188,7 +188,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                     children: [
                       // 2-column
                       GestureDetector(
-                        onTap: () => setState(() => userState.setUseIcon()),
+                        onTap: () => setState(() => userState.toggleUseIcons()),
                         child: Container(
                           constraints: BoxConstraints(
                             maxWidth: MediaQuery.of(context).size.width/3,
@@ -198,14 +198,14 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                           padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: !userState.user.useIcons
+                              color: !userState.current.useIcons
                                   ? Colors.deepPurple
                                   : Colors.grey[300]!,
                               width: 2,
                             ),
                             borderRadius: BorderRadius.circular(12),
                             color: Colors.white,
-                            boxShadow: [if (!userState.user.useIcons)
+                            boxShadow: [if (!userState.current.useIcons)
                               BoxShadow(color: Colors.deepPurple.withOpacity(0.1), blurRadius: 4)]
                           ),
                           child: Column(
@@ -219,7 +219,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                       ),
                       // 3-column
                       GestureDetector(
-                        onTap: () => setState(() => userState.setUseIcon()),
+                        onTap: () => setState(() => userState.toggleUseIcons()),
                         child: Container(
                           margin: EdgeInsets.symmetric(horizontal: 12),
                           constraints: BoxConstraints(
@@ -229,14 +229,14 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                           padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             border: Border.all(
-                              color: userState.user.useIcons
+                              color: userState.current.useIcons
                                   ? Colors.deepPurple
                                   : Colors.grey[300]!,
                               width: 2,
                             ),
                             borderRadius: BorderRadius.circular(12),
                             color: Colors.white,
-                            boxShadow: [if (userState.user.useIcons)
+                            boxShadow: [if (userState.current.useIcons)
                               BoxShadow(color: Colors.deepPurple.withOpacity(0.1), blurRadius: 4)]
                           ),
                           child: Column(
@@ -273,7 +273,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                             if (context.mounted) {
                               Navigator.of(context).pushReplacement(
                                 MaterialPageRoute(
-                                  builder: (_) => HomePage(user: userState.user),
+                                  builder: (_) => HomePage(userId: userState.current.id),
                                 ),
                               );
                             }

@@ -17,14 +17,14 @@ class _SettingsThemePageState extends State<SettingsThemePage> {
   @override
   void initState() {
     super.initState();
-    originalTheme = context.read<UserState>().user.themeSlug;
+    originalTheme = context.read<UserState>().current.themeSlug;
   }
 
   @override
   Widget build(BuildContext context) {
     final userState = context.read<UserState>();
     return PopScope(
-      onPopInvokedWithResult: (didPop, result) => originalTheme != userState.user.themeSlug ? userState.saveTheme() : null,
+      onPopInvokedWithResult: (didPop, result) => originalTheme != userState.current.themeSlug ? userState.saveTheme() : null,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Manage Theme'),
@@ -46,13 +46,13 @@ class _SettingsThemePageState extends State<SettingsThemePage> {
                         color: color.shade100,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: userState.user.themeSlug == slug ? Colors.black : Colors.transparent,
+                          color: userState.current.themeSlug == slug ? Colors.black : Colors.transparent,
                           width: 2,
                         ),
                       ),
                     ),
                     title: Text(slug),
-                    trailing: userState.user.themeSlug == slug ? const Icon(Icons.check) : null,
+                    trailing: userState.current.themeSlug == slug ? const Icon(Icons.check) : null,
                     onTap: () {
                       setState(() {
                         userState.setTheme(slug);

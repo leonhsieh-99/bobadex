@@ -16,8 +16,8 @@ class _SettingsLayoutPageState extends State<SettingsLayoutPage> {
   @override
   void initState() {
     super.initState();
-    originalColumns = context.read<UserState>().user.gridColumns;
-    originalIcons = context.read<UserState>().user.useIcons;
+    originalColumns = context.read<UserState>().current.gridColumns;
+    originalIcons = context.read<UserState>().current.useIcons;
   }
 
   @override
@@ -25,7 +25,7 @@ class _SettingsLayoutPageState extends State<SettingsLayoutPage> {
     final userState = context.read<UserState>();
     return PopScope(
       onPopInvokedWithResult: (didPop, result) => 
-        (originalColumns != userState.user.gridColumns || originalIcons != userState.user.useIcons) ? userState.saveLayout() : null,
+        (originalColumns != userState.current.gridColumns || originalIcons != userState.current.useIcons) ? userState.saveLayout() : null,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Manage Layout'),
@@ -36,7 +36,7 @@ class _SettingsLayoutPageState extends State<SettingsLayoutPage> {
               title: const Text('Compact Layout'),
               subtitle: const Text('3 shops per column'),
               trailing: Switch(
-                value: userState.user.gridColumns == 3,
+                value: userState.current.gridColumns == 3,
                 onChanged: (val) {
                   setState(() => userState.setGridLayout(val ? 3 : 2));
                 })
@@ -45,9 +45,9 @@ class _SettingsLayoutPageState extends State<SettingsLayoutPage> {
               title: const Text('Use Banner Photos'),
               subtitle: const Text('Home page icons will use your banner photo instead of the icons'),
               trailing: Switch(
-                value: !userState.user.useIcons,
+                value: !userState.current.useIcons,
                 onChanged: (val) {
-                  setState(() => userState.setUseIcon());
+                  setState(() => userState.toggleUseIcons());
                 })
             )
           ],

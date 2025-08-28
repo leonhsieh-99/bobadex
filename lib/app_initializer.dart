@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/navigation.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/state/achievements_state.dart';
@@ -162,23 +163,30 @@ class _AppInitializerState extends State<AppInitializer> {
     final achievementsState = context.read<AchievementsState>();
     final feedState = context.read<FeedState>();
 
-    await userState.loadFromSupabase();
+    await userState.loadCurrent();
 
-    final user = userState.user;
+    final user = userState.current;
     if (user.id.isEmpty) {
       debugPrint('No valid user loaded — skipping rest');
       return false;
     }
     this.user = user;
 
-    await Future.wait([
-      drinkState.loadFromSupabase(),
+    final drinkCount = await drinkState.fetchDrinkCount(user.id);
+    final futures = [
       brandState.loadFromSupabase(),
-      shopState.loadFromSupabase(),
+      shopState.loadCurrentUser(force: true),
+      shopState.loadDrinkCountsForCurrentUser(),
       friendState.loadFromSupabase(),
       shopMediaState.loadFromSupabase(),
       achievementsState.loadFromSupabase(),
-    ]);
+    ];
+
+    if (drinkCount < Constants.maxDrinkCountForFetchAll) {
+      futures.add(drinkState.loadAllForUser(user.id));
+    }
+
+    await Future.wait(futures);
 
     final hasErrors = [
       drinkState.hasError,

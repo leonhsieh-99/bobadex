@@ -30,17 +30,19 @@ import 'add_shop_search_page.dart';
 import '../widgets/command_icon.dart';
 import 'friends_page.dart';
 import 'rankings_page.dart';
-import '../models/user.dart' as u;
 
 class HomePage extends StatefulWidget {
-  final u.User user;
-  const HomePage({super.key, required this.user});
+  final String? userId;
+  const HomePage({super.key, this.userId});
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  late final String _uid;
+  late final bool _isCurrentUser;
+  late Future<void> _ready;
   final supabase = Supabase.instance.client;
   late Future<List<Shop>> _userShopsFuture;
   String _searchQuery = '';
@@ -49,21 +51,32 @@ class _HomePageState extends State<HomePage> {
 
   bool get isCurrentUser {
     final currentUser = Supabase.instance.client.auth.currentUser;
-    return currentUser != null && widget.user.id == currentUser.id;
+    return currentUser != null && widget.userId == currentUser.id;
   }
-
 
   @override
   void initState() {
     super.initState();
-    if (isCurrentUser) _showOnboardingIfNeeded(Supabase.instance.client.auth.currentUser!.id);
+    final authId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    _uid = (widget.userId?.isNotEmpty == true) ? widget.userId! : authId;
+    _isCurrentUser = _uid == authId;
+    _ready = _prime();
+  }
 
-    final id = widget.user.id;
-    if (id.isNotEmpty) {
-      _userShopsFuture = fetchUserShops(id);
-    } else {
-      _userShopsFuture = Future.value([]);
+  Future<void> _prime() async {
+    final userState = context.read<UserState>();
+    final shopState = context.read<ShopState>();
+
+    final futures = <Future>[
+      userState.loadUser(_uid),
+      shopState.loadForUser(_uid),
+    ];
+
+    if (_isCurrentUser) {
+      unawaited(_showOnboardingIfNeeded(_uid));
     }
+
+    await Future.wait(futures);
   }
 
   @override
@@ -75,32 +88,21 @@ class _HomePageState extends State<HomePage> {
   @override
   void didUpdateWidget(covariant HomePage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.user.id != oldWidget.user.id && widget.user.id.isNotEmpty) {
-      _userShopsFuture = fetchUserShops(widget.user.id);
+    if (widget.userId != oldWidget.userId && _uid.isNotEmpty) {
+      _userShopsFuture = context.watch<ShopState>().fetchUserShops(_uid);
     }
   }
 
   Future<void> _showOnboardingIfNeeded(String userId) async {
-    final seen = widget.user.onboarded;
+    final seen = context.read<UserState>().current.onboarded;
     if (!seen) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => OnboardingWizard()),
         );
-        setState(() => widget.user.onboarded = true);
+        setState(() {});
       });
     }
-  }
-
-  Future<List<Shop>> fetchUserShops(String? userId) async {
-    if (userId == null || userId.isEmpty) {
-      return [];
-    }
-    final response = await Supabase.instance.client
-        .from('shops')
-        .select()
-        .eq('user_id', userId);
-    return (response as List).map((json) => Shop.fromJson(json)).toList();
   }
 
   List<Shop> getVisibleShops(List<Shop> shops) {
@@ -132,13 +134,13 @@ class _HomePageState extends State<HomePage> {
       .toList();
   }
 
-  Future<void> _navigateToShop(Shop shop, user) async {
+  Future<void> _navigateToShop(String shopId, String userId) async {
     await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ShopDetailPage(
-          shop: shop,
-          user: user,
+          shopId: shopId,
+          userId: userId,
         )
       ),
     );
@@ -157,8 +159,9 @@ class _HomePageState extends State<HomePage> {
     final friendState = context.watch<FriendState>();
     final brandState = context.watch<BrandState>();
     final shopMediaState = context.watch<ShopMediaState>();
-    final user = isCurrentUser ? userState.user : widget.user;
-    final themeColor = Constants.getThemeColor(user.themeSlug);
+    final user = context.watch<UserState>().getUser(_uid);
+    final shops = context.watch<ShopState>().shopsFor(_uid);
+    final themeColor = Theme.of(context).primaryColor as MaterialColor;
 
     Widget shopGrid(List<Shop> shops, List<ShopMedia> banners) {
       final visibleShops = getVisibleShops(shops);
@@ -174,7 +177,7 @@ class _HomePageState extends State<HomePage> {
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 120),
           itemCount: visibleShops.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: user.gridColumns,
+            crossAxisCount: user!.gridColumns,
             crossAxisSpacing: 4,
             mainAxisSpacing: 4,
             childAspectRatio: 1,
@@ -207,8 +210,17 @@ class _HomePageState extends State<HomePage> {
                 ? bannerUrl
                 : (hasBrandThumb ? brandThumb : null);
 
+            int uiDrinkCount(BuildContext context, String shopId) {
+              final drinkState = context.watch<DrinkState>();
+              final shopState = context.read<ShopState>();
+              final drinks = drinkState.drinksFor(shopId);
+
+              if (drinks.isNotEmpty) return drinks.length;
+              return shopState.countsForShop(shopId).total;
+            }
+
             return GestureDetector(
-              onTap: () async => _navigateToShop(shop, user),
+              onTap: () async => _navigateToShop(shop.id!, user.id),
               child: Card(
                 elevation: 2,
                 color: useIcons ? themeColor == Colors.grey ? themeColor.shade200 : themeColor.shade200 : Colors.grey.shade100,
@@ -262,7 +274,7 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                       SizedBox(width: 2),
                                       Text(
-                                        (context.watch<DrinkState>().drinksByShop[shop.id] ?? []).length.toString(),
+                                        uiDrinkCount(context, shop.id!).toString(),
                                         style: TextStyle(fontSize: 12 * textScale),
                                         textAlign: TextAlign.left,
                                         overflow: TextOverflow.ellipsis,
@@ -382,7 +394,7 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                       SizedBox(width: 4),
                                       Text(
-                                        (context.watch<DrinkState>().drinksByShop[shop.id] ?? []).length.toString(),
+                                        uiDrinkCount(context, shop.id!).toString(),
                                         style: TextStyle(color: Colors.white),
                                       ),
                                     ],
@@ -412,190 +424,232 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     }
-    if (!userState.isLoaded) {
-      return SplashPage();
-    }
-    return Scaffold(
-      extendBody: true,
-      appBar: AppBar(
-        title: Text('${user.firstName}\'s Bobadex'),
-      ),
-      drawer: isCurrentUser ? Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(color: themeColor.shade100),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ThumbPic(url: userState.user.thumbUrl, size: 120,),
-                ],
-              )
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Settings'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsPage())
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.badge),
-              title: const Text('Achievements'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => AchievementsPage(userId: widget.user.id))
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: const Text('About + Contact'),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => AboutPage())
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Sign out'),
-              onTap: () async {
-                final confirmed = await showConfirmDialog(
-                  context,
-                  message: 'Are you sure you want to sign out?',
-                  title: 'Sign Out',
-                  confirmText: 'Sign Out',
-                  confirmColor: themeColor.shade400
-                );
-                if (confirmed) {
-                  await Supabase.instance.client.auth.signOut();
-                }
-              },
-            ),
-          ],
-        ),
-      ) : null,
-      body: OnboardingGate(
-        isCurrentUser: isCurrentUser,
-        onAddShop: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => AddShopSearchPage()),
-        ),
-        child: Stack(
-          children: [
-            Column(
+    return FutureBuilder(
+      future: _ready,
+      builder: (context, snap) {
+        final loading = snap.connectionState == ConnectionState.waiting;
+
+        if (loading && (user == null || shops.isEmpty)) {
+          return const ShopGridSkeleton();
+        }
+
+        if (user == null) {
+          return const ShopGridSkeleton();
+        }
+
+        return Scaffold(
+          extendBody: true,
+          appBar: AppBar(
+            title: Text('${user.firstName}\'s Bobadex'),
+          ),
+          drawer: isCurrentUser ? Drawer(
+            child: ListView(
+              padding: EdgeInsets.zero,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: FilterSortBar(
-                    controller: _searchController,
-                    sortOptions: [
-                      SortOption('favorite', Icons.favorite),
-                      SortOption('rating', Icons.star),
-                      SortOption('name', Icons.sort_by_alpha),
-                      SortOption('createdAt', Icons.access_time),
+                DrawerHeader(
+                  decoration: BoxDecoration(color: themeColor.shade100),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ThumbPic(url: userState.current.thumbUrl, size: 120,),
                     ],
-                    onSearchChanged: (query) {
-                      setState(() => _searchQuery = query);
-                    },
-                    onSortSelected: (sortKey) {
-                      setState(() => _selectedSort = sortKey);
-                    }
-                  ),
+                  )
                 ),
-                Expanded(
-                  child: isCurrentUser
-                      ? provider.Consumer<ShopState>(
-                          builder: (context, shopState, _) {
-                            return shopGrid(shopState.all, shopMediaState.all.where((sm) => sm.isBanner).toList());
-                          },
-                        )
-                      : FutureBuilder<List<Shop>>(
-                          future: _userShopsFuture,
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return Center(child: SplashPage());
-                            }
-                            if (snapshot.hasError) {
-                              return Center(child: Text('Error: ${snapshot.error}'));
-                            }
-                            final shops = snapshot.data ?? [];
-                            final shopIds = getVisibleShops(shops).map((s) => s.id).whereType<String>().toList();
-                            return FutureBuilder<List<ShopMedia>>(
-                              future: fetchBannersForShops(shopIds),
-                              builder: (context, bannerSnapshot) {
-                                if (bannerSnapshot.connectionState == ConnectionState.waiting) {
-                                  return Center(child: CircularProgressIndicator());
-                                }
-                                if (bannerSnapshot.hasError) {
-                                  return Center(child: Text('Error: ${bannerSnapshot.error}'));
-                                }
-                                final banners = bannerSnapshot.data ?? [];
-                                return shopGrid(shops, banners);
-                              },
-                            );
-                          },
-                        ),
+                ListTile(
+                  leading: const Icon(Icons.settings),
+                  title: const Text('Settings'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const SettingsPage())
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.badge),
+                  title: const Text('Achievements'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => AchievementsPage(userId: _uid))
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: const Text('About + Contact'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => AboutPage())
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.logout),
+                  title: const Text('Sign out'),
+                  onTap: () async {
+                    final confirmed = await showConfirmDialog(
+                      context,
+                      message: 'Are you sure you want to sign out?',
+                      title: 'Sign Out',
+                      confirmText: 'Sign Out',
+                      confirmColor: themeColor.shade400
+                    );
+                    if (confirmed) {
+                      await Supabase.instance.client.auth.signOut();
+                    }
+                  },
                 ),
               ],
             ),
-            if (isCurrentUser && MediaQuery.of(context).viewInsets.bottom == 0)
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom: 24,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: themeColor.shade50,
-                    borderRadius: BorderRadius.circular(40),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey,
-                        blurRadius: 10,
-                        offset: Offset(0, 4),
+          ) : null,
+          body: OnboardingGate(
+            isCurrentUser: isCurrentUser,
+            onAddShop: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => AddShopSearchPage()),
+            ),
+            child: Stack(
+              children: [
+                Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: FilterSortBar(
+                        controller: _searchController,
+                        sortOptions: [
+                          SortOption('favorite', Icons.favorite),
+                          SortOption('rating', Icons.star),
+                          SortOption('name', Icons.sort_by_alpha),
+                          SortOption('createdAt', Icons.access_time),
+                        ],
+                        onSearchChanged: (query) {
+                          setState(() => _searchQuery = query);
+                        },
+                        onSortSelected: (sortKey) {
+                          setState(() => _selectedSort = sortKey);
+                        }
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      CommandIcon(icon: Icons.group, label: "Friends", notificationCount: friendState.incomingRequests.length, onTap: () => _navigateToPage(FriendsPage())),
-                      CommandIcon(icon: Icons.people, label: "Social", onTap: () => _navigateToPage(SocialPage())),
-
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: () => _navigateToPage(AddShopSearchPage()),
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: themeColor == Colors.grey ? themeColor.shade400 : themeColor.shade300,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.add, color: Colors.white, size: 24),
-                            ),
+                    ),
+                    Expanded(
+                      child: isCurrentUser
+                        ? provider.Consumer<ShopState>(
+                            builder: (context, shopState, _) {
+                              return shopGrid(shopState.shopsForCurrentUser(), shopMediaState.all.where((sm) => sm.isBanner).toList());
+                            },
+                          )
+                        : FutureBuilder<List<Shop>>(
+                            future: _userShopsFuture,
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return Center(child: SplashPage());
+                              }
+                              if (snapshot.hasError) {
+                                return Center(child: Text('Error: ${snapshot.error}'));
+                              }
+                              final shops = snapshot.data ?? [];
+                              final shopIds = getVisibleShops(shops).map((s) => s.id).whereType<String>().toList();
+                              return FutureBuilder<List<ShopMedia>>(
+                                future: fetchBannersForShops(shopIds),
+                                builder: (context, bannerSnapshot) {
+                                  if (bannerSnapshot.connectionState == ConnectionState.waiting) {
+                                    return Center(child: CircularProgressIndicator());
+                                  }
+                                  if (bannerSnapshot.hasError) {
+                                    return Center(child: Text('Error: ${bannerSnapshot.error}'));
+                                  }
+                                  final banners = bannerSnapshot.data ?? [];
+                                  return shopGrid(shops, banners);
+                                },
+                              );
+                            },
+                          ),
+                    ),
+                  ],
+                ),
+                if (isCurrentUser && MediaQuery.of(context).viewInsets.bottom == 0)
+                  Positioned(
+                    left: 16,
+                    right: 16,
+                    bottom: 24,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: themeColor.shade50,
+                        borderRadius: BorderRadius.circular(40),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey,
+                            blurRadius: 10,
+                            offset: Offset(0, 4),
                           ),
                         ],
                       ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          CommandIcon(icon: Icons.group, label: "Friends", notificationCount: friendState.incomingRequests.length, onTap: () => _navigateToPage(FriendsPage())),
+                          CommandIcon(icon: Icons.people, label: "Social", onTap: () => _navigateToPage(SocialPage())),
 
-                      CommandIcon(icon: Icons.leaderboard, label: "Rankings", onTap: () => _navigateToPage(RankingsPage())),
-                      CommandIcon(icon: Icons.person, label: "Profile", onTap: () => _navigateToPage(AccountViewPage(userId: user.id, user: user))),
-                    ],
-                  ),
-                ),
-              )
-            ]
-          ),
-        )
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GestureDetector(
+                                onTap: () => _navigateToPage(AddShopSearchPage()),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: themeColor == Colors.grey ? themeColor.shade400 : themeColor.shade300,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.add, color: Colors.white, size: 24),
+                                ),
+                              ),
+                            ],
+                          ),
+                          CommandIcon(icon: Icons.leaderboard, label: "Rankings", onTap: () => _navigateToPage(RankingsPage())),
+                          CommandIcon(icon: Icons.person, label: "Profile", onTap: () => _navigateToPage(AccountViewPage(userId: user.id, user: user))),
+                        ],
+                      ),
+                    ),
+                  )
+                ]
+              ),
+            )
+          );
+        }
       );
     }
 }
+
+class ShopGridSkeleton extends StatelessWidget {
+  const ShopGridSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const columns = Constants.defaultGridColumns;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
+      child: GridView.builder(
+        padding: const EdgeInsets.fromLTRB(4, 0, 4, 120),
+        itemCount: 6, // arbitrary number of placeholders
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: columns,
+          crossAxisSpacing: 4,
+          mainAxisSpacing: 4,
+          childAspectRatio: 1,
+        ),
+        itemBuilder: (context, index) {
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+

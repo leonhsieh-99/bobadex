@@ -20,11 +20,11 @@ class OnboardingGate extends StatelessWidget {
     if (!isCurrentUser) return child;
 
     final wizardDone =
-        context.select<UserState, bool>((s) => s.user.onboarded == true);
+        context.select<UserState, bool>((s) => s.current.onboarded == true);
     if (!wizardDone) return child;
 
     final shopsCount =
-        context.select<ShopState, int>((s) => s.all.length);
+        context.select<ShopState, int>((s) => s.shopsForCurrentUser().length);
 
     final showFirstRun = (shopsCount == 0);
     if (!showFirstRun) return child;

@@ -15,7 +15,7 @@ class AddCircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.read<UserState>().user;
+    final user = context.read<UserState>().current;
     final themeColor = Constants.getThemeColor(user.themeSlug);
     return SizedBox(
       width: size,

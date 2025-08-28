@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:bobadex/helpers/retry_helper.dart';
 import 'package:bobadex/models/achievement.dart';
 import 'package:bobadex/state/drink_state.dart';
@@ -39,6 +38,17 @@ class AchievementsState extends ChangeNotifier {
     } else {
       debugPrint('unlockedAchievements stream is closed; dropping ${a.name}');
     }
+  }
+
+  // Uses rpc to fetch achievement stats for drink-related achievements
+  Future<DrinkCounts> fetchDrinkCounts() async {
+    final supabase = Supabase.instance.client;
+    final res = await supabase.rpc('drink_achievement_counts');
+    if (res is Map<String, dynamic>) return DrinkCounts.fromMap(res);
+    if (res is List && res.isNotEmpty && res.first is Map<String, dynamic>) {
+      return DrinkCounts.fromMap(res.first as Map<String, dynamic>);
+    }
+    return DrinkCounts(total: 0, matcha: 0, notes: 0, maxInShop: 0);
   }
 
   String getBadgeAssetPath(String? path) {
@@ -114,7 +124,7 @@ class AchievementsState extends ChangeNotifier {
 
   Future<void> checkAndUnlockShopAchievement(ShopState shopState) async {
     for (final a in getAllType('shop_count')) {
-      int count = shopState.all.length;
+      int count = shopState.shopsForCurrentUser().length;
       int min = a.dependsOn['min'];
       await checkAndUnlock(count, min, a);
     }
@@ -122,15 +132,18 @@ class AchievementsState extends ChangeNotifier {
   }
 
   Future<void> checkAndUnlockDrinkAchievement(DrinkState drinkState) async {
+    final c = await fetchDrinkCounts();
+
+    // total drink count achievements
     for (final a in getAllType('drink_count')) {
-      int count = drinkState.all.length;
-      int min = a.dependsOn['min'];
-      await checkAndUnlock(count, min, a);
+      final min = a.dependsOn['min'] as int;
+      await checkAndUnlock(c.total, min, a);
     }
-    final a = _achievements.firstWhere((a) => a.dependsOn['type'] == 'matcha_drink_count');
-    int count = drinkState.all.where((d) => d.name.toLowerCase().split(' ').contains('matcha')).length;
-    int min = a.dependsOn['min'];
-    await checkAndUnlock(count, min, a);
+
+    // matcha count for performative achievement
+    final a = _achievements.firstWhere((x) => x.dependsOn['type'] == 'matcha_drink_count');
+    await checkAndUnlock(c.matcha, a.dependsOn['min'] as int, a);
+
     notifyListeners();
   }
 
@@ -144,26 +157,17 @@ class AchievementsState extends ChangeNotifier {
   }
 
   Future<void> checkAndUnlockNotesAchievement(DrinkState drinkState) async {
+    final c = await fetchDrinkCounts();
     for (final a in getAllType('drink_notes_count')) {
-      int count = drinkState.all.where((d) => d.notes != null && d.notes!.isNotEmpty).length;
-      int min = a.dependsOn['min'];
-      await checkAndUnlock(count, min, a);
+      await checkAndUnlock(c.notes, a.dependsOn['min'] as int, a);
     }
     notifyListeners();
   }
 
   Future<void> checkAndUnlockMaxDrinksShopAchievement(DrinkState drinkState) async {
+    final c = await fetchDrinkCounts();
     for (final a in getAllType('max_drinks_single_shop')) {
-      final Map<String, int> drinkToShop = {};
-      for (var drink in drinkState.all) {
-        final shopId = drink.shopId;
-        if (shopId != null) {
-          drinkToShop[shopId] = (drinkToShop[shopId] ?? 0) + 1;
-        }
-      }
-      int count = drinkToShop.values.isEmpty ? 0 : drinkToShop.values.reduce((a, b) => a > b ? a : b);
-      int min = a.dependsOn['min'];
-      await checkAndUnlock(count, min, a);
+      await checkAndUnlock(c.maxInShop, a.dependsOn['min'] as int, a);
     }
     notifyListeners();
   }
@@ -181,7 +185,7 @@ class AchievementsState extends ChangeNotifier {
     for (final a in getAllType('visited_brands')) {
       final brands = a.dependsOn['brands'];
       int count = 0;
-      final allShops = shopState.all.map((s) => normalizer(s.name));
+      final allShops = shopState.shopsForCurrentUser().map((s) => normalizer(s.name));
       for (var brand in brands) {
         if (allShops.contains(normalizer(brand))) {
           count += 1;
@@ -290,3 +294,24 @@ class AchievementsState extends ChangeNotifier {
     }
   }
 }
+
+// helper drink count class
+class DrinkCounts {
+  final int total, matcha, notes, maxInShop;
+  DrinkCounts({required this.total, required this.matcha, required this.notes, required this.maxInShop});
+  factory DrinkCounts.fromMap(Map<String, dynamic> m) => DrinkCounts(
+    total: (m['total'] ?? 0) as int,
+    matcha: (m['matcha'] ?? 0) as int,
+    notes: (m['notes'] ?? 0) as int,
+    maxInShop: (m['max_in_shop'] ?? 0) as int,
+  );
+}
+
+// generic token count, uncomment if need to use in future
+// Future<int> _countByToken(String token) async {
+//   final supabase = Supabase.instance.client;
+//   final res = await supabase.rpc('drink_count_by_name_token', params: {'token': token});
+//   if (res is int) return res;
+//   if (res is num) return res.toInt();
+//   return 0;
+// }

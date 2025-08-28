@@ -102,7 +102,7 @@ class _AuthPageState extends State<AuthPage> {
       }
 
       // Load user state
-      await userState.loadFromSupabase();
+      await userState.loadCurrent();
       if (!mounted || context.read<UserState>().isLoaded) return;
 
     } on AuthException catch (e) {

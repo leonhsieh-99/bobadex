@@ -22,7 +22,7 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> {
   Widget build(BuildContext context) {
     final friendState = context.watch<FriendState>();
     final achievementState = context.watch<AchievementsState>();
-    final user = context.watch<UserState>().user;
+    final user = context.watch<UserState>().current;
     final themeColor = Constants.getThemeColor(user.themeSlug);
     final incomingRequests = friendState.incomingRequests;
 

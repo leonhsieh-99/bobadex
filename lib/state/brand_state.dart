@@ -1,7 +1,6 @@
 import 'package:bobadex/helpers/retry_helper.dart';
 import 'package:collection/collection.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-
 import '../models/brand.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';

@@ -42,7 +42,7 @@ class _FilterSortBarState extends State<FilterSortBar> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.read<UserState>().user;
+    final user = context.read<UserState>().current;
     return CompactTextRow(
       maxLength: 24,
       leftFlexStart: 2,

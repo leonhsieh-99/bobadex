@@ -87,6 +87,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
     setState(() => _isSubmitting = true);
 
     final isNewShop = widget.shop == null;
+    final userId = Supabase.instance.client.auth.currentUser!.id;
     bool bannerExists = false;
     if (!isNewShop) {
       bannerExists = shopMediaState.getBannerId(widget.shop!.id!) != null;
@@ -101,6 +102,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
       ) ??
           Shop(
             name: _nameController.text.trim(),
+            userId: userId,
             rating: _rating,
             notes: _notesController.text.trim(),
             brandSlug: _brandSlug,
@@ -208,7 +210,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
     final shopMediaState = context.read<ShopMediaState>();
     final achievementState = context.read<AchievementsState>();
     final feedState = context.read<FeedState>();
-    final user = context.read<UserState>().user;
+    final user = context.read<UserState>().current;
     final isNewShop = widget.shop == null;
 
     return GestureDetector(
