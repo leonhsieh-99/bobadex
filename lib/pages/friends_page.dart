@@ -60,6 +60,7 @@ class _FriendsPageState extends State<FriendsPage> {
           IconButton(
             icon: Badge(
               isLabelVisible: incomingRequests.isNotEmpty,
+              backgroundColor: Colors.red,
               label: Text(
                 incomingRequests.length.toString(),
                 style: Constants.badgeLabelStyle,

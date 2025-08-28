@@ -199,6 +199,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                       },
                       isCurrentUser: _isCurrentUser,
                       shopId: _shopId,
+                      themeColor: user.themeSlug,
                     ),
                   ),
                 );

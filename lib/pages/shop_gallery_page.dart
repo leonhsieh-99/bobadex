@@ -19,6 +19,7 @@ class ShopGalleryPage extends StatefulWidget {
   final Future<List<ShopMedia>> Function(int offset, int limit)? onFetchMore;
   final bool isCurrentUser;
   final String? shopId;
+  final String? themeColor;
 
   const ShopGalleryPage({
     super.key,
@@ -29,6 +30,7 @@ class ShopGalleryPage extends StatefulWidget {
     this.onFetchMore,
     required this.isCurrentUser,
     this.shopId,
+    this.themeColor,
   });
 
   @override
@@ -176,12 +178,15 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
     final shopMedia = userGallery
       ? shopMediaState.getByShop(widget.shopId!)
       : _mediaList;
+    final themeColor = widget.themeColor != null ? Constants.getThemeColor(widget.themeColor!).shade50 : Theme.of(context).primaryColor;
 
     return Stack(
       children: [
         Scaffold(
+          backgroundColor: themeColor,
           appBar: AppBar(
             title: Text('Photos (${shopMedia.length.toString()})'),
+            backgroundColor: themeColor,
             actions: [
               if (widget.isCurrentUser && !_selecting)
                 IconButton(

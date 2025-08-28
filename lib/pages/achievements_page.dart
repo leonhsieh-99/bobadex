@@ -214,67 +214,58 @@ class _UiCounts {
 
 class _AchievementSkeletonList extends StatelessWidget {
   final int itemCount;
-  const _AchievementSkeletonList({this.itemCount = 8});
+  const _AchievementSkeletonList({this.itemCount = 15});
 
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
-      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(12),
       itemCount: itemCount,
-      separatorBuilder: (_, __) => const Divider(height: 1),
-      itemBuilder: (_, __) => const _AchievementSkeletonTile(),
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Left circle
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Right column of two lines
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 14,
+                    width: 100, // shorter top line
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 14,
+                    width: double.infinity, // longer bottom line
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
-class _AchievementSkeletonTile extends StatelessWidget {
-  const _AchievementSkeletonTile();
 
-  @override
-  Widget build(BuildContext context) {
-    final base = Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.6);
-    final highlight = Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.9);
-
-    return ListTile(
-      leading: _SkeletonCircle(size: 40, color: highlight),
-      title: _SkeletonBar(width: 140, height: 14, color: base),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: _SkeletonBar(width: 220, height: 12, color: base),
-      ),
-      trailing: _SkeletonBar(width: 48, height: 16, color: base),
-    );
-  }
-}
-
-class _SkeletonCircle extends StatelessWidget {
-  final double size;
-  final Color color;
-  const _SkeletonCircle({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size, height: size,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
-}
-
-class _SkeletonBar extends StatelessWidget {
-  final double width;
-  final double height;
-  final Color color;
-  const _SkeletonBar({required this.width, required this.height, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width, height: height,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(6),
-      ),
-    );
-  }
-}

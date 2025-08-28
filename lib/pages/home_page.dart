@@ -6,7 +6,6 @@ import 'package:bobadex/pages/about_page.dart';
 import 'package:bobadex/pages/settings_page.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
 import 'package:bobadex/pages/social_page.dart';
-import 'package:bobadex/pages/splash_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
@@ -42,9 +41,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late final String _uid;
   late final bool _isCurrentUser;
-  late Future<void> _ready;
+  late Future<void> _ready = Future.value();
   final supabase = Supabase.instance.client;
-  late Future<List<Shop>> _userShopsFuture;
   String _searchQuery = '';
   String _selectedSort = 'favorite-asc';
   final _searchController = TextEditingController();
@@ -60,22 +58,20 @@ class _HomePageState extends State<HomePage> {
     final authId = Supabase.instance.client.auth.currentUser?.id ?? '';
     _uid = (widget.userId?.isNotEmpty == true) ? widget.userId! : authId;
     _isCurrentUser = _uid == authId;
-    _ready = _prime();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ready = _prime();
+      setState(() {});
+    });
   }
 
   Future<void> _prime() async {
     final userState = context.read<UserState>();
     final shopState = context.read<ShopState>();
-
     final futures = <Future>[
       userState.loadUser(_uid),
       shopState.loadForUser(_uid),
     ];
-
-    if (_isCurrentUser) {
-      unawaited(_showOnboardingIfNeeded(_uid));
-    }
-
+    if (_isCurrentUser) unawaited(_showOnboardingIfNeeded(_uid));
     await Future.wait(futures);
   }
 
@@ -89,7 +85,7 @@ class _HomePageState extends State<HomePage> {
   void didUpdateWidget(covariant HomePage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.userId != oldWidget.userId && _uid.isNotEmpty) {
-      _userShopsFuture = context.watch<ShopState>().fetchUserShops(_uid);
+      context.read<ShopState>().loadForUser(_uid);
     }
   }
 
@@ -161,11 +157,11 @@ class _HomePageState extends State<HomePage> {
     final shopMediaState = context.watch<ShopMediaState>();
     final user = context.watch<UserState>().getUser(_uid);
     final shops = context.watch<ShopState>().shopsFor(_uid);
-    final themeColor = Theme.of(context).primaryColor as MaterialColor;
 
     Widget shopGrid(List<Shop> shops, List<ShopMedia> banners) {
       final visibleShops = getVisibleShops(shops);
       final bannerByShop = { for (var b in banners) b.shopId: b };
+      final themeColor = Constants.getThemeColor(user?.themeSlug ?? Constants.defaultTheme);
       if (shops.isEmpty) {
         return const Center(child: Text("No shops added.", style: Constants.emptyListTextStyle));
       } else if (visibleShops.isEmpty) {
@@ -430,17 +426,21 @@ class _HomePageState extends State<HomePage> {
         final loading = snap.connectionState == ConnectionState.waiting;
 
         if (loading && (user == null || shops.isEmpty)) {
-          return const ShopGridSkeleton();
+          return const HomePageSkeleton();
         }
 
         if (user == null) {
-          return const ShopGridSkeleton();
+          return const HomePageSkeleton();
         }
+
+        final themeColor = Constants.getThemeColor(user.themeSlug);
 
         return Scaffold(
           extendBody: true,
+          backgroundColor: themeColor.shade50,
           appBar: AppBar(
             title: Text('${user.firstName}\'s Bobadex'),
+            backgroundColor: themeColor.shade50,
           ),
           drawer: isCurrentUser ? Drawer(
             child: ListView(
@@ -533,39 +533,31 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     Expanded(
-                      child: isCurrentUser
-                        ? provider.Consumer<ShopState>(
-                            builder: (context, shopState, _) {
-                              return shopGrid(shopState.shopsForCurrentUser(), shopMediaState.all.where((sm) => sm.isBanner).toList());
-                            },
-                          )
-                        : FutureBuilder<List<Shop>>(
-                            future: _userShopsFuture,
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState == ConnectionState.waiting) {
-                                return Center(child: SplashPage());
-                              }
-                              if (snapshot.hasError) {
-                                return Center(child: Text('Error: ${snapshot.error}'));
-                              }
-                              final shops = snapshot.data ?? [];
-                              final shopIds = getVisibleShops(shops).map((s) => s.id).whereType<String>().toList();
-                              return FutureBuilder<List<ShopMedia>>(
-                                future: fetchBannersForShops(shopIds),
-                                builder: (context, bannerSnapshot) {
-                                  if (bannerSnapshot.connectionState == ConnectionState.waiting) {
-                                    return Center(child: CircularProgressIndicator());
-                                  }
-                                  if (bannerSnapshot.hasError) {
-                                    return Center(child: Text('Error: ${bannerSnapshot.error}'));
-                                  }
-                                  final banners = bannerSnapshot.data ?? [];
-                                  return shopGrid(shops, banners);
-                                },
-                              );
-                            },
-                          ),
-                    ),
+                      child: Builder(
+                        builder: (context) {
+                          final shopState = context.watch<ShopState>();
+
+                          final shops = isCurrentUser
+                              ? shopState.shopsForCurrentUser()
+                              : shopState.shopsFor(_uid);
+
+                          if (shops.isEmpty) {
+                            return const HomePageSkeleton();
+                          }
+
+                          final shopIds = getVisibleShops(shops)
+                              .map((s) => s.id)
+                              .whereType<String>()
+                              .toSet();
+
+                          final banners = shopMediaState.all
+                              .where((sm) => sm.isBanner && shopIds.contains(sm.shopId))
+                              .toList();
+
+                          return shopGrid(shops, banners);
+                        },
+                      ),
+                    )
                   ],
                 ),
                 if (isCurrentUser && MediaQuery.of(context).viewInsets.bottom == 0)
@@ -623,33 +615,88 @@ class _HomePageState extends State<HomePage> {
     }
 }
 
-class ShopGridSkeleton extends StatelessWidget {
-  const ShopGridSkeleton({super.key});
+class HomePageSkeleton extends StatelessWidget {
+  const HomePageSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
     const columns = Constants.defaultGridColumns;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
-      child: GridView.builder(
-        padding: const EdgeInsets.fromLTRB(4, 0, 4, 120),
-        itemCount: 6, // arbitrary number of placeholders
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: columns,
-          crossAxisSpacing: 4,
-          mainAxisSpacing: 4,
-          childAspectRatio: 1,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Bobadex"),
+        centerTitle: true,
+        backgroundColor: Colors.grey.shade100,
+        elevation: 0,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 12, 8, 12),
+        child: GridView.builder(
+          padding: const EdgeInsets.only(bottom: 120),
+          itemCount: 8, // show a bit more skeletons for realism
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            childAspectRatio: 1,
+          ),
+          itemBuilder: (context, index) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // top image placeholder
+                  Expanded(
+                    flex: 3,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // bottom text placeholders
+                  Expanded(
+                    flex: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            height: 12,
+                            width: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade300,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            height: 10,
+                            width: 50,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade300,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
-        itemBuilder: (context, index) {
-          return Container(
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(12),
-            ),
-          );
-        },
       ),
     );
   }
 }
+
 

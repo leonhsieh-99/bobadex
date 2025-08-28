@@ -64,12 +64,11 @@ class UserState extends ChangeNotifier {
         try {
           settings = await settingsF;
         } catch (_) {
-          // If no settings row yet, leave null; your model can default.
           settings = null;
         }
         return [profile, settings];
       });
-
+      
       final profile = result[0] as Map<String, dynamic>;
       final settings = result[1] as Map<String, dynamic>;
 

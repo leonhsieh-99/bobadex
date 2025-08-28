@@ -24,6 +24,7 @@ class CommandIcon extends StatelessWidget {
         children: [
           Badge(
             isLabelVisible: notificationCount != 0,
+            backgroundColor: Colors.red,
             label: Text(
               notificationCount.toString(),
               style: Constants.badgeLabelStyle,
