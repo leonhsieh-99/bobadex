@@ -73,12 +73,12 @@ class BobadexApp extends StatelessWidget {
                 scrolledUnderElevation: 0,
               ),
               elevatedButtonTheme: ElevatedButtonThemeData(
-                style: ButtonStyle(
-                  backgroundColor: WidgetStatePropertyAll<Color>(themeColor.shade400),
-                  foregroundColor: WidgetStatePropertyAll<Color>(Colors.white),
-                  textStyle: WidgetStatePropertyAll<TextStyle>(
-                    TextStyle(fontWeight: FontWeight.w500)
-                  )
+                style: ElevatedButton.styleFrom(
+                  disabledBackgroundColor: Colors.grey,
+                  disabledForegroundColor: Colors.white,
+                  backgroundColor: themeColor.shade400,
+                  foregroundColor: Colors.white,
+                  textStyle: TextStyle(fontWeight: FontWeight.w500)
                 )
               ),
               cardTheme: CardThemeData(color: themeColor.shade100),

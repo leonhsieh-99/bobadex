@@ -7,104 +7,92 @@ import '../state/user_state.dart';
 class SortOption {
   final String key;
   final IconData icon;
-
-  SortOption (this.key, this.icon);
+  SortOption(this.key, this.icon);
 }
-class FilterSortBar extends StatefulWidget {
-  final TextEditingController controller;
-  final ValueChanged<String> onSearchChanged;
-  final List<SortOption> sortOptions;
-  final ValueChanged<String> onSortSelected;
-  
-  const FilterSortBar ({
+
+class FilterSortBar extends StatelessWidget {
+  const FilterSortBar({
     super.key,
     required this.controller,
     required this.onSearchChanged,
     required this.sortOptions,
-    required this.onSortSelected,
+    required this.selectedSort,
+    required this.onSortChanged,
   });
 
-  @override
-  State<FilterSortBar> createState() => _FilterSortBarState();
-}
+  final TextEditingController controller;
+  final ValueChanged<String> onSearchChanged;
+  final List<SortOption> sortOptions;
 
-class _FilterSortBarState extends State<FilterSortBar> {
-  String _selectedSortKey = '';
-  bool _isAscending = false;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.sortOptions.isNotEmpty) {
-      _selectedSortKey = widget.sortOptions.first.key;
-    }
-  }
+  final String selectedSort;                 // e.g. 'rating-asc'
+  final ValueChanged<String> onSortChanged;
 
   @override
   Widget build(BuildContext context) {
     final user = context.read<UserState>().current;
+
+    // derive from selectedSort
+    final parts = selectedSort.split('-');
+    final selectedKey = parts.isNotEmpty ? parts[0] : (sortOptions.isNotEmpty ? sortOptions.first.key : '');
+    final isAsc = parts.length > 1 && parts[1] == 'asc';
+
     return CompactTextRow(
       maxLength: 24,
       leftFlexStart: 2,
       leftFlexEnd: 9,
       rightFlex: 3,
       hintText: 'Search',
-      textController: widget.controller,
-      onSearchChanged: widget.onSearchChanged,
+      textController: controller,
+      onSearchChanged: onSearchChanged,
       child: Row(
         children: [
-          // Asc/desc icon
+          // Asc/desc
           GestureDetector(
             onTap: () {
-              setState(() => _isAscending = !_isAscending);
-              widget.onSortSelected(_selectedSortKey + (_isAscending ? '-asc' : '-desc'));
+              final next = '$selectedKey-${isAsc ? 'desc' : 'asc'}';
+              onSortChanged(next);
             },
             child: Padding(
-              padding: const EdgeInsets.only(right: 10), // very tight spacing
+              padding: const EdgeInsets.only(right: 10),
               child: Icon(
-                _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                isAsc ? Icons.arrow_upward : Icons.arrow_downward,
                 color: Constants.getThemeColor(user.themeSlug),
                 size: 20,
               ),
             ),
           ),
 
-          // Vertical divider
           const SizedBox(height: 40, child: VerticalDivider(width: 1)),
-
-          // Sort option chips
           const SizedBox(width: 8),
+
           Flexible(
             flex: 4,
-            child: Stack(
-              children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Row(
-                    children: widget.sortOptions.map((opt) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: ChoiceChip(
-                          label: Icon(opt.icon, size: 16),
-                          selected: _selectedSortKey == opt.key,
-                          backgroundColor: Constants.getThemeColor(user.themeSlug).shade50,
-                          selectedColor: Constants.getThemeColor(user.themeSlug).shade100,
-                          showCheckmark: false,
-                          onSelected: (_) {
-                            setState(() => _selectedSortKey = opt.key);
-                            widget.onSortSelected(opt.key + (_isAscending ? '-asc' : '-desc'));
-                          },
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ],
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(right: 12),
+              child: Row(
+                children: sortOptions.map((opt) {
+                  final selected = selectedKey == opt.key;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: ChoiceChip(
+                      label: Icon(opt.icon, size: 16),
+                      selected: selected,
+                      backgroundColor: Constants.getThemeColor(user.themeSlug).shade50,
+                      selectedColor: Constants.getThemeColor(user.themeSlug).shade100,
+                      showCheckmark: false,
+                      onSelected: (_) {
+                        final next = '${opt.key}-${isAsc ? 'asc' : 'desc'}';
+                        onSortChanged(next);
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ),
         ],
-      )
+      ),
     );
   }
 }
