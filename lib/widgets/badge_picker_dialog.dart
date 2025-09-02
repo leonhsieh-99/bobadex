@@ -1,6 +1,5 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/achievement.dart';
-import 'package:flutter/foundation.dart';
 // import 'package:bobadex/state/achievements_state.dart';
 import 'package:flutter/material.dart';
 // import 'package:provider/provider.dart';
@@ -25,13 +24,11 @@ class BadgePickerDialog extends StatefulWidget {
 
 class _BadgePickerDialogState extends State<BadgePickerDialog> {
   late Set<String> selected;
-  late final Set<String> initialSelected;
 
   @override
   void initState() {
     super.initState();
     selected = widget.pinnedBadges.map((b) => b.id).toSet();
-    initialSelected = Set.of(selected);
   }
 
 @override
@@ -110,13 +107,10 @@ Widget build(BuildContext context) {
         child: Text('Cancel'),
       ),
       ElevatedButton(
-        onPressed: setEquals(selected, initialSelected)
-            ? null
-            : () {
-                widget.onSave(selected.toList());
-                Navigator.of(context).pop();
-              },
-        child: const Text('Save'),
+        onPressed: () {
+          widget.onSave(selected.toList());
+        },
+        child: Text('Save'),
       ),
     ],
   );

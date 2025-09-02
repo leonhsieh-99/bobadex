@@ -317,10 +317,11 @@ class _AccountViewPageState extends State<AccountViewPage> {
                                 await achievementState.setPinned(a.id);
                               }
                             }
-                            notify('Badge showcase saved', SnackType.success);
                             if(context.mounted) Navigator.of(context).pop();
                           } catch (e) {
-                            notify('Error pinning badges', SnackType.error);
+                            if (context.mounted) { 
+                              notify('Error pinning badges', SnackType.error);
+                            }
                           }
                         },
                       ),

@@ -100,7 +100,7 @@ class FriendsShopDetailsPage extends StatelessWidget {
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
-            initiallyExpanded: isCrown || (note != null && note.isNotEmpty),
+            initiallyExpanded: isCrown,
             leading: Stack(
               alignment: Alignment.bottomRight,
               children: [
@@ -157,12 +157,12 @@ class FriendsShopDetailsPage extends StatelessWidget {
             ),
             children: [
               Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if ((note ?? '').isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
-                      child: Text(note, textAlign: TextAlign.start, style: TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      child: Text(note, style: TextStyle(fontWeight: FontWeight.w400)),
                     ),
                   if (top3Drinks.isNotEmpty)
                     Padding(
@@ -170,7 +170,7 @@ class FriendsShopDetailsPage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Top Drinks', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
+                          const Text('Top Drinks', style: TextStyle(fontWeight: FontWeight.w500)),
                           ...top3Drinks.map((drink) => Row(
                             children: [
                               ConstrainedBox(

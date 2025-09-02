@@ -43,37 +43,32 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   late final String _shopId;
   late final bool _isCurrentUser;
   late Future<void> _ready = Future.value();
-
-  // filter options
+  final _expandedDrinkIds = <String>{};
   String _selectedSort = 'favorite-desc';
   String _searchQuery = '';
   final _searchController = TextEditingController();
-
-  // for expansion tiles
-  final _expandedDrinkIds = <String>{};
-  bool _hydrated = false;
 
   String  getPinnedDrink(List<Drink> drinks, String id) {
     final pinned = drinks.where((d) => d.id == id).firstOrNull;
     return pinned?.name ?? '';
   }
 
-  List<Drink> getVisibleDrinks(
-    List<Drink> drinks, {
-    required String selectedSort,
-  }) {
-    var filtered = [...drinks];
+  List<Drink> getVisibleDrinks(List<Drink> drinks) {
+    List<Drink> filtered = [...drinks];
 
     if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      filtered = filtered.where((d) => d.name.toLowerCase().contains(q)).toList();
+      filtered = filtered.where((d) =>
+        d.name.toLowerCase().contains(_searchQuery.toLowerCase())
+      ).toList();
     }
 
-    final parts = selectedSort.split('-');
-    final by = parts.isNotEmpty ? parts[0] : 'name';
-    final asc = parts.length > 1 ? parts[1] == 'asc' : true;
+    List options = _selectedSort.split('-');
+    sortEntries(
+      filtered,
+      by: options[0],
+      ascending: options[1] == 'asc',
+    );
 
-    sortEntries(filtered, by: by, ascending: asc);
     return filtered;
   }
 
@@ -85,27 +80,21 @@ class _ShopDetailPage extends State<ShopDetailPage> {
     _shopId = widget.shopId;
     _isCurrentUser = _uid == authId;
 
-    _ready = _prime().then((_) {
-      if (!mounted) return;
-      _seedExpanded();
-      _hydrated = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ready = _prime();
+      setState(() {});
     });
   }
 
-Future<void> _prime() async {
-  final drinkState = context.read<DrinkState>();
-  await drinkState.loadForShop(_shopId, userId: _uid);
-}
+  Future<void> _prime() async {
+    final drinkState = context.read<DrinkState>();
 
-void _seedExpanded() {
-  final drinks = context.read<DrinkState>().drinksFor(_shopId);
-  _expandedDrinkIds
-    ..clear()
-    ..addAll(drinks
-        .where((d) => d.id != null && (d.notes?.isNotEmpty ?? false))
-        .map((d) => d.id!));
-  setState(() {}); // reflect seeded state
-}
+    final futures = <Future>[
+      drinkState.loadForShop(_shopId, userId: _uid),
+    ];
+
+    await Future.wait(futures);
+  }
 
   @override
   void didUpdateWidget(covariant ShopDetailPage oldWidget) {
@@ -172,7 +161,7 @@ void _seedExpanded() {
         final pinnedDrink = (shopRead.pinnedDrinkId == null || shopRead.pinnedDrinkId!.isEmpty)
             ? ''
             : getPinnedDrink(drinks, shopRead.pinnedDrinkId!);
-        final visibleDrinks = getVisibleDrinks(drinks, selectedSort: _selectedSort);
+        final visibleDrinks = getVisibleDrinks(drinks);
 
         return Scaffold(
           body: LayoutBuilder(
@@ -395,7 +384,6 @@ void _seedExpanded() {
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               child: FilterSortBar(
-                                selectedSort: _selectedSort,
                                 controller: _searchController,
                                 sortOptions: [
                                   SortOption('favorite', Icons.favorite),
@@ -406,7 +394,7 @@ void _seedExpanded() {
                                 onSearchChanged: (query) {
                                   setState(() => _searchQuery = query);
                                 },
-                                onSortChanged: (sortKey) {
+                                onSortSelected: (sortKey) {
                                   setState(() => _selectedSort = sortKey);
                                 }
                               ),
@@ -420,7 +408,6 @@ void _seedExpanded() {
                                   itemCount: visibleDrinks.length,
                                   itemBuilder: (context, index) {
                                     final drink = visibleDrinks[index];
-                                    final isExpanded = _expandedDrinkIds.contains(drink.id);
                                     return Padding(
                                       padding: const EdgeInsets.symmetric(vertical: 4),
                                       child: Stack(
@@ -433,16 +420,13 @@ void _seedExpanded() {
                                               child: Theme(
                                                 data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                                                 child: ExpansionTile(
-                                                  key: PageStorageKey('drink-${drink.id}'),
-                                                  initiallyExpanded: (drink.notes?.isNotEmpty ?? false),
-                                                  onExpansionChanged: (expanded) {
-                                                    final id = drink.id;
-                                                    if (id == null) return;
+                                                  initiallyExpanded: drink.notes != null && drink.notes!.isNotEmpty,
+                                                  onExpansionChanged: (isExpanded) { 
                                                     setState(() {
-                                                      if (expanded) {
-                                                        _expandedDrinkIds.add(id);
+                                                      if (isExpanded) {
+                                                        _expandedDrinkIds.add(drink.id ?? '');
                                                       } else {
-                                                        _expandedDrinkIds.remove(id);
+                                                        _expandedDrinkIds.remove(drink.id);
                                                       }
                                                     });
                                                   },
@@ -472,7 +456,7 @@ void _seedExpanded() {
                                                       ),
                                                       if (_isCurrentUser)
                                                         PopupMenuButton<String>(
-                                                          icon: const Icon(Icons.more_horiz, size: 16, color: Colors.black,),
+                                                          icon: const Icon(Icons.more_horiz, size: 16),
                                                           onSelected: (value) async {
                                                             final shop = shopState.getShop(widget.shopId);
                                                             switch(value) {
@@ -558,9 +542,8 @@ void _seedExpanded() {
                                                   title: Row(
                                                     children: [
                                                       AnimatedRotation(
-                                                        key: ValueKey(isExpanded),
-                                                        turns: isExpanded ? 0.25 : 0.0,
-                                                        duration: _hydrated ? const Duration(milliseconds: 200) : Duration.zero,
+                                                        turns: _expandedDrinkIds.contains(drink.id) ? 0.25 : 0.00,
+                                                        duration: const Duration(milliseconds: 200),
                                                         child: const Icon(Icons.chevron_right, size: 20, color: Colors.brown),
                                                       ),
                                                       const SizedBox(width: 4),

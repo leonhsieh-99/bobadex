@@ -517,7 +517,6 @@ class _HomePageState extends State<HomePage> {
                     Padding(
                       padding: const EdgeInsets.all(8),
                       child: FilterSortBar(
-                        selectedSort: _selectedSort,
                         controller: _searchController,
                         sortOptions: [
                           SortOption('favorite', Icons.favorite),
@@ -528,7 +527,7 @@ class _HomePageState extends State<HomePage> {
                         onSearchChanged: (query) {
                           setState(() => _searchQuery = query);
                         },
-                        onSortChanged: (sortKey) {
+                        onSortSelected: (sortKey) {
                           setState(() => _selectedSort = sortKey);
                         }
                       ),
