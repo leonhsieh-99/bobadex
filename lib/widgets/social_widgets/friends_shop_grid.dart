@@ -5,7 +5,6 @@ import 'package:bobadex/pages/friends_shop_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/icon_pic.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
