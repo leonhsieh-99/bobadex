@@ -1,5 +1,4 @@
 import 'package:bobadex/models/drink.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class FriendsShop {
   final String brandSlug;
@@ -47,12 +46,6 @@ class FriendShopInfo {
     this.filePath,
     required this.drinksTried,
   });
-
-  String get thumbUrl => filePath != null && filePath!.isNotEmpty
-    ? Supabase.instance.client.storage
-        .from('media-uploads')
-        .getPublicUrl('thumbs/${filePath!.trim()}')
-    : '';
 
 
   factory FriendShopInfo.fromJson(Map<String, dynamic> json) => FriendShopInfo(

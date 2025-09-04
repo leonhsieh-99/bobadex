@@ -13,11 +13,11 @@ import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/user_stats_cache.dart';
 import 'package:bobadex/widgets/badge_picker_dialog.dart';
+import 'package:bobadex/widgets/icon_pic.dart';
 import 'package:bobadex/widgets/report_widget.dart';
 import 'package:bobadex/widgets/stat_box.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:bobadex/widgets/social_widgets/user_feed_view.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -53,12 +53,6 @@ class _AccountViewPageState extends State<AccountViewPage> {
     _fetchUser();
     _fetchData();
   }
-
-  String get brandThumbUrl => stats.topShopIcon.isNotEmpty
-    ? Supabase.instance.client.storage
-        .from('shop-media')
-        .getPublicUrl('thumbs/${stats.topShopIcon.trim()}')
-    : '';
 
   Future<void> _fetchData() async {
     final supabase = Supabase.instance.client;
@@ -192,7 +186,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
           child: Column(
             children: [
               ThumbPic(
-                url: user.thumbUrl,
+                path: user.profileImagePath,
                 size: 140, 
                 onTap: isCurrentUser 
                   ?  () => Navigator.of(context).push(
@@ -281,17 +275,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
                     ? ShopTileSkeleton()
                     : (brand != null)
                       ? ListTile(
-                          leading: (brandThumbUrl.isNotEmpty)
-                            ? CachedNetworkImage(
-                              imageUrl: brandThumbUrl,
-                              width: 50,
-                              height: 50,
-                              placeholder: (context, url) => CircularProgressIndicator(),
-                            )
-                            : Image.asset(
-                              'lib/assets/default_icon.png',
-                              fit: BoxFit.cover,
-                            ),
+                          leading: IconPic(path: brand.iconPath, size: 50),
                           title: Text(brand.display),
                           subtitle: Text(drinkName),
                         )

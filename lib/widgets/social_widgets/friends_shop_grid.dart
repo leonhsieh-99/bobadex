@@ -4,6 +4,7 @@ import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/friends_shop_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/user_state.dart';
+import 'package:bobadex/widgets/icon_pic.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -129,7 +130,7 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
     );
   }
 
-  Widget _buildShopPearl(shop) {
+  Widget _buildShopPearl(FriendsShop shop) {
     final brandState = context.read<BrandState>();
     final brand = brandState.getBrand(shop.brandSlug);
     final userState = context.read<UserState>();
@@ -155,23 +156,7 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
               color: themeColor.shade200,
               shape: BoxShape.circle,
             ),
-            child: ClipOval(
-              child: (shop.brandSlug == null || shop.brandSlug!.isEmpty) || (brand!.iconPath == null || brand.iconPath!.isEmpty)
-                ? Image.asset(
-                  'lib/assets/default_icon.png',
-                  fit: BoxFit.cover,
-                  )
-                : CachedNetworkImage(
-                  imageUrl: brand.thumbUrl,
-                  width: 64,
-                  height: 64,
-                  fit: BoxFit.cover,
-                  placeholder: (context, _) => Container(
-                    color: Colors.grey.shade200,
-                  ),
-                  errorWidget: (context, _, __) => Icon(Icons.store, size: 30, color: Colors.grey),
-                ),
-              )
+            child: IconPic(path: brand!.iconPath, size: 64)
           ),
           const SizedBox(height: 10),
           Text(

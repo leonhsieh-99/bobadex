@@ -49,8 +49,7 @@ class _GalleryGridState extends State<GalleryGrid> {
       // Build GalleryImage list
       final galleryImages = widget.mediaList.map((media) => GalleryImage(
         url: media.imageUrl,
-        thumbUrl: media.thumbUrl,
-        userThumbUrl: media.userThumbUrl,
+        userImagePath: media.profileImagePath,
         userName: media.userDisplayName,
         id: media.id,
         comment: media.comment ?? '',

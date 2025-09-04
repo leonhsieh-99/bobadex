@@ -10,6 +10,7 @@ import 'package:bobadex/pages/shop_gallery_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
+import 'package:bobadex/widgets/icon_pic.dart';
 import 'package:bobadex/widgets/social_widgets/brand_feed_view.dart';
 import 'package:bobadex/widgets/image_widgets/horizontal_photo_preview.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -115,6 +116,18 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
     }
   }
 
+  void viewAllPhotos(List<ShopMedia> medias) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) =>
+        ShopGalleryPage(
+          shopMediaList: medias,
+          isCurrentUser: false,
+          onFetchMore: (offset, limit) => fetchGallery(offset: offset, limit: limit),
+        )
+      )
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final shopState = context.watch<ShopState>();
@@ -156,15 +169,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                         foregroundColor: WidgetStatePropertyAll(Colors.black),
                       ),
                       onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(    
-                            builder: (_) => ShopGalleryPage(
-                              shopMediaList: medias,
-                              isCurrentUser: false,
-                              onFetchMore: (offset, limit) => fetchGallery(offset: offset, limit: limit),
-                            ),
-                          ),
-                        );
+                        viewAllPhotos(medias);
                       },
                       child: Text(
                         'View All',
@@ -179,15 +184,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                 height: 200,
                 child: medias.isEmpty
                   ? const Center(child: Text('No community photos yet', style: Constants.emptyListTextStyle))
-                  : HorizontalPhotoPreview(maxPreview: 3, height: 200, width: 150, shopMediaList: medias, onViewAll: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) =>
-                      ShopGalleryPage(
-                        shopMediaList: medias,
-                        isCurrentUser: false,
-                        onFetchMore: (offset, limit) => fetchGallery(offset: offset, limit: limit),
-                      )
-                    )),
-                  )
+                  : HorizontalPhotoPreview(maxPreview: 3, height: 200, width: 150, shopMediaList: medias, onViewAll: () => viewAllPhotos)
               ),
             ],
           );
@@ -209,6 +206,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                     widget.brand,
                     _globalGalleryFuture,
                     buildBannerContent(context, widget.brand, _statsFuture),
+                    (medias) => viewAllPhotos(medias),
                   ),
                   // back button
                   Positioned(
@@ -358,85 +356,71 @@ Widget _buildBrandBanner(
   Brand brand,
   Future<List<ShopMedia>> galleryFuture,
   Widget childContent,
+  ValueChanged<List<ShopMedia>> onTapWithMedias,
 ) {
-  return FutureBuilder(
+  return FutureBuilder<List<ShopMedia>>(
     future: galleryFuture,
     builder: (context, snapshot) {
+      final medias = snapshot.data ?? [];
       String? bgUrl;
-      if (snapshot.hasData && (snapshot.data?.isNotEmpty ?? false)) {
-        final images = snapshot.data!;
-        bgUrl = (images..shuffle()).first.imageUrl;
+      if (medias.isNotEmpty) {
+        final images = List<ShopMedia>.of(medias);
+        images.shuffle();
+        bgUrl = images.first.imageUrl;
       }
 
-      return Container(
-        height: 250,
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Colors.grey,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // banner
-            if (bgUrl != null)
-              CachedNetworkImage(
-                imageUrl: bgUrl,
-                fit: BoxFit.cover,
-                color: Colors.black.withOpacity(0.35),
-                colorBlendMode: BlendMode.darken,
-              ),
-            // gradient
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                height: 100,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black54,
-                    ],
+      return InkWell(
+        onTap: medias.isNotEmpty ? () => onTapWithMedias(medias) : null, // ⬅️ wire here
+        child: Container(
+          height: 250,
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: const BoxDecoration(color: Colors.grey),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (bgUrl != null)
+                CachedNetworkImage(
+                  imageUrl: bgUrl,
+                  fit: BoxFit.cover,
+                  color: Colors.black.withOpacity(0.35),
+                  colorBlendMode: BlendMode.darken,
+                ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  height: 100,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, Colors.black54],
+                    ),
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(16),
-              child: Align(
-                alignment: Alignment.bottomLeft,
-                child: childContent,
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Align(
+                  alignment: Alignment.bottomLeft,
+                  child: childContent,
+                ),
               ),
-            )
-          ],
+            ],
+          ),
         ),
       );
-    }
+    },
   );
 }
+
 
 Widget buildBannerContent(BuildContext context, Brand brand, Future<BrandStats> statsFuture) {
   return IntrinsicHeight(
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.end, // bottom align children
       children: [
-        ClipOval(
-          child: brand.iconPath != null && brand.iconPath!.isNotEmpty
-            ? CachedNetworkImage(
-              imageUrl: brand.thumbUrl,
-              width: 70,
-              height: 70,
-              fit: BoxFit.cover,
-            )
-            : Image.asset(
-              'lib/assets/default_icon.png',
-              width: 70,
-              height: 70,
-              fit: BoxFit.cover,
-            ),
-        ),
+        IconPic(path: brand.iconPath),
         const SizedBox(width: 8),
         Expanded(
           child: Column(

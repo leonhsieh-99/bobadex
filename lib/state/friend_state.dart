@@ -38,8 +38,8 @@ class FriendState extends ChangeNotifier {
     return friends.firstWhere((f) => f.id == userId).displayName;
   }
 
-  String getThumbUrl(String userId) {
-    return friends.firstWhere((f) => f.id == userId).thumbUrl;
+  String? getImagePath(String userId) {
+    return friends.firstWhere((f) => f.id == userId).profileImagePath;
   }
 
   u.User getFriend(String userId) {

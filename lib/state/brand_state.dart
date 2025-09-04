@@ -37,21 +37,19 @@ class BrandState extends ChangeNotifier {
 
   Future<void> loadFromSupabase({bool forceRefresh = false}) async {
     final supabase = Supabase.instance.client;
-
     final cacheBox = await Hive.openBox(_cacheBox);
-    final cachedData = cacheBox.get('brands');
 
-    // load cache first
-    final cachedLastUpdatedStr = cacheBox.get('brands_last_updated');
+    // 1) Warm from cache
+    final cachedData = cacheBox.get('brands');
+    final cachedLastUpdatedStr = cacheBox.get('brands_last_updated') as String?;
     final cachedLastUpdated = cachedLastUpdatedStr != null
-      ? DateTime.tryParse(cachedLastUpdatedStr)
-      : null;
+        ? DateTime.tryParse(cachedLastUpdatedStr)
+        : null;
 
     if (!forceRefresh && cachedData != null && _brands.isEmpty) {
       final cachedBrands = (cachedData as List)
-        .map((json) => Brand.fromJson(Map<String, dynamic>.from(json)))
-        .toList();
-      
+          .map((json) => Brand.fromJson(Map<String, dynamic>.from(json)))
+          .toList();
       _brands
         ..clear()
         ..addAll(cachedBrands);
@@ -61,38 +59,47 @@ class BrandState extends ChangeNotifier {
     }
 
     try {
-      final versionResponse = await RetryHelper.retry(() => supabase
-        .from('brand_metadata')
-        .select('last_updated')
-        .eq('id', 1)
-        .maybeSingle());
+      // 2) Get server version
+      final versionRow = await RetryHelper.retry(() => supabase
+          .from('brand_metadata')
+          .select('last_updated')
+          .eq('id', 1)
+          .maybeSingle());
 
-      final serverLastUpdated = versionResponse != null
-        ? DateTime.tryParse(versionResponse['last_updated'])
-        : null;
+      final serverLastUpdated = versionRow != null
+          ? DateTime.tryParse(versionRow['last_updated'] as String)
+          : null;
 
       final needsUpdate = forceRefresh ||
-        serverLastUpdated == null ||
-        cachedLastUpdated == null ||
-        serverLastUpdated.isAfter(cachedLastUpdated);
+          serverLastUpdated == null ||
+          cachedLastUpdated == null ||
+          serverLastUpdated.isAfter(cachedLastUpdated);
 
-      if (needsUpdate) {
-        final response = await RetryHelper.retry(() => supabase.from('brands').select());
-        final freshBrands = response.map<Brand>((json) => Brand.fromJson(json)).toList();
+      if (!needsUpdate) {
+        debugPrint('Cache is up to date. No fetch needed');
+        return;
+      }
 
-        _brands
-          ..clear()
-          ..addAll(freshBrands);
-        _updateNameLookup();
-        notifyListeners();
-        debugPrint('Loaded ${_brands.length} brands from Supabase');
+      // 3) Fetch fresh list
+      final rows = await RetryHelper.retry(() => supabase
+          .from('brands')
+          .select('*')
+          .order('slug'));
 
-        await cacheBox.put('brands', freshBrands.map((b) => b.toJson()).toList());
-        if (serverLastUpdated != null) {
-          await cacheBox.put('brands_last_updated', DateTime.now().toIso8601String());
-        } else {
-          debugPrint('Cache is up to date. No fetch needed');
-        }
+      final freshBrands =
+          (rows as List).map<Brand>((json) => Brand.fromJson(json)).toList();
+
+      _brands
+        ..clear()
+        ..addAll(freshBrands);
+      _updateNameLookup();
+      notifyListeners();
+      debugPrint('Loaded ${_brands.length} brands from Supabase');
+
+      // 4) Persist cache + SERVER timestamp
+      await cacheBox.put('brands', freshBrands.map((b) => b.toJson()).toList());
+      if (serverLastUpdated != null) {
+        await cacheBox.put('brands_last_updated', serverLastUpdated.toIso8601String());
       }
     } catch (e) {
       if (!_hasError) {

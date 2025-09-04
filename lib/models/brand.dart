@@ -19,12 +19,6 @@ class Brand {
         .getPublicUrl(iconPath!.trim())
     : '';
 
-  String get thumbUrl => iconPath != null && iconPath!.isNotEmpty
-    ? Supabase.instance.client.storage
-        .from('shop-media')
-        .getPublicUrl('thumbs/${iconPath!.trim()}')
-    : '';
-
   factory Brand.fromJson(Map<String, dynamic> json) {
     return Brand(
       slug: json['slug'],

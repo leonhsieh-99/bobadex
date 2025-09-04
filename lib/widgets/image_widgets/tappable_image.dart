@@ -1,5 +1,12 @@
+import 'package:bobadex/helpers/build_transformed_url.dart';
 import 'package:bobadex/models/shop_media.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+String _originalUrl(String path) {
+  return Supabase.instance.client.storage.from('media-uploads').getPublicUrl(path);
+}
 
 class TappableImage extends StatelessWidget {
   final ShopMedia media;
@@ -24,79 +31,57 @@ class TappableImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget image;
+
     try {
       if (media.isPending && media.localFile != null) {
         image = Image.file(
-          media.localFile!, 
-          fit: BoxFit.cover, 
-          width: width, 
+          media.localFile!,
+          fit: BoxFit.cover,
+          width: width,
           height: height,
-          errorBuilder: (context, error, stackTrace) {
-            debugPrint("Failed to load local image: $error");
-            return Icon(Icons.broken_image, size: 40);
-          }
+          errorBuilder: (_, err, __) {
+            debugPrint("Failed to load local image: $err");
+            return const Icon(Icons.broken_image, size: 40);
+          },
         );
       } else {
-        if (useHero) {
-          image = Hero(
-            tag: media.id,
-            child: Image.network(
-              media.thumbUrl,
-              fit: BoxFit.cover,
+        final path = media.imagePath;
+        final hasPath = path.isNotEmpty;
+        final tUrl = hasPath
+            ? buildTransformedUrl(
+                bucket: 'media-uploads',
+                path: path,
+                resize: 'cover',
+                quality: 100
+              )
+            : null;
+        final oUrl = (path.isNotEmpty) ? _originalUrl(path) : null;
+
+        Widget net = (tUrl != null)
+          ? CachedNetworkImage(
+              imageUrl: tUrl,
               width: width,
               height: height,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Container(
-                  width: width,
-                  height: height,
-                  color: Colors.grey[300],
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                          : null,
-                    ),
-                  ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) {
-                debugPrint("Failed to load image: $error");
-                return const SizedBox.shrink();
-              }
-            ),
-          );
-        } else {
-          image = Image.network(
-            media.thumbUrl,
-            fit: BoxFit.cover,
-            width: width,
-            height: height,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Container(
-                width: width,
-                height: height,
-                color: Colors.grey[300],
-                child: Center(
-                  child: CircularProgressIndicator(
-                    value: loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                        : null,
-                  ),
-                ),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              debugPrint("Failed to load image: $error");
-              return const SizedBox.shrink();
-            }
-          );
-        }
+              fit: BoxFit.cover,
+              placeholder: (_, __) => _placeholder(width, height),
+              errorWidget: (_, __, ___) => (oUrl != null)
+                  ? CachedNetworkImage(
+                      imageUrl: oUrl,
+                      width: width,
+                      height: height,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => _placeholder(width, height),
+                      errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                    )
+                  : const SizedBox.shrink(),
+            )
+          : const SizedBox.shrink();
+
+        image = useHero ? Hero(tag: media.id, child: net) : net;
       }
     } catch (e) {
       debugPrint("Error building image widget: $e");
-      image = Icon(Icons.broken_image, size: 40);
+      image = const Icon(Icons.broken_image, size: 40);
     }
 
     return GestureDetector(
@@ -107,58 +92,37 @@ class TappableImage extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             child: image,
           ),
+
           // Pending overlay
           if (media.isPending && media.localFile != null)
-            Positioned.fill(child: Container(
-              color: Colors.black26,
-              child: Center(child: CircularProgressIndicator()),
-            )),
+            Positioned.fill(
+              child: Container(
+                color: Colors.black26,
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+            ),
+
           // Selection highlight
           if (selectable && selected)
-            Positioned.fill(child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.deepPurple, width: 3),
-                borderRadius: BorderRadius.circular(10),
-                color: Colors.black26,
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.deepPurple, width: 3),
+                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.black26,
+                ),
+                child: const Icon(Icons.check_circle, color: Colors.white, size: 36),
               ),
-              child: Icon(Icons.check_circle, color: Colors.white, size: 36),
-            )),
+            ),
         ],
       ),
     );
   }
-}
 
-class SkeletonTappableImage extends StatelessWidget {
-  final double width;
-  final double height;
-
-  const SkeletonTappableImage({
-    super.key,
-    required this.width,
-    required this.height,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: Colors.grey[300],
-        ),
-        child: Stack(
-          children: [
-            // Optional: add a subtle shimmer with AnimatedContainer or shimmer package
-            // For now, just a static box
-            Center(
-              child: Icon(Icons.image, color: Colors.grey[400], size: width * 0.35),
-            ),
-          ],
-        ),
-      ),
+  Widget _placeholder(double w, double h) => Container(
+      width: w,
+      height: h,
+      color: Colors.grey[300],
+      child: const Center(child: CircularProgressIndicator()),
     );
-  }
 }

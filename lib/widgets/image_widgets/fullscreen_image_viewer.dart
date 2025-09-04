@@ -15,22 +15,20 @@ enum FullscreenImageMode { upload, edit, view }
 class GalleryImage {
   final String? id; // DB id (nullable for new uploads)
   final String? url; // For network images
-  final String? thumbUrl; // palceholder
   final File? file;
   String comment;
   String visibility;
-  String? userThumbUrl;
+  String? userImagePath;
   String? userName;
   String? userId;
 
   GalleryImage({
     this.url,
-    this.thumbUrl,
     this.id,
     this.file,
     this.comment = '',
     this.visibility = 'private',
-    this.userThumbUrl,
+    this.userImagePath,
     this.userName,
     this.userId,
   });
@@ -173,7 +171,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
               children: [
                 if (!canEdit && widget.showUserInfo)
                   ThumbPic(
-                    url: img.userThumbUrl ?? '',
+                    path: img.userImagePath ?? '',
                     size: 40,
                     onTap: img.userId == null
                         ? null // disables tap + ripple in most GestureDetectors
@@ -225,7 +223,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                 Row(
                   children: [
                     ThumbPic(
-                      url: img.userThumbUrl ?? '',
+                      path: img.userImagePath ?? '',
                       size: 40,
                       onTap: img.userId == null
                           ? null
@@ -316,7 +314,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                             ),
                             loadStateChanged: (state) {
                               if (state.extendedImageLoadState == LoadState.loading) {
-                                return Image.network(img.thumbUrl!, fit: BoxFit.contain);
+                                return ThumbPic(path: img.userImagePath);
                               }
                               return null;
                             },

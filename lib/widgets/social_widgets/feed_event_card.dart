@@ -6,6 +6,7 @@ import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/widgets/image_widgets/horizontal_photo_preview.dart';
 import 'package:bobadex/widgets/number_rating.dart';
 import 'package:bobadex/widgets/social_widgets/feed_card_options.dart';
+import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -97,15 +98,12 @@ class FeedEventCard extends StatelessWidget {
           if (opts.showAvatar)
             Padding(
               padding: const EdgeInsets.only(right: 10),
-              child: GestureDetector(
+              child: ThumbPic(
+                path: user.profileImagePath,
+                size: 40,
+                initials: user.firstName[0].toUpperCase(),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => AccountViewPage(userId: user.id, user: user))),
-                child: CircleAvatar(
-                  backgroundColor: Colors.grey.shade400,
-                  radius: 20,
-                  backgroundImage: (user.thumbUrl.isNotEmpty) ? NetworkImage(user.thumbUrl) : null,
-                  child: (user.thumbUrl.isEmpty) ? Text(user.firstName.isNotEmpty ? user.firstName[0].toUpperCase() : '?') : null,
-                ),
               ),
             ),
           Expanded(

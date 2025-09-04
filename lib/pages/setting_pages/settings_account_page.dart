@@ -4,6 +4,7 @@ import 'package:bobadex/helpers/image_uploader_helper.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/utils/validators.dart';
 import 'package:bobadex/widgets/change_password_dialong.dart';
+import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,7 +12,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
 import '../../helpers/image_picker_helper.dart';
 import '../../state/user_state.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/text_field_edit_dialog.dart';
 
 class SettingsAccountPage extends StatefulWidget{
@@ -68,7 +68,6 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
           path = await ImageUploaderHelper.uploadImage(
             file: File(newImagePath),
             folder: 'user-uploads',
-            generateThumbnail: true,
           );
         } catch (e) {
           debugPrint('Image upload failed: $e');
@@ -243,16 +242,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                     Center(
                       child: GestureDetector(
                         onTap: () => _handleImagePick(userState),
-                        child: (user.profileImagePath != null && user.profileImagePath!.isNotEmpty)
-                          ? CircleAvatar(
-                              radius: 70,
-                              backgroundImage: CachedNetworkImageProvider(user.thumbUrl),
-                            )
-                          : CircleAvatar(
-                              radius: 70,
-                              backgroundColor: Colors.grey[200],
-                              child: const Icon(Icons.person, size: 80, color: Colors.grey),
-                            ),
+                        child: ThumbPic(path: user.profileImagePath, size: 150)
                       ),
                     ),
                     const SizedBox(height: 16),

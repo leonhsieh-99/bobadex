@@ -28,10 +28,9 @@ class HorizontalPhotoPreview extends StatelessWidget {
           images: mediaList.map((m) =>
             GalleryImage(
               url: m.imageUrl,
-              thumbUrl: m.thumbUrl,
               id: m.id,
               comment: m.comment ?? '',
-              userThumbUrl: m.userThumbUrl,
+              userImagePath: m.profileImagePath,
               userName: m.userDisplayName,
               userId: m.userId,
             )

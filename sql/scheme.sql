@@ -136,11 +136,11 @@ create index on reports(content_type, content_id);
 -- Brands Table
 create table brands (
   slug text primary key,                -- e.g. 'gong-cha'
-  display text,
+  display text not null,
   wikidata text,                        -- Q-ID when known
   aliases text[],                       -- lower-case spellings
   logo_url text,
-  icon_path text,
+  icon_path text
 );
 
 CREATE TABLE brand_aliases (
@@ -200,6 +200,6 @@ CREATE INDEX boundary_gix ON ref.boundaries USING GIST (geom);
 
 ----------ADMIN-----------
 
-create table if not exists admin_users (
+create table if not exists admins (
   user_id uuid primary key references auth.users(id) on delete cascade
 );

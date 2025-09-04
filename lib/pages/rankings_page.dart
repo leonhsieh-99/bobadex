@@ -73,7 +73,7 @@ class _RankingsPageState extends State<RankingsPage> {
                     return ListTile(
                       minTileHeight: 60,
                       title: Text(user.displayName),
-                      leading: ThumbPic(url: user.thumbUrl),
+                      leading: ThumbPic(path: user.profileImagePath),
                       subtitle: Text('@${user.username}'),
                       trailing: Text(
                         user.shopCount.toString(),

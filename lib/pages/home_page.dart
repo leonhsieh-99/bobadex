@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:bobadex/helpers/build_transformed_url.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/achievements_page.dart';
@@ -10,6 +11,7 @@ import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/widgets/confirmation_dialog.dart';
+import 'package:bobadex/widgets/icon_pic.dart';
 import 'package:bobadex/widgets/onboarding_gate.dart';
 import 'package:bobadex/widgets/onboarding_wizard.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
@@ -192,19 +194,29 @@ class _HomePageState extends State<HomePage> {
             // actual data
             final shop = visibleShops[index];
             final brand = brandState.getBrand(shop.brandSlug);
-            final String? url = brand?.thumbUrl;
-            final bool hasValidThumb = url != null && url.isNotEmpty;
             final useIcons = user.useIcons == true;
 
             // banner vars
             final banner = bannerByShop[shop.id];
-            final String? bannerUrl = banner?.imageUrl;
-            final String? brandThumb = brand?.thumbUrl;
-            final bool hasBanner = bannerUrl != null && bannerUrl.isNotEmpty;
-            final bool hasBrandThumb = brandThumb != null && brandThumb.isNotEmpty;
+            final String? bannerPath = banner?.imagePath;
+            final String? brandIconPath = brand?.iconPath;
+
+            final bool hasBanner = bannerPath != null && bannerPath.isNotEmpty;
+            final bool hasBrandIcon = brandIconPath != null && brandIconPath.isNotEmpty;
+
             final String? displayUrl = hasBanner
-                ? bannerUrl
-                : (hasBrandThumb ? brandThumb : null);
+              ? buildTransformedUrl(
+                  bucket: 'media-uploads',
+                  path: bannerPath,
+                  resize: 'cover',
+                )
+              : (hasBrandIcon
+                  ? buildTransformedUrl(
+                      bucket: 'shop-media',
+                      path: brandIconPath,
+                      resize: 'contain',
+                    )
+                  : null);
 
             int uiDrinkCount(BuildContext context, String shopId) {
               final drinkState = context.watch<DrinkState>();
@@ -284,24 +296,7 @@ class _HomePageState extends State<HomePage> {
                           Positioned(
                             bottom: 8,
                             right: 8,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: SizedBox(
-                                width: 55 * imageScale,
-                                height: 60 * imageScale,
-                                child: hasValidThumb
-                                  ? CachedNetworkImage(
-                                      imageUrl: url,
-                                      fit: BoxFit.cover,
-                                      placeholder: (context, url) => CircularProgressIndicator(),
-                                      errorWidget: (context, url, error) => Icon(Icons.broken_image, size: 50 * imageScale),
-                                    )
-                                  : Image.asset(
-                                      'lib/assets/default_icon.png',
-                                      fit: BoxFit.cover,
-                                    ),
-                              )
-                            ),
+                            child: IconPic(path: brandIconPath, size: 55 * imageScale)
                           ),
                           if (shop.isFavorite)
                           Positioned(
@@ -437,10 +432,8 @@ class _HomePageState extends State<HomePage> {
 
         return Scaffold(
           extendBody: true,
-          backgroundColor: themeColor.shade50,
           appBar: AppBar(
             title: Text('${user.firstName}\'s Bobadex'),
-            backgroundColor: themeColor.shade50,
           ),
           drawer: isCurrentUser ? Drawer(
             child: ListView(
@@ -452,7 +445,7 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ThumbPic(url: userState.current.thumbUrl, size: 120,),
+                      ThumbPic(path: userState.current.profileImagePath, size: 120,),
                     ],
                   )
                 ),

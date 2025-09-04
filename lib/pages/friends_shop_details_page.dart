@@ -5,7 +5,8 @@ import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/user_state.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:bobadex/widgets/icon_pic.dart';
+import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -19,12 +20,6 @@ class FriendsShopDetailsPage extends StatelessWidget {
     required this.shop,
     this.mostDrinksUser,
   });
-
-  String getThumbUrl(String? imagePath) {
-    return imagePath != null && imagePath.isNotEmpty
-        ? Supabase.instance.client.storage.from('media-uploads').getPublicUrl('thumbs/${imagePath.trim()}')
-        : '';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,13 +77,13 @@ class FriendsShopDetailsPage extends StatelessWidget {
       final drinkCount = info.drinksTried;
 
       String displayName;
-      String thumbUrl;
+      String? imagePath;
       if (userId == userState.current.id) {
         displayName = 'You';
-        thumbUrl = userState.current.thumbUrl;
+        imagePath = userState.current.profileImagePath;
       } else {
         displayName = friendState.getDisplayName(userId);
-        thumbUrl = friendState.getThumbUrl(userId);
+        imagePath = friendState.getImagePath(userId);
       }
 
       Widget baseCard() => Card(
@@ -110,13 +105,7 @@ class FriendsShopDetailsPage extends StatelessWidget {
                     : () =>  Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => AccountViewPage(userId: userId, user: friendState.getFriend(userId)))
                     ),
-                  child: CircleAvatar(
-                    backgroundImage: thumbUrl.isNotEmpty
-                        ? CachedNetworkImageProvider(thumbUrl)
-                        : null,
-                    radius: isCrown ? 28 : 24,
-                    child: thumbUrl.isEmpty ? const Icon(Icons.person) : null,
-                  ),
+                  child: ThumbPic(path: imagePath, size: 45)
                 ),
                 if (isCrown)
                   Positioned(
@@ -235,21 +224,7 @@ class FriendsShopDetailsPage extends StatelessWidget {
                     color: themeColor.shade200,
                     shape: BoxShape.circle,
                   ),
-                  child: ClipOval(
-                    child: (shop.iconPath.isNotEmpty)
-                      ? CachedNetworkImage(
-                          imageUrl: brandState.getBrand(shop.brandSlug)!.thumbUrl,
-                          width: 150,
-                          height: 150,
-                          fit: BoxFit.cover,
-                        )
-                      : Image.asset(
-                          'lib/assets/default_icon.png',
-                          width: 150,
-                          height: 150,
-                          fit: BoxFit.cover,
-                        ),
-                  ),
+                  child: IconPic(path: brandState.getBrand(shop.brandSlug)!.iconPath, size: 150)
                 ),
               ),
             ),

@@ -42,19 +42,6 @@ class User {
     }
   }
 
-  String get thumbUrl {
-    try {
-      return profileImagePath != null && profileImagePath!.isNotEmpty
-        ? Supabase.instance.client.storage
-            .from('media-uploads')
-            .getPublicUrl('thumbs/${profileImagePath!.trim()}')
-        : '';
-    } catch (e) {
-      debugPrint('Error generating thumbnail URL: $e');
-      return '';
-    }
-  }
-
   factory User.fromMap(Map<String, dynamic> profile, Map<String, dynamic>? settings) {
     return User(
       id: profile['id'],

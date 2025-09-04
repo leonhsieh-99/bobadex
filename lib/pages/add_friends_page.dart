@@ -89,7 +89,7 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
                 return ListTile(
                   title: Text(addressee.username),
                   subtitle: Text(addressee.displayName),
-                  leading: ThumbPic(url: addressee.imageUrl),
+                  leading: ThumbPic(path: addressee.profileImagePath),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => AccountViewPage(userId: addressee.id, user: addressee))
                   ), 

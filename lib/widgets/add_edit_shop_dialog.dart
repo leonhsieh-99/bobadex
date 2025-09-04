@@ -140,7 +140,6 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
           final imagePath = await ImageUploaderHelper.uploadImage(
             file: img.file!,
             folder: 'shop-gallery',
-            generateThumbnail: true,
           );
 
           uploadedImages[idx] = {

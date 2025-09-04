@@ -47,7 +47,7 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> {
                   return ListTile(
                     title: Text(requester.username),
                     subtitle: Text(requester.displayName),
-                    leading: ThumbPic(url: requester.imageUrl, size: 60),
+                    leading: ThumbPic(path: requester.profileImagePath, size: 60),
                     minLeadingWidth: 60,
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => AccountViewPage(userId: requester.id, user: requester))

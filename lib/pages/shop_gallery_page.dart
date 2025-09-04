@@ -141,11 +141,10 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
           final imagePath = await ImageUploaderHelper.uploadImage(
             file: img.file!,
             folder: 'shop-gallery',
-            generateThumbnail: true,
           );
 
           final realMedia = ShopMedia(
-            id: '', // Will be set by backend
+            id: '',
             shopId: widget.shopId!,
             userId: Supabase.instance.client.auth.currentUser!.id,
             imagePath: imagePath,
@@ -178,15 +177,12 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
     final shopMedia = userGallery
       ? shopMediaState.getByShop(widget.shopId!)
       : _mediaList;
-    final themeColor = widget.themeColor != null ? Constants.getThemeColor(widget.themeColor!).shade50 : Theme.of(context).primaryColor;
 
     return Stack(
       children: [
         Scaffold(
-          backgroundColor: themeColor,
           appBar: AppBar(
             title: Text('Photos (${shopMedia.length.toString()})'),
-            backgroundColor: themeColor,
             actions: [
               if (widget.isCurrentUser && !_selecting)
                 IconButton(
