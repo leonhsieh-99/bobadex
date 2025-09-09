@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/media_realtime_service.dart';
 import 'package:bobadex/navigation.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/state/achievements_state.dart';
@@ -29,6 +30,7 @@ class _AppInitializerState extends State<AppInitializer> {
   bool _routingLock = false;
   StreamSubscription? _achievmentSub;
   StreamSubscription<AuthState>? _authSub;
+  final _mediaRT = MediaRealtimeService();
   late u.User user;
 
   @override
@@ -41,6 +43,7 @@ class _AppInitializerState extends State<AppInitializer> {
   void dispose() {
     _achievmentSub?.cancel();
     _authSub?.cancel();
+    _mediaRT.stop();
     super.dispose();
   }
 
@@ -122,6 +125,7 @@ class _AppInitializerState extends State<AppInitializer> {
             _resetAllStates();
             await _achievmentSub?.cancel();
             _achievmentSub = null;
+            await _mediaRT.stop();
             await _go('/auth');
             break;
 
@@ -240,6 +244,22 @@ class _AppInitializerState extends State<AppInitializer> {
     } catch (e) {
       debugPrint('Error loading feed state: $e');
     }
+
+    _mediaRT.start(
+      onDeleteById: (deletedId) async {
+        if (!mounted) return;
+        try {
+          context.read<ShopMediaState>().removeCache(deletedId);
+          context.read<FeedState>().removeImageCache(deletedId);
+        } catch (e) {
+          debugPrint('onDeleteById prune error: $e');
+        }
+      },
+      onOwnMediaDeleted: (_) {
+        notify('One of your uploads was removed by moderators.', SnackType.error);
+      },
+    );
+
 
     return true;
   }

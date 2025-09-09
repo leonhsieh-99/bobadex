@@ -1,9 +1,10 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _kAvatarSmall = [64, 96, 128, 192, 256];
-const _kAvatarLarge = [192, 256, 320, 512];
+const _kAvatarSmall = Constants.avatarSmall;
+const _kAvatarLarge = Constants.avatarLarge;
 
 int _ceilBucket(int v, List<int> buckets) {
   for (final b in buckets) {

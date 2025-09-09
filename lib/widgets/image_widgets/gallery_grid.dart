@@ -67,7 +67,7 @@ class _GalleryGridState extends State<GalleryGrid> {
             onEdit: widget.isEditable
               ? (img, comment, visibility) async {
                 try {
-                  await context.read<ShopMediaState>().editMedia(img.id, comment, visibility);
+                  await context.read<ShopMediaState>().editMedia(img.id!, comment, visibility);
                   notify('Updated photo', SnackType.success);
                 } catch (e) {
                   notify('Error updating comment: $e', SnackType.error);

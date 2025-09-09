@@ -76,7 +76,7 @@ class ShopMediaState extends ChangeNotifier {
     }
   }
 
-  Future<void> editMedia(id, comment, visibility) async {
+  Future<void> editMedia(String id, String comment, String visibility) async {
     final mediaIdx = _shopMedia.indexWhere((m) => m.id == id);
     final tempMedia = _shopMedia[mediaIdx];
     _shopMedia[mediaIdx] = tempMedia.copyWith(comment: comment, visibility: visibility);
@@ -158,6 +158,12 @@ class ShopMediaState extends ChangeNotifier {
       notifyListeners();
       rethrow;
     }
+  }
+
+  // removes local cache. DB deletion done from admin panel
+  void removeCache(String id) async {
+    _shopMedia.removeWhere((sm) => sm.id == id);
+    notifyListeners();
   }
 
   Future<void> removeAllMediaForShop(String shopId) async {

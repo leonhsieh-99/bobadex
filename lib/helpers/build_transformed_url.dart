@@ -15,7 +15,6 @@ String buildTransformedUrl({
   final base = Supabase.instance.client.storage.from(bucket).getPublicUrl(cleanPath);
   final u = Uri.parse(base);
 
-  // swap /object/public -> /render/image/public
   final renderPath = u.path.replaceFirst(
     '/storage/v1/object/public/',
     '/storage/v1/render/image/public/',
@@ -25,7 +24,7 @@ String buildTransformedUrl({
     if (width != null) 'width': '$width',
     if (height != null) 'height': '$height',
     'resize': resize,
-    'quality': '${quality.clamp(1, 100)}', // always valid
+    'quality': '${quality.clamp(1, 100)}',
     if (format != null) 'format': format,
   };
 

@@ -1,8 +1,9 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _kSquareBuckets = [64, 128, 160, 256];
+const _kSquareBuckets = Constants.avatarSmall;
 
 int _nearestPx(int v, List<int> buckets) =>
     buckets.reduce((a, b) => (v - a).abs() < (v - b).abs() ? a : b);

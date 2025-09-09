@@ -35,6 +35,22 @@ class Constants {
   static const int defaultFeedLimit = 50;
   static const int defaultGalleryLimit = 20;
   static const int snackBarDuration = 2900; // milliseconds
+  // image sizes
+  static const avatarSmall = <int>[64, 128, 192, 256];
+  static const avatarLarge = <int>[192, 256, 320, 512];
+  static List<(int w, int h)> allVariants() {
+    final set = <String>{};
+    void addIntList(List<int> xs) {
+      for (final s in xs) { set.add('$s:$s'); }
+    }
+    addIntList(avatarSmall);
+    addIntList(avatarLarge);
+
+    return set.map((s) {
+      final parts = s.split(':');
+      return (int.parse(parts[0]), int.parse(parts[1]));
+    }).toList();
+  }
 
   static const int maxUsernameLength = 20;
   static const int maxNameLength = 40;

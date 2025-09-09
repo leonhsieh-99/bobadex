@@ -112,7 +112,11 @@ create table reports (
   content_id uuid not null,           -- id of reported item
   reason text not null,               -- category
   message text,                       -- optional, extra user message
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  status report_status not null default,
+  resolved_by uuid references auth.users(id),
+  resolved_at timestamptz,
+  resolution_note text
 );
 
 
@@ -140,7 +144,8 @@ create table brands (
   wikidata text,                        -- Q-ID when known
   aliases text[],                       -- lower-case spellings
   logo_url text,
-  icon_path text
+  icon_path text,
+  created_at timestamptz default now()
 );
 
 CREATE TABLE brand_aliases (

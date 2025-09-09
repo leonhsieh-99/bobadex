@@ -116,6 +116,11 @@ class FeedState extends ChangeNotifier {
     }
   }
 
+  void removeImageCache(String id) {
+    _feed.removeWhere((fe) => fe.eventType == 'shop_add' && fe.payload['images'].contains(id));
+    notifyListeners();
+  }
+
   void reset() {
     _feed.clear();
     _seenIds.clear();
