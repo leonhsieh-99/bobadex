@@ -5,7 +5,7 @@ import 'package:bobadex/state/feed_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
-import 'package:bobadex/widgets/image_widgets/multiselect_image_picker_dialog.dart';
+import 'package:bobadex/widgets/image_widgets/multiselect_image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -64,7 +64,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
     FocusScope.of(context).unfocus();
     final pickedImages = await showDialog<List<GalleryImage>>(
       context: context,
-      builder: (context) => MultiselectImagePickerDialog(),
+      builder: (context) => MultiselectImagePicker(maxImages: 5),
     );
     if (mounted) FocusScope.of(context).unfocus();
     if (pickedImages != null && pickedImages.isNotEmpty) {

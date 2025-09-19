@@ -105,7 +105,7 @@ class _FriendsPageState extends State<FriendsPage> {
                 final friend = filteredFriends[index];
                 return ListTile(
                   title: Text(friend.displayName),
-                  leading: ThumbPic(path: friend.profileImagePath),
+                  leading: ThumbPic(path: friend.profileImagePath, initials: friend.displayName),
                   subtitle: Text('@${friend.username}'),
                   onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AccountViewPage(userId: friend.id, user: friend))),
                 );

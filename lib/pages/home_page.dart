@@ -211,12 +211,12 @@ class _HomePageState extends State<HomePage> {
                   resize: 'cover',
                 )
               : (hasBrandIcon
-                  ? buildTransformedUrl(
-                      bucket: 'shop-media',
-                      path: brandIconPath,
-                      resize: 'contain',
-                    )
-                  : null);
+                ? buildTransformedUrl(
+                    bucket: 'shop-media',
+                    path: brandIconPath,
+                    resize: 'contain',
+                  )
+                : null);
 
             int uiDrinkCount(BuildContext context, String shopId) {
               final drinkState = context.watch<DrinkState>();

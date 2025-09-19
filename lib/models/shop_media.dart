@@ -36,14 +36,6 @@ class ShopMedia {
     ? Supabase.instance.client.storage.from('media-uploads').getPublicUrl(imagePath.trim())
     : '';
 
-  String get thumbUrl => imagePath.isNotEmpty
-    ? Supabase.instance.client.storage.from('media-uploads').getPublicUrl('thumbs/${imagePath.trim()}')
-    : '';
-
-  String get userThumbUrl => (profileImagePath != null && profileImagePath!.isNotEmpty)
-    ? Supabase.instance.client.storage.from('media-uploads').getPublicUrl('thumbs/${profileImagePath!.trim()}')
-    : '';
-
 
   factory ShopMedia.fromJson(Map<String, dynamic> json) {
     return ShopMedia(

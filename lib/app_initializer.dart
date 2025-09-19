@@ -154,7 +154,10 @@ class _AppInitializerState extends State<AppInitializer> {
   }
 
   Future<bool> _handleSignedIn(Session session) async {
-    if (_lastHandledSession?.accessToken == session.accessToken) return true;
+    if (_lastHandledSession?.accessToken == session.accessToken) {
+      debugPrint('Session unchanged, skipping reload');
+      return true;
+    }
     _lastHandledSession = session;
     _lastUserId = session.user.id;
 

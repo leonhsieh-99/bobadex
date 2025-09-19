@@ -49,6 +49,7 @@ class BobadexApp extends StatelessWidget {
               '/splash': (_) => SplashPage(),
             },
             navigatorKey: navigatorKey,
+            locale: Locale('en'),
             theme: ThemeData(
               primarySwatch: themeColor,
               colorScheme: ColorScheme(

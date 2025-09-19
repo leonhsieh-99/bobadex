@@ -106,7 +106,7 @@ class ThumbPic extends StatelessWidget {
   Widget _fallback() {
     final text = (initials ?? '').trim();
     if (text.isNotEmpty) {
-      final abbr = _twoChars(text).toUpperCase();
+      final abbr = _oneChar(text).toUpperCase();
       return Container(
         width: size,
         height: size,
@@ -126,8 +126,8 @@ class ThumbPic extends StatelessWidget {
     );
   }
 
-  String _twoChars(String s) {
+  String _oneChar(String s) {
     final cleaned = s.replaceAll(RegExp(r'\s+'), '');
-    return cleaned.characters.take(2).toString();
+    return cleaned.characters.take(1).toString();
   }
 }

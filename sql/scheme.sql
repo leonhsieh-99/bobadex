@@ -151,7 +151,8 @@ create table brands (
 CREATE TABLE brand_aliases (
   id serial PRIMARY KEY,
   brand_slug text REFERENCES brands(slug) ON DELETE CASCADE,
-  normalized_name text NOT NULL UNIQUE    -- e.g. 'gongcha', 'gong-cha', '贡茶'
+  normalized_name text NOT NULL UNIQUE,    -- e.g. 'gongcha', 'gong-cha', '贡茶'
+  created_at timestamptz default now()
 );
 
 create table brand_staging (

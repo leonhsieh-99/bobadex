@@ -8,7 +8,7 @@ import 'package:uuid/uuid.dart';
 class ImageUploaderHelper {
   static final _supabase = Supabase.instance.client;
   static const List<String> _supportedExtensions = [
-    'jpg', 'jpeg', 'png', 'gif', 'webp'
+    'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'
   ];
 
   static Future<String> uploadImage({

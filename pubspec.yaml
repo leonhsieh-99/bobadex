@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   image_picker: ^1.1.2
   supabase_flutter: ^2.9.1
   flutter_dotenv: ^5.0.2
@@ -48,7 +50,11 @@ dependencies:
   url_launcher: ^6.3.2
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-
+  wechat_assets_picker: ^9.8.0
+  wechat_camera_picker: ^4.4.0
+  photo_manager: ^3.0.0
+  path_provider: ^2.1.5
+  path: ^1.9.1
 
 
   # The following adds the Cupertino Icons font to your application.

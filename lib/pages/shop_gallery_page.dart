@@ -6,7 +6,7 @@ import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
 import 'package:bobadex/widgets/image_widgets/gallery_grid.dart';
-import 'package:bobadex/widgets/image_widgets/multiselect_image_picker_dialog.dart';
+import 'package:bobadex/widgets/image_widgets/multiselect_image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -97,7 +97,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
   void _addPhotos(ShopMediaState shopMediaState, AchievementsState achievementState) async {
     final images = await showDialog<List<GalleryImage>>(
       context: context,
-      builder: (context) => MultiselectImagePickerDialog(),
+      builder: (context) => MultiselectImagePicker(),
     );
     if (images == null || images.isEmpty) return;
     final bannerExists = shopMediaState.getBannerId(widget.shopId!) != null;

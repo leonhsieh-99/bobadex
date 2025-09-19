@@ -48,13 +48,13 @@ class TappableImage extends StatelessWidget {
         final path = media.imagePath;
         final hasPath = path.isNotEmpty;
         final tUrl = hasPath
-            ? buildTransformedUrl(
-                bucket: 'media-uploads',
-                path: path,
-                resize: 'cover',
-                quality: 100
-              )
-            : null;
+          ? buildTransformedUrl(
+              bucket: 'media-uploads',
+              path: path,
+              resize: 'cover',
+              quality: 100
+            )
+          : null;
         final oUrl = (path.isNotEmpty) ? _originalUrl(path) : null;
 
         Widget net = (tUrl != null)
@@ -65,15 +65,15 @@ class TappableImage extends StatelessWidget {
               fit: BoxFit.cover,
               placeholder: (_, __) => _placeholder(width, height),
               errorWidget: (_, __, ___) => (oUrl != null)
-                  ? CachedNetworkImage(
-                      imageUrl: oUrl,
-                      width: width,
-                      height: height,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) => _placeholder(width, height),
-                      errorWidget: (_, __, ___) => const SizedBox.shrink(),
-                    )
-                  : const SizedBox.shrink(),
+                ? CachedNetworkImage(
+                    imageUrl: oUrl,
+                    width: width,
+                    height: height,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => _placeholder(width, height),
+                    errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                  )
+                : const SizedBox.shrink(),
             )
           : const SizedBox.shrink();
 
@@ -120,9 +120,9 @@ class TappableImage extends StatelessWidget {
   }
 
   Widget _placeholder(double w, double h) => Container(
-      width: w,
-      height: h,
-      color: Colors.grey[300],
-      child: const Center(child: CircularProgressIndicator()),
-    );
+    width: w,
+    height: h,
+    color: Colors.grey[300],
+    child: const Center(child: CircularProgressIndicator()),
+  );
 }

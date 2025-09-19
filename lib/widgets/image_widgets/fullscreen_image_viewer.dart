@@ -314,7 +314,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                             ),
                             loadStateChanged: (state) {
                               if (state.extendedImageLoadState == LoadState.loading) {
-                                return ThumbPic(path: img.userImagePath);
+                                return null; // do something later maybe
                               }
                               return null;
                             },
