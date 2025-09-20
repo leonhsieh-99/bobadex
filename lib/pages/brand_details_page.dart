@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:bobadex/analytics_service.dart';
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/brand.dart';
 import 'package:bobadex/models/brand_stats.dart';
@@ -54,7 +55,11 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
       );
 
       final status = response.status;
-      final data = response.data is Map ? response.data as Map<String, dynamic> : null;
+      final raw = response.data;
+
+      final Map<String, dynamic>? data = raw is String
+        ? json.decode(raw) as Map<String, dynamic>
+        : (raw is Map ? (raw).cast<String, dynamic>() : null);
 
       if ((status == 200 || status == 201) && data != null) {
         return data['result'];
@@ -136,6 +141,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
     final hasVisit = shopState.shopsForCurrentUser().map((s) => s.brandSlug).contains(widget.brand.slug);
     final userShop = shopState.getShopByBrand(userState.current.id, widget.brand.slug);
     final themeColor = Constants.getThemeColor(userState.current.themeSlug);
+    final analytics = context.read<AnalyticsService>();
 
     Widget buildGlobalGallery(Brand brand, Future<List<ShopMedia>> galleryFuture) {
       return FutureBuilder<List<ShopMedia>>(
@@ -184,7 +190,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                 height: 200,
                 child: medias.isEmpty
                   ? const Center(child: Text('No community photos yet', style: Constants.emptyListTextStyle))
-                  : HorizontalPhotoPreview(maxPreview: 3, height: 200, width: 150, shopMediaList: medias, onViewAll: () => viewAllPhotos)
+                  : HorizontalPhotoPreview(maxPreview: 3, height: 200, width: 150, shopMediaList: medias, onViewAll: () => viewAllPhotos(medias))
               ),
             ],
           );
@@ -245,9 +251,11 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                               try {
                                 if (hasVisit) {
                                   final persistedShop = await shopState.update(submittedShop);
+                                  notify('Shop updated', SnackType.success);
                                   return persistedShop;
                                 } else {
                                   final persistedShop = await shopState.add(submittedShop);
+                                  analytics.shopAdded(rating: persistedShop.rating, brandSlug: persistedShop.brandSlug);
                                   await achievementState.checkAndUnlockShopAchievement(shopState);
                                   await achievementState.checkAndUnlockBrandAchievement(shopState);
                                   return persistedShop;
@@ -274,6 +282,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                         switch(value) {
                           case 'report':
                             final result = await reportBrandClosed();
+                            print(result);
                             if (result != null && (result == 'incremented' || result == 'created')) {
                               notify('Report pending review', SnackType.info);
                             } else if (result != null ) {

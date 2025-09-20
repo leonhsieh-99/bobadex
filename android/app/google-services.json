@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "342980802832",
+    "project_id": "bobadex",
+    "storage_bucket": "bobadex.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:342980802832:android:f469914d69ce63c8d54d95",
+        "android_client_info": {
+          "package_name": "com.hsiehleon.bobadex"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQtvtJ0_bRdS2sSqc4b6wBeOn9EOxicNI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

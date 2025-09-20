@@ -63,6 +63,7 @@ class _CompactTextRowState extends State<CompactTextRow> {
           child: TextField(
             focusNode: _focusNode,
             controller: widget.textController,
+            textCapitalization: TextCapitalization.sentences,
             onChanged: widget.onSearchChanged,
             decoration: InputDecoration(
               labelText: widget.labelText,

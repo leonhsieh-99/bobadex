@@ -27,6 +27,7 @@ Future<String?> textFieldEditDialog ({
               children: [
                 TextFormField(
                   controller: controller,
+                  textCapitalization: TextCapitalization.sentences,
                   decoration: InputDecoration(
                     hintText: hintText,
                     errorText: asyncError,

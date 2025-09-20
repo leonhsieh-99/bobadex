@@ -79,6 +79,7 @@ class UserState extends ChangeNotifier {
     } catch (e) {
       _hasError = true;
       debugPrint('UserState.loadUser($userId) failed: $e');
+      debugPrint('User ID: $userId');
     } finally {
       _loading[userId] = false;
       notifyListeners();

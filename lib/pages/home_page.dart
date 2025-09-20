@@ -48,6 +48,7 @@ class _HomePageState extends State<HomePage> {
   String _searchQuery = '';
   String _selectedSort = 'favorite-asc';
   final _searchController = TextEditingController();
+  final Set<String> _bannerFetchRequestedFor = {};
 
   bool get isCurrentUser {
     final currentUser = Supabase.instance.client.auth.currentUser;
@@ -69,9 +70,11 @@ class _HomePageState extends State<HomePage> {
   Future<void> _prime() async {
     final userState = context.read<UserState>();
     final shopState = context.read<ShopState>();
+    final shopMediaState = context.read<ShopMediaState>();
     final futures = <Future>[
       userState.loadUser(_uid),
       shopState.loadForUser(_uid),
+      shopMediaState.loadBannersForUserViaRpc(_uid),
     ];
     if (_isCurrentUser) unawaited(_showOnboardingIfNeeded(_uid));
     await Future.wait(futures);
@@ -87,7 +90,10 @@ class _HomePageState extends State<HomePage> {
   void didUpdateWidget(covariant HomePage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.userId != oldWidget.userId && _uid.isNotEmpty) {
-      context.read<ShopState>().loadForUser(_uid);
+      // Defer the load to avoid setState during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<ShopState>().loadForUser(_uid);
+      });
     }
   }
 
@@ -120,18 +126,6 @@ class _HomePageState extends State<HomePage> {
     return filtered;
   }
 
-  Future<List<ShopMedia>> fetchBannersForShops(List<String> shopIds) async {
-    final response = await Supabase.instance.client
-      .from('shop_media')
-      .select()
-      .inFilter('shop_id', shopIds)
-      .eq('is_banner', true);
-
-    return (response as List)
-      .map((json) => ShopMedia.fromJson(json))
-      .toList();
-  }
-
   Future<void> _navigateToShop(String shopId, String userId) async {
     await Navigator.push(
       context,
@@ -156,7 +150,6 @@ class _HomePageState extends State<HomePage> {
     final userState = context.watch<UserState>();
     final friendState = context.watch<FriendState>();
     final brandState = context.watch<BrandState>();
-    final shopMediaState = context.watch<ShopMediaState>();
     final user = context.watch<UserState>().getUser(_uid);
     final shops = context.watch<ShopState>().shopsFor(_uid);
 
@@ -543,9 +536,29 @@ class _HomePageState extends State<HomePage> {
                               .whereType<String>()
                               .toSet();
 
-                          final banners = shopMediaState.all
-                              .where((sm) => sm.isBanner && shopIds.contains(sm.shopId))
-                              .toList();
+                          if (!_bannerFetchRequestedFor.contains(_uid)) {
+                            _bannerFetchRequestedFor.add(_uid);
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              context.read<ShopMediaState>().loadBannersForUserViaRpc(_uid);
+                            });
+                          }
+
+                          // Build banner view-models for your grid
+                          final sm = context.watch<ShopMediaState>();
+                          final banners = shopIds.map((sid) {
+                            final path = sm.getBannerPath(sid);
+                            if (path == null) return null;
+
+                            return ShopMedia(
+                              id: 'banner-$sid',
+                              shopId: sid,
+                              userId: _uid,
+                              imagePath: path,
+                              isBanner: true,
+                              visibility: 'public',
+                              comment: '',
+                            );
+                          }).whereType<ShopMedia>().toList();
 
                           return shopGrid(shops, banners);
                         },

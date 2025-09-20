@@ -1,3 +1,4 @@
+import 'package:bobadex/helpers/initials_helper.dart';
 import 'package:bobadex/models/feed_event.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/pages/account_view_page.dart';
@@ -101,7 +102,11 @@ class FeedEventCard extends StatelessWidget {
               child: ThumbPic(
                 path: user.profileImagePath,
                 size: 40,
-                initials: user.firstName[0].toUpperCase(),
+                initials: initialFrom( // helper function in lib/helpers
+                  firstName: user.firstName,
+                  displayName: user.displayName,
+                  username: user.username,
+                ),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => AccountViewPage(userId: user.id, user: user))),
               ),

@@ -1,3 +1,4 @@
+import 'package:bobadex/analytics_service.dart';
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/helpers/image_uploader_helper.dart';
 import 'package:bobadex/models/shop_media.dart';
@@ -13,7 +14,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ShopGalleryPage extends StatefulWidget {
   final List<ShopMedia> shopMediaList;
-  final String? bannerMediaId;
   final Future<void> Function(String mediaId)? onSetBanner;
   final Future<void> Function(String mediaId)? onDelete;
   final Future<List<ShopMedia>> Function(int offset, int limit)? onFetchMore;
@@ -24,7 +24,6 @@ class ShopGalleryPage extends StatefulWidget {
   const ShopGalleryPage({
     super.key,
     required this.shopMediaList,
-    this.bannerMediaId,
     this.onSetBanner,
     this.onDelete,
     this.onFetchMore,
@@ -94,13 +93,13 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
     }
   }
 
-  void _addPhotos(ShopMediaState shopMediaState, AchievementsState achievementState) async {
+  void _addPhotos(ShopMediaState shopMediaState, AchievementsState achievementState, AnalyticsService analytics) async {
     final images = await showDialog<List<GalleryImage>>(
       context: context,
       builder: (context) => MultiselectImagePicker(),
     );
     if (images == null || images.isEmpty) return;
-    final bannerExists = shopMediaState.getBannerId(widget.shopId!) != null;
+    final hadBannerPath = shopMediaState.getBannerPath(widget.shopId!) != null;
 
     setState(() => _isLoading = true);
 
@@ -111,7 +110,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
       tempIds.add(tempId);
 
       // check for any existing pending images
-      if (shopMediaState.all.any((m) => m.localFile == img.file && m.isPending)) {
+      if (shopMediaState.getByShop(widget.shopId!).any((m) => m.localFile == img.file && m.isPending)) {
         debugPrint('Duplicate pending upload detected, skipping');
         continue;
       }
@@ -124,11 +123,11 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
         imagePath: '',
         comment: img.comment,
         visibility: img.visibility,
-        isBanner: idx == 0 && !bannerExists,
+        isBanner: idx == 0 && !hadBannerPath,
         localFile: img.file,
         isPending: true,
       );
-      shopMediaState.addPendingMedia(pendingMedia);
+      shopMediaState.addPendingForShop(widget.shopId!, pendingMedia);
     }
 
     await Future.wait(
@@ -150,15 +149,15 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
             imagePath: imagePath,
             comment: img.comment,
             visibility: img.visibility,
-            isBanner: idx == 0 && !bannerExists,
+            isBanner: idx == 0 && !hadBannerPath,
           );
 
-          final insertedMedia = await shopMediaState.addMedia(realMedia);
-          await achievementState.checkAndUnlockMediaUploadAchievement(shopMediaState);
-          shopMediaState.replacePendingMedia(tempId, insertedMedia);
+          await achievementState.checkAndUnlockMediaUploadAchievement();
+          await shopMediaState.addMedia(realMedia, replacePendingId: tempId);
+          await analytics.mediaUploaded(shopId: realMedia.id, count: 1);
         } catch (e) {
           debugPrint('Error uploading image $idx: $e');
-          shopMediaState.removePendingMedia(tempId);
+          shopMediaState.removePendingForShop(widget.shopId!, tempId);
           notify('Upload failed', SnackType.error);
         }
       }),
@@ -172,6 +171,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
   Widget build(BuildContext context) {
     final shopMediaState = context.watch<ShopMediaState>();
     final achievementState = context.watch<AchievementsState>();
+    final analytics = context.read<AnalyticsService>();
 
     final userGallery = widget.isCurrentUser && widget.shopId != null;
     final shopMedia = userGallery
@@ -187,7 +187,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
               if (widget.isCurrentUser && !_selecting)
                 IconButton(
                   icon: Icon(Icons.add),
-                  onPressed: () => _addPhotos(shopMediaState, achievementState),
+                  onPressed: () => _addPhotos(shopMediaState, achievementState, analytics),
                 ),
               if (widget.isCurrentUser && !_selecting)
                 IconButton(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:bobadex/analytics_service.dart';
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/media_realtime_service.dart';
 import 'package:bobadex/navigation.dart';
@@ -28,6 +29,7 @@ class _AppInitializerState extends State<AppInitializer> {
   Session? _lastHandledSession;
   String? _lastUserId;
   bool _routingLock = false;
+  bool _justDidPasswordReset = false;
   StreamSubscription? _achievmentSub;
   StreamSubscription<AuthState>? _authSub;
   final _mediaRT = MediaRealtimeService();
@@ -77,6 +79,7 @@ class _AppInitializerState extends State<AppInitializer> {
 
   Future<void> initializeAuthFlow() async {
     final auth = Supabase.instance.client.auth;
+    final analytics = context.read<AnalyticsService>();
 
     // Show splash once
     unawaited(_go('/splash'));
@@ -87,12 +90,16 @@ class _AppInitializerState extends State<AppInitializer> {
       final event   = data.event;
       final session = data.session;
 
+      final uid = Supabase.instance.client.auth.currentUser?.id;
+      analytics.setUser(uid);
+
       debugPrint('Auth state changed: $event');
 
       if (event == AuthChangeEvent.passwordRecovery) {
         if (navigatorKey.currentState?.canPop() ?? false) {
           navigatorKey.currentState!.pop();
         }
+        _justDidPasswordReset = true;
         await _go('/reset');
         return;
       }
@@ -114,6 +121,14 @@ class _AppInitializerState extends State<AppInitializer> {
           case AuthChangeEvent.signedIn:
             if (session != null) {
               unawaited(_go('/splash'));
+              
+              // If we just did a password reset, wait longer for database consistency
+              if (_justDidPasswordReset) {
+                debugPrint('Password reset detected, waiting for database consistency');
+                await Future.delayed(const Duration(milliseconds: 1500));
+                _justDidPasswordReset = false;
+              }
+              
               final ok = await _handleSignedIn(session);
               await _go(ok ? '/home' : '/auth');
             } else {
@@ -174,23 +189,34 @@ class _AppInitializerState extends State<AppInitializer> {
 
     final user = userState.current;
     if (user.id.isEmpty) {
-      debugPrint('No valid user loaded — skipping rest');
-      return false;
+      debugPrint('No valid user loaded — retrying with delay');
+      
+      // Wait longer for database consistency after password reset
+      await Future.delayed(const Duration(milliseconds: 1000));
+      await userState.loadCurrent(force: true);
+      
+      final retryUser = userState.current;
+      if (retryUser.id.isEmpty) {
+        debugPrint('No valid user loaded after retry — skipping rest');
+        return false;
+      }
+      this.user = retryUser;
+    } else {
+      this.user = user;
     }
-    this.user = user;
 
-    final drinkCount = await drinkState.fetchDrinkCount(user.id);
+    final drinkCount = await drinkState.fetchDrinkCount(this.user.id);
     final futures = [
       brandState.loadFromSupabase(),
       shopState.loadCurrentUser(force: true),
       shopState.loadDrinkCountsForCurrentUser(),
       friendState.loadFromSupabase(),
-      shopMediaState.loadFromSupabase(),
+      shopMediaState.loadBannersForUserViaRpc(user.id),
       achievementsState.loadFromSupabase(),
     ];
 
     if (drinkCount < Constants.maxDrinkCountForFetchAll) {
-      futures.add(drinkState.loadAllForUser(user.id));
+      futures.add(drinkState.loadAllForUser(this.user.id));
     }
 
     await Future.wait(futures);
@@ -200,7 +226,6 @@ class _AppInitializerState extends State<AppInitializer> {
       brandState.hasError,
       shopState.hasError,
       friendState.hasError,
-      shopMediaState.hasError,
       achievementsState.hasError,
     ].any((e) => e);
 
@@ -232,7 +257,7 @@ class _AppInitializerState extends State<AppInitializer> {
         achievementsState.checkAndUnlockFriendAchievement(friendState),
         achievementsState.checkAndUnlockNotesAchievement(drinkState),
         achievementsState.checkAndUnlockMaxDrinksShopAchievement(drinkState),
-        achievementsState.checkAndUnlockMediaUploadAchievement(shopMediaState),
+        achievementsState.checkAndUnlockMediaUploadAchievement(),
         achievementsState.checkAndUnlockBrandAchievement(shopState),
         achievementsState.checkAndUpdateAllAchievement(),
       ]);

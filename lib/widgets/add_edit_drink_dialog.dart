@@ -72,6 +72,7 @@ class _AddOrEditDrinkDialogState extends State<AddOrEditDrinkDialog> {
             children: [
               TextFormField(
                 controller: _nameController,
+                textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(labelText: 'Drink Name'),
                 maxLength: 25,
                 validator: (val) => val == null || val.isEmpty ? 'Enter a name' : null,

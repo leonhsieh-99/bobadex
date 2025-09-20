@@ -1,4 +1,6 @@
 
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -22,6 +24,8 @@ void main() async {
       throw Exception('Missing Supabase configuration. Please check your .env file.');
     }
 
+    await Firebase.initializeApp();
+
     await Supabase.initialize(
       url: supabaseUrl, 
       anonKey: supabaseAnonKey,
@@ -32,6 +36,8 @@ void main() async {
     );
 
     await Hive.initFlutter();
+
+    await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
 
     await SentryFlutter.init(
       (o) {

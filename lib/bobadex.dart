@@ -1,3 +1,4 @@
+import 'package:bobadex/analytics_service.dart';
 import 'package:bobadex/navigation.dart';
 import 'package:bobadex/pages/auth_page.dart';
 import 'package:bobadex/pages/home_page.dart';
@@ -14,18 +15,38 @@ import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/user_stats_cache.dart';
 import 'package:bobadex/widgets/notification_consumer.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'app_initializer.dart';
 import 'package:provider/provider.dart';
 import 'config/constants.dart';
 
-class BobadexApp extends StatelessWidget {
+class BobadexApp extends StatefulWidget {
   const BobadexApp({super.key});
+  @override
+  State<BobadexApp> createState() => _BobadexAppState();
+}
+
+@override
+class _BobadexAppState extends State<BobadexApp> {
+  late final FirebaseAnalytics _fa;
+  late final AnalyticsService _analytics;
+  late final FirebaseAnalyticsObserver _observer;
+
+
+  @override
+  void initState() {
+    super.initState();
+    _fa = FirebaseAnalytics.instance;
+    _analytics = AnalyticsService(_fa);
+    _observer = FirebaseAnalyticsObserver(analytics: _fa);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider<AnalyticsService>.value(value: _analytics),
         ChangeNotifierProvider(create: (_) => UserState()),
         ChangeNotifierProvider(create: (_) => DrinkState()),
         ChangeNotifierProvider(create: (_) => ShopState()),
@@ -49,6 +70,7 @@ class BobadexApp extends StatelessWidget {
               '/splash': (_) => SplashPage(),
             },
             navigatorKey: navigatorKey,
+            navigatorObservers: [_observer],
             locale: Locale('en'),
             theme: ThemeData(
               primarySwatch: themeColor,

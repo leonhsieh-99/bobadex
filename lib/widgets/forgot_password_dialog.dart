@@ -16,6 +16,7 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
 
   Future<void> _sendReset() async {
     setState(() { _isLoading = true; _message = null; });
+    FocusScope.of(context).unfocus();
     final email = _emailController.text.trim();
     if (!Constants.emailRegex.hasMatch(email)) {
       setState(() {
@@ -45,12 +46,14 @@ class _ForgotPasswordDialogState extends State<ForgotPasswordDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text("Enter your email and we’ll send you a password reset link."),
+          Text("Enter your email and we'll send you a password reset link."),
           SizedBox(height: 16),
           TextField(
             controller: _emailController,
             decoration: InputDecoration(labelText: 'Email'),
             keyboardType: TextInputType.emailAddress,
+            autofocus: true,
+            onSubmitted: (_) => _sendReset(),
           ),
           if (_message != null) ...[
             SizedBox(height: 16),

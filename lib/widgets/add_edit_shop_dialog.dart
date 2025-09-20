@@ -1,3 +1,4 @@
+import 'package:bobadex/analytics_service.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/state/achievements_state.dart';
@@ -79,6 +80,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
     ShopMediaState shopMediaState,
     AchievementsState achievementState,
     FeedState feedState,
+    AnalyticsService analytics,
     user,
   ) async {
     final isValid = _formkey.currentState?.validate() ?? false;
@@ -88,10 +90,6 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
 
     final isNewShop = widget.shop == null;
     final userId = Supabase.instance.client.auth.currentUser!.id;
-    bool bannerExists = false;
-    if (!isNewShop) {
-      bannerExists = shopMediaState.getBannerId(widget.shop!.id!) != null;
-    }
 
     try {
       final newShop = widget.shop?.copyWith(
@@ -100,36 +98,38 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
         notes: _notesController.text.trim(),
         brandSlug: _brandSlug,
       ) ??
-          Shop(
-            name: _nameController.text.trim(),
-            userId: userId,
-            rating: _rating,
-            notes: _notesController.text.trim(),
-            brandSlug: _brandSlug,
-          );
+        Shop(
+          name: _nameController.text.trim(),
+          userId: userId,
+          rating: _rating,
+          notes: _notesController.text.trim(),
+          brandSlug: _brandSlug,
+        );
       final submittedShop = await widget.onSubmit(newShop);
+      final shopId = submittedShop.id!;
+      await shopMediaState.loadForShop(shopId, force: false);
+      final hadBannerPath = shopMediaState.getBannerPath(shopId) != null;
 
       final List<String> tempIds = [];
       for (int idx = 0; idx < _selectedImages.length; idx++) {
         final img = _selectedImages[idx];
         final tempId = Uuid().v4();
         tempIds.add(tempId);
-        shopMediaState.addPendingMedia(
+        shopMediaState.addPendingForShop(
+          shopId, 
           ShopMedia(
             id: tempId,
-            shopId: submittedShop.id!,
-            userId: Supabase.instance.client.auth.currentUser!.id,
+            shopId: shopId,
+            userId: userId,
             imagePath: '',
             comment: img.comment,
             visibility: img.visibility,
-            isBanner: idx == 0 && !bannerExists,
+            isBanner: idx == 0 && !hadBannerPath,
             localFile: img.file,
             isPending: true,
           ),
         );
       }
-
-      List<Map<String, dynamic>?> uploadedImages = List.filled(_selectedImages.length, null);
 
       await Future.wait(_selectedImages.asMap().entries.map((entry) async {
         final idx = entry.key;
@@ -142,27 +142,21 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
             folder: 'shop-gallery',
           );
 
-          uploadedImages[idx] = {
-            "path": imagePath,
-            "comment": img.comment,
-          };
-
           final realMedia = ShopMedia(
             id: '', // Will be set by backend
-            shopId: submittedShop.id!,
-            userId: Supabase.instance.client.auth.currentUser!.id,
+            shopId: shopId,
+            userId: userId,
             imagePath: imagePath,
             comment: img.comment,
             visibility: img.visibility,
-            isBanner: idx == 0 && !bannerExists,
+            isBanner: idx == 0 && !hadBannerPath,
           );
 
-          final insertedMedia = await shopMediaState.addMedia(realMedia);
-          await achievementState.checkAndUnlockMediaUploadAchievement(shopMediaState);
-          shopMediaState.replacePendingMedia(tempId, insertedMedia);
+          await shopMediaState.addMedia(realMedia, replacePendingId: tempId);
+          await analytics.mediaUploaded(shopId: shopId, count: 1);
         } catch (e) {
           debugPrint('Error uploading images: $e');
-          shopMediaState.removePendingMedia(tempId);
+          shopMediaState.removePendingForShop(shopId, tempId);
           if (e.toString().contains('statusCode: 409')) {
             notify('Image already exists, skipping', SnackType.info);
           } else if (mounted) {
@@ -171,7 +165,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
         }
       }));
 
-      uploadedImages = uploadedImages.whereType<Map<String, dynamic>>().toList();
+      await achievementState.checkAndUnlockMediaUploadAchievement();
 
       if (isNewShop && submittedShop.id != null) {
         try {
@@ -209,6 +203,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
     final shopMediaState = context.read<ShopMediaState>();
     final achievementState = context.read<AchievementsState>();
     final feedState = context.read<FeedState>();
+    final analytics = context.read<AnalyticsService>();
     final user = context.read<UserState>().current;
     final isNewShop = widget.shop == null;
 
@@ -365,7 +360,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                             ElevatedButton(
                               onPressed: _isSubmitting
                                   ? null
-                                  : () => _handleSubmit(shopMediaState, achievementState, feedState, user),
+                                  : () => _handleSubmit(shopMediaState, achievementState, feedState, analytics, user),
                               child: _isSubmitting
                                   ? const SizedBox(
                                       width: 16,

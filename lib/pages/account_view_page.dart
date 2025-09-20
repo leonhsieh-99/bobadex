@@ -1,3 +1,4 @@
+import 'package:bobadex/analytics_service.dart';
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/account_stats.dart';
 import 'package:bobadex/models/achievement.dart';
@@ -106,6 +107,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
     final userState = context.watch<UserState>();
     final brandState = context.read<BrandState>();
     final friendState = context.watch<FriendState>();
+    final analytics = context.read<AnalyticsService>();
 
     final currentUser = userState.current;
     final isCurrentUser = currentUser.id == widget.userId;
@@ -208,7 +210,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
                           backgroundColor: WidgetStatePropertyAll(
                             !isFriendButtonEnabled(friendStatus, currentUser.id, widget.userId)
                               ? Colors.grey
-                              : Constants.getThemeColor(userState.current.themeSlug).shade300
+                              : Constants.getThemeColor(userState.current.themeSlug).shade400
                           ),
                           foregroundColor: WidgetStatePropertyAll(Colors.white)
                         ),
@@ -218,6 +220,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
                               await friendState.addUser(user);
                             } else if (friendStatus.status == 'pending' && friendStatus.requester.id == widget.userId) {
                               await friendState.acceptUser(widget.userId);
+                              await analytics.friendRequestAccepted();
                             }
                           }
                           : null,

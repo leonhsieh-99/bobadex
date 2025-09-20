@@ -1,3 +1,4 @@
+import 'package:bobadex/analytics_service.dart';
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/account_view_page.dart';
@@ -22,6 +23,7 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> {
   Widget build(BuildContext context) {
     final friendState = context.watch<FriendState>();
     final achievementState = context.watch<AchievementsState>();
+    final analytics = context.read<AnalyticsService>();
     final user = context.watch<UserState>().current;
     final themeColor = Constants.getThemeColor(user.themeSlug);
     final incomingRequests = friendState.incomingRequests;
@@ -67,6 +69,7 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> {
                             onPressed: () {
                               try {
                                 friendState.acceptUser(requester.id);
+                                analytics.friendRequestAccepted();
                                 achievementState.checkAndUnlockFriendAchievement(friendState);
                                 notify('Friend added', SnackType.info);
                               } catch (e) {

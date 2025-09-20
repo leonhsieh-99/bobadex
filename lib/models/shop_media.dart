@@ -53,6 +53,20 @@ class ShopMedia {
     );
   }
 
+  factory ShopMedia.empty() => ShopMedia(
+    id: '',
+    shopId: '',
+    userId: '',
+    drinkId: '',
+    imagePath: '',
+    isBanner: false,
+    visibility: 'private',
+    comment: '',
+    isPending: false,
+    userDisplayName: '',
+    profileImagePath: ''
+  );
+
   static ShopMedia galleryViewMedia({
     required String imagePath,
     required String comment,

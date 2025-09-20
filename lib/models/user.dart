@@ -5,7 +5,7 @@ class User {
   final String id;
   String username;
   String displayName;
-  String themeSlug = 'grey';
+  String themeSlug = 'brown';
   String? profileImagePath;
   String? bio;
   int gridColumns;
@@ -16,7 +16,7 @@ class User {
     required this.id,
     required this.username,
     required this.displayName,
-    this.themeSlug = 'grey',
+    this.themeSlug = 'brown',
     this.profileImagePath,
     this.bio,
     this.gridColumns = 2,
@@ -49,7 +49,7 @@ class User {
       displayName: profile['display_name'],
       profileImagePath: profile['profile_image_path'],
       bio: profile['bio'],
-      themeSlug: settings?['theme_slug'] ?? 'grey',
+      themeSlug: settings?['theme_slug'] ?? 'brown',
       gridColumns: settings?['grid_columns'] ?? 2,
       useIcons: settings?['use_icons'] ?? false,
       onboarded: settings?['onboarded'] ?? false,
@@ -70,7 +70,7 @@ class User {
     id: '',
     username: '',
     profileImagePath: '',
-    themeSlug: 'grey',
+    themeSlug: 'brown',
     displayName: '',
     bio: '',
     gridColumns: 2,

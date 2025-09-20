@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'package:bobadex/analytics_service.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
@@ -11,7 +11,6 @@ import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/add_edit_drink_dialog.dart';
 import 'package:bobadex/helpers/sortable_entry.dart';
 import 'package:bobadex/models/drink_form_data.dart';
-import 'package:bobadex/models/shop.dart';
 import 'package:bobadex/pages/shop_gallery_page.dart';
 import 'package:bobadex/widgets/rating_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -101,7 +100,12 @@ class _ShopDetailPage extends State<ShopDetailPage> {
 
   Future<void> _prime() async {
     final drinkState = context.read<DrinkState>();
-    await drinkState.loadForShop(_shopId, userId: _uid);
+    final shopMediaState = context.read<ShopMediaState>();
+
+    await Future.wait([
+      drinkState.loadForShop(_shopId, userId: _uid),
+      shopMediaState.loadForShop(_shopId),
+    ]);
   }
 
   @override
@@ -134,22 +138,14 @@ class _ShopDetailPage extends State<ShopDetailPage> {
     final userState = context.watch<UserState>();
     final feedState = context.watch<FeedState>();
     final shopMediaState = context.watch<ShopMediaState>();
+    final analytics = context.read<AnalyticsService>();
 
     final shop = context.watch<ShopState>().getShop(_shopId);
     final user = userState.getUser(_uid);
     final drinks = context.watch<DrinkState>().drinksFor(_shopId);
 
-    Shop shopRead = shopState.getShop(_shopId)!;
-    final brand = brandState.getBrand(shopRead.brandSlug);
-
     final hasLocalData = shop != null && drinks.isNotEmpty;
     if (hasLocalData) _hasShownContentOnce = true;
-
-    final bannerPath = shopMediaState
-      .getByShop(shopRead.id!)
-      .firstWhereOrNull((media) => media.isBanner);
-
-    final bannerUrl = bannerPath?.imageUrl;
 
     return FutureBuilder(
       future: _ready,
@@ -162,10 +158,11 @@ class _ShopDetailPage extends State<ShopDetailPage> {
         }
 
         if (shop == null) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Shop')),
-            body: const Center(child: Text('Shop not found')),
-          );
+          scheduleMicrotask(() {
+            if (!mounted) return;
+            Navigator.of(context).maybePop();
+          });
+          return const SizedBox.shrink();
         }
         if (user == null) {
           return Scaffold(
@@ -177,6 +174,13 @@ class _ShopDetailPage extends State<ShopDetailPage> {
         final refreshing = waiting && _hasShownContentOnce;
 
         final shopRead = shop;
+        final brand    = brandState.getBrand(shopRead.brandSlug);
+
+        final bannerPath = shopMediaState
+            .getByShop(_shopId)
+            .firstWhereOrNull((m) => m.isBanner);
+        final bannerUrl = bannerPath?.imageUrl;
+
         final pinnedDrink = (shopRead.pinnedDrinkId == null || shopRead.pinnedDrinkId!.isEmpty)
             ? ''
             : getPinnedDrink(drinks, shopRead.pinnedDrinkId!);
@@ -198,7 +202,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                       MaterialPageRoute(
                         builder: (_) => ShopGalleryPage(
                           shopMediaList: shopMediaState.getByShop(_shopId),
-                          bannerMediaId: shopMediaState.getBannerId(_shopId),
                           onSetBanner: (mediaId) async {
                             try {
                               await shopMediaState.setBanner(shopRead.id!, mediaId);
@@ -360,6 +363,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                               onSubmit: (drink) async {
                                                 try {
                                                   await drinkState.add(drink.toDrink(shopId: shopRead.id), shopRead.id!);
+                                                  await analytics.drinkAdded(rating: drink.rating, name: drink.name);
                                                   await achievementState.checkAndUnlockDrinkAchievement(drinkState);
                                                   await achievementState.checkAndUnlockNotesAchievement(drinkState);
                                                   notify('Drink added.', SnackType.success);
@@ -484,11 +488,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                                   case 'pin':
                                                                     final isPinned = shop?.pinnedDrinkId == drink.id;
                                                                     try {
-                                                                      if (isPinned) {
-                                                                        await shopState.update(shop!.copyWith(pinnedDrinkId: ''));
-                                                                      } else {
-                                                                        await shopState.update(shop!.copyWith(pinnedDrinkId: drink.id));
-                                                                      }
+                                                                      await shopState.update(shop!.copyWith(pinnedDrinkId: isPinned ? null : drink.id));
                                                                       notify('Pinned drink updated', SnackType.success);
                                                                     } catch (_) {
                                                                       notify('Error pinning drink', SnackType.error);
@@ -521,20 +521,21 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                                     final confirm = await showDialog<bool>(
                                                                       context: context,
                                                                       builder: (context) => AlertDialog(
-                                                                        title: const Text('Remove Drink'),
-                                                                        content: const Text('Are you sure you want to remove this drink ?'),
+                                                                        title: const Text('Delete Drink'),
+                                                                        content: const Text('Are you sure you want to delete this drink ?'),
                                                                         actions: [
                                                                           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                                                                          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
+                                                                          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
                                                                         ],
                                                                       )
                                                                     );
                                                                     if (confirm == true) {
                                                                       try {
                                                                         await drinkState.remove(drink.id!);
-                                                                        notify('Drink removed', SnackType.success);
+                                                                        shopState.nullifyPinnedForDrink(drink.id!);
+                                                                        notify('Drink deleted', SnackType.success);
                                                                       } catch (_) {
-                                                                        notify('Error removing drink', SnackType.error);
+                                                                        notify('Error deleting drink', SnackType.error);
                                                                       }
                                                                     }
                                                                     break;
@@ -558,6 +559,8 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                                 ),
                                                               ]
                                                             ),
+                                                          if (!_isCurrentUser)
+                                                            SizedBox(width: 16,)
                                                         ],
                                                       ),
                                                       title: Row(
@@ -656,16 +659,16 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                     if (!shop.isFavorite)
                                       SvgPicture.asset(
                                         'lib/assets/icons/heart.svg',
-                                        width: 16,
-                                        height: 16,
+                                        width: 24,
+                                        height: 24,
                                         colorFilter: ColorFilter.mode(Colors.white.withOpacity(.3), BlendMode.srcIn),
                                       ),
                                     SvgPicture.asset(
                                       shop.isFavorite 
                                         ? 'lib/assets/icons/heart.svg'
                                         : 'lib/assets/icons/heart_outlined.svg',
-                                      width: 16,
-                                      height: 16,
+                                      width: 24,
+                                      height: 24,
                                     ),
                                   ],
                                 )
@@ -698,6 +701,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                           onSubmit: (submittedShop) async {
                                             try {
                                               final persistedShop = await shopState.update(submittedShop);
+                                              notify('Shop updated.', SnackType.success);
                                               return persistedShop;
                                             } catch (e) {
                                               notify('Error updating shop.', SnackType.error);

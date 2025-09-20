@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 class Constants {
   static const Map<String, MaterialColor> themeMap = {
-    'Grey': Colors.grey,
+    'Blue Grey': Colors.blueGrey,
     'Cyan': Colors.cyan,
     'Orange': Colors.orange,
+    'Yellow': Colors.yellow,
     'Pink': Colors.pink,
     'Red': Colors.red,
     'Purple': Colors.purple,
@@ -16,7 +17,7 @@ class Constants {
   };
 
   static MaterialColor getThemeColor(String slug) =>
-      themeMap[slug] ?? Colors.grey;
+      themeMap[slug] ?? Colors.brown;
 
   static const defaultGridColumns = 2;
   static const defaultTheme = 'grey';

@@ -3,7 +3,6 @@ import 'package:bobadex/helpers/retry_helper.dart';
 import 'package:bobadex/models/achievement.dart';
 import 'package:bobadex/state/drink_state.dart';
 import 'package:bobadex/state/friend_state.dart';
-import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -172,10 +171,10 @@ class AchievementsState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> checkAndUnlockMediaUploadAchievement(ShopMediaState shopMediaState) async {
+  Future<void> checkAndUnlockMediaUploadAchievement() async {
+    final count = await _mediaUploadCount();
     for (final a in getAllType('media_upload_count')) {
-      int count = shopMediaState.all.length;
-      int min = a.dependsOn['min'];
+      final int min = a.dependsOn['min'] as int;
       await checkAndUnlock(count, min, a);
     }
     notifyListeners();
@@ -315,3 +314,8 @@ class DrinkCounts {
 //   if (res is num) return res.toInt();
 //   return 0;
 // }
+
+Future<int> _mediaUploadCount() async {
+  final res = await Supabase.instance.client.rpc('media_upload_count');
+  return (res as int?) ?? 0;
+}

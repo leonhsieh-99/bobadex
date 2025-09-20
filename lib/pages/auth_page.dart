@@ -67,6 +67,16 @@ class _AuthPageState extends State<AuthPage> {
           return;
         }
 
+        final emailTaken = await supabase.rpc(
+          'email_exists',
+          params: { 'input_email': email.trim().toLowerCase() },
+        ) as bool? ?? false;
+
+        if (emailTaken) {
+          notify('Email already in use', SnackType.error);
+          return;
+        }
+
         // First-time signup: pass metadata for the supabase trigger to make rows
         final response = await supabase.auth.signUp(
           email: email,
@@ -230,6 +240,8 @@ class _AuthPageState extends State<AuthPage> {
                   child: TextButton(
                     style: AppButtonStyles.textButton,
                     onPressed: () {
+                      // Dismiss keyboard before showing dialog
+                      FocusScope.of(context).unfocus();
                       showDialog(
                         context: context,
                         builder: (_) => const ForgotPasswordDialog(),
@@ -242,7 +254,6 @@ class _AuthPageState extends State<AuthPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.teal.shade200),
                     onPressed: () {
                       if (_loading) {
                         return;

@@ -18,6 +18,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   bool _showPassword = false;
   
   Future<void> _resetPassword() async {
+    FocusScope.of(context).unfocus();
     final newPassword = _passwordController.text.trim();
     try {
       await Supabase.instance.client.auth.updateUser(
@@ -88,7 +89,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 onPressed: () {
                   if (_formKey.currentState?.validate() ?? false) {
                     _resetPassword();
-                    navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
+                    // Navigation is handled by auth state listener
                   }
                 },
                 child: Text('Confirm')

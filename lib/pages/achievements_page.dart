@@ -1,10 +1,10 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/friend_state.dart';
-import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AchievementsPage extends StatefulWidget {
   final String userId;
@@ -31,7 +31,6 @@ class _AchievementsPageState extends State<AchievementsPage> {
     final ach = context.read<AchievementsState>();
     final shopState = context.read<ShopState>();
     final friendState = context.read<FriendState>();
-    final mediaState = context.read<ShopMediaState>();
 
     // Drink-related via RPC
     final dc = await ach.fetchDrinkCounts();
@@ -39,7 +38,7 @@ class _AchievementsPageState extends State<AchievementsPage> {
     // Others via local states
     final shopCount = shopState.shopsForCurrentUser().length;
     final friendCount = friendState.friends.length;
-    final mediaCount = mediaState.all.length;
+    final mediaCount = await _mediaUploadCount();
 
     // visited brands
     final normalizedShopNames = shopState.shopsForCurrentUser().map((s) => _normalize(s.name)).toSet();
@@ -268,4 +267,7 @@ class _AchievementSkeletonList extends StatelessWidget {
   }
 }
 
-
+Future<int> _mediaUploadCount() async {
+  final res = await Supabase.instance.client.rpc('media_upload_count');
+  return (res as int?) ?? 0;
+}

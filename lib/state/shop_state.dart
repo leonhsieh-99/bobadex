@@ -56,10 +56,10 @@ class ShopState extends ChangeNotifier {
     notifyListeners();
     try {
       final rows = await RetryHelper.retry(() => Supabase.instance.client
-          .from('shops')
-          .select()
-          .eq('user_id', userId)
-          .order('created_at', ascending: false));
+        .from('shops')
+        .select()
+        .eq('user_id', userId)
+        .order('created_at', ascending: false));
 
       final list = rows.map(Shop.fromJson).toList();
       _byUser[userId] = list;
@@ -171,54 +171,66 @@ class ShopState extends ChangeNotifier {
     }
   }
 
-  Future<Shop> update(Shop updated) async {
-    final id = updated.id;
-    if (id == null) throw StateError('Shop missing id');
-    final uid = _shopToUser[id] ?? _currentUserId;
-    if (uid == null) throw StateError('No user context for shop');
+  Future<Shop> update(Shop updated, {bool touchPinned = false}) async {
+    final id  = updated.id!;
+    final uid = _shopToUser[id] ?? _currentUserId!;
+    final current = _byUser[uid] ?? const <Shop>[];
 
-    final list = List<Shop>.from(_byUser[uid] ?? const []);
-    final index = list.indexWhere((s) => s.id == id);
-    if (index == -1) throw StateError('Shop not found in local state');
+    // Find index now
+    final i0 = current.indexWhere((s) => s.id == id);
+    if (i0 == -1) throw StateError('Shop not found in local state');
+    final original = current[i0];
 
-    final original = list[index];
-    list[index] = updated;
-    _byUser[uid] = list;
+    // Optimistic replace-by-id
+    final next0 = List<Shop>.from(current);
+    next0[i0] = updated;
+    _byUser[uid] = next0;
     _byId[id] = updated;
     notifyListeners();
 
     try {
-      final response = await Supabase.instance.client
-          .from('shops')
-          .update({
-            'name': updated.name,
-            'rating': updated.rating,
-            'is_favorite': updated.isFavorite,
-            'brand_slug': updated.brandSlug,
-            'pinned_drink_id': updated.pinnedDrinkId,
-            'notes': updated.notes,
-          })
-          .eq('id', updated.id!)
-          .select()
-          .single();
+      final data = <String, dynamic>{
+        'name':        updated.name,
+        'rating':      updated.rating,
+        'is_favorite': updated.isFavorite,
+        'brand_slug':  updated.brandSlug,
+        'notes':       updated.notes,
+      };
 
-      final persistedShop = Shop.fromJson(response);
-      final index2 = _byUser[uid]!.indexWhere((s) => s.id == id);
-      if (index2 != -1) {
-        final copy = List<Shop>.from(_byUser[uid]!);
-        copy[index2] = persistedShop;
-        _byUser[uid] = copy;
-        _byId[id] = persistedShop;
-        _lastLoadedAt[uid] = DateTime.now();
-        _hasError = false;
-        notifyListeners();
+      // send pinned only if changed
+      final pinnedChanged = updated.pinnedDrinkId != original.pinnedDrinkId;
+      if (pinnedChanged) {
+        data['pinned_drink_id'] =
+            (updated.pinnedDrinkId == null || updated.pinnedDrinkId!.isEmpty)
+                ? null
+                : updated.pinnedDrinkId;
       }
-      return persistedShop;
+
+      final res = await Supabase.instance.client
+          .from('shops').update(data).eq('id', id).select().single();
+
+      final persisted = Shop.fromJson(res);
+
+      // Recompute index now (list may have re-ordered)
+      final nowList = _byUser[uid] ?? const <Shop>[];
+      final iNow = nowList.indexWhere((s) => s.id == id);
+      if (iNow != -1) {
+        final next = List<Shop>.from(nowList);
+        next[iNow] = persisted;
+        _byUser[uid] = next;
+      }
+      _byId[id] = persisted;
+      notifyListeners();
+      return persisted;
     } catch (e) {
-      debugPrint("Update shop failed: $e");
-      final copy = List<Shop>.from(_byUser[uid]!);
-      if (index < copy.length) copy[index] = original;
-      _byUser[uid] = copy;
+      // Recompute index again for rollback
+      final nowList = _byUser[uid] ?? const <Shop>[];
+      final iNow = nowList.indexWhere((s) => s.id == id);
+      if (iNow != -1) {
+        final next = List<Shop>.from(nowList);
+        next[iNow] = original;
+        _byUser[uid] = next;
+      }
       _byId[id] = original;
       notifyListeners();
       rethrow;
@@ -296,6 +308,14 @@ class ShopState extends ChangeNotifier {
     final uid = _currentUserId;
     if (uid == null) return const [];
     return _byUser[uid] ?? const [];
+  }
+
+  void nullifyPinnedForDrink(String drinkId) {
+    _byId.updateAll((_, s) => s.pinnedDrinkId == drinkId ? s.copyWith(pinnedDrinkId: null) : s);
+    _byUser.updateAll((_, list) => [
+      for (final s in list) s.pinnedDrinkId == drinkId ? s.copyWith(pinnedDrinkId: null) : s
+    ]);
+    notifyListeners();
   }
 
   void reset() {
