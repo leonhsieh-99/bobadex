@@ -44,7 +44,7 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
       if (query.length >= 2) {
         setState(() {
           _filteredBrands = _brands
-              .where((b) => b.display.toLowerCase().contains(query))
+              .where((b) => b.display.toLowerCase().contains(query) && b.status == BrandStatus.active)
               .toList();
         });
       }

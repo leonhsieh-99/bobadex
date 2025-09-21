@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:bobadex/analytics_service.dart';
+import 'package:bobadex/models/brand.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
@@ -52,6 +53,16 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   String _selectedSort = 'favorite-desc';
   String _searchQuery = '';
   final _searchController = TextEditingController();
+
+  Widget _removedPill(BuildContext ctx) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: Colors.red.withOpacity(.12),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: Colors.red.withOpacity(.5)),
+    ),
+    child: const Text('Brand removed', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red)),
+  );
 
   String  getPinnedDrink(List<Drink> drinks, String id) {
     final pinned = drinks.where((d) => d.id == id).firstOrNull;
@@ -175,6 +186,8 @@ class _ShopDetailPage extends State<ShopDetailPage> {
 
         final shopRead = shop;
         final brand    = brandState.getBrand(shopRead.brandSlug);
+
+        final brandRemoved = (brand == null) || (brand.status == BrandStatus.retired);
 
         final bannerPath = shopMediaState
             .getByShop(_shopId)
@@ -345,6 +358,8 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                         },
                                       ),
                                     ),
+                                    const SizedBox(width: 8),
+                                    if (brandRemoved) _removedPill(context),
                                     SizedBox(width: 14),
                                     if (_isCurrentUser)
                                       ActionChip(
@@ -691,7 +706,10 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                 onSelected: (value) async {
                                   switch(value) {
                                     case 'view':
-                                      Navigator.push(context, MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand!)));
+                                      if (!brandRemoved) {
+                                        Navigator.push(context, MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand)));
+                                      }
+                                      break;
                                     case 'edit':
                                       await showDialog(
                                         context: context,
@@ -744,10 +762,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                   }
                                 },
                                 itemBuilder: (_) => [
-                                  PopupMenuItem(
-                                    value: 'view',
-                                    child: Text('View page'),
-                                  ),
+                                  if (!brandRemoved) const PopupMenuItem(value: 'view', child: Text('View page')),
                                   PopupMenuItem(
                                     value: 'edit',
                                     child: Text('Edit'),

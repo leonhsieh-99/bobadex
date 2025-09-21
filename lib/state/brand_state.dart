@@ -52,7 +52,7 @@ class BrandState extends ChangeNotifier {
           .toList();
       _brands
         ..clear()
-        ..addAll(cachedBrands);
+        ..addAll(cachedBrands.where((b) => b.status == BrandStatus.active));
       _updateNameLookup();
       notifyListeners();
       debugPrint('Loaded ${_brands.length} brands from cache');
@@ -91,7 +91,7 @@ class BrandState extends ChangeNotifier {
 
       _brands
         ..clear()
-        ..addAll(freshBrands);
+        ..addAll(freshBrands.where((b) => b.status == BrandStatus.active));
       _updateNameLookup();
       notifyListeners();
       debugPrint('Loaded ${_brands.length} brands from Supabase');

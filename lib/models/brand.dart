@@ -1,16 +1,28 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+enum BrandStatus { active, retired }
+
+extension BrandStatusX on BrandStatus {
+  String get db => this == BrandStatus.retired ? 'retired' : 'active';
+  String get label => this == BrandStatus.retired ? 'Closed' : 'Open';
+}
+
+BrandStatus _brandStatusFromDb(String? s) =>
+    s == 'retired' ? BrandStatus.retired : BrandStatus.active;
+
 class Brand {
   final String slug;
   final String display;
   final List<String> aliases;
   final String? iconPath;
+  BrandStatus status;
 
   Brand({
     required this.slug,
     required this.display,
     List<String>? aliases,
     this.iconPath,
+    this.status = BrandStatus.active,
   }) : aliases = aliases ?? [];
 
   String get imageUrl => iconPath != null && iconPath!.isNotEmpty
@@ -25,6 +37,7 @@ class Brand {
       display: json['display'],
       aliases: (json['aliases'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
       iconPath: json['icon_path'],
+      status: _brandStatusFromDb(json['status'] as String?),
     );
   }
 
@@ -34,6 +47,7 @@ class Brand {
       'display': display,
       'aliases': aliases,
       'icon_path': iconPath,
+      'status': status.db,
     });
   }
 }

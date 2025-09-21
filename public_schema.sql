@@ -7,7 +7,6 @@ create table shops (
   is_favorite boolean default false,
   notes text,
   pinned_drink_id uuid,
-  place_id text -- FUTURE USE (MAYBE)
   brand_slug text references brands(slug) on delete cascade
   pending_brand_id uuid references brand_staging(id) on delete set null
   created_at timestamptz default now()

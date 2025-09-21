@@ -211,7 +211,7 @@ class ShopState extends ChangeNotifier {
 
       final persisted = Shop.fromJson(res);
 
-      // Recompute index now (list may have re-ordered)
+      // 🔐 Recompute index now (list may have re-ordered)
       final nowList = _byUser[uid] ?? const <Shop>[];
       final iNow = nowList.indexWhere((s) => s.id == id);
       if (iNow != -1) {
