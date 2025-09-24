@@ -1,5 +1,6 @@
 import 'package:bobadex/pages/setting_pages/settings_account_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_layout_page.dart';
+import 'package:bobadex/pages/setting_pages/settings_privacy_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_theme_page.dart';
 import 'package:flutter/material.dart';
 
@@ -59,6 +60,16 @@ class _SettingsPageState extends State<SettingsPage> {
             onTap: () =>  Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => SettingsLayoutPage())
+            ),
+          ),
+          ListTile(
+            leading: Icon(Icons.notifications),
+            title: Text('Privacy'),
+            subtitle: Text('Manage privacy settings'),
+            trailing: Icon(Icons.chevron_right),
+            onTap:() => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => SettingsPrivacyPage())
             ),
           ),
         ],

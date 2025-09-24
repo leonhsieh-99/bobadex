@@ -93,11 +93,10 @@ class ShopState extends ChangeNotifier {
     Future<void> loadDrinkCountsForCurrentUser({bool force = false}) async {
     final uid = _currentUserId;
     if (uid == null) return;
-    // Optional: keep a TTL per-user if you want; often this is tiny enough to fetch at startup.
     try {
       final res = await Supabase.instance.client.rpc('drink_counts_by_shop');
       final List data =
-          res is List ? res : (res == null ? const [] : [res]); // handle both shapes
+        res is List ? res : (res == null ? const [] : [res]);
       _drinkCounts
         ..clear()
         ..addEntries(

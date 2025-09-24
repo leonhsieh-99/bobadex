@@ -41,16 +41,17 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCHO7aUGOXvx75DCGzpuXvMQl-raBDot8g',
+    apiKey: 'AIzaSyAYTBIenVjE24zIOUonTYXMnHMKxeOuiu8',
     appId: '1:342980802832:web:bb90c52519938312d54d95',
     messagingSenderId: '342980802832',
     projectId: 'bobadex',
     authDomain: 'bobadex.firebaseapp.com',
     storageBucket: 'bobadex.firebasestorage.app',
+    measurementId: 'G-QBNX82XKNF',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDQtvtJ0_bRdS2sSqc4b6wBeOn9EOxicNI',
+    apiKey: 'AIzaSyC2L7zlnN1v5pezk4pZCgaO3iC1Jc4yJEo',
     appId: '1:342980802832:android:f469914d69ce63c8d54d95',
     messagingSenderId: '342980802832',
     projectId: 'bobadex',
@@ -58,16 +59,16 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAOkTarfbYqTlC6VkE1lvEXXoa1smYhAuU',
-    appId: '1:342980802832:ios:fbd36c65c18a7c32d54d95',
+    apiKey: 'AIzaSyDJFeytHRMpMEWbKZUR2IfE1vDby9YLPfE',
+    appId: '1:342980802832:ios:f1cc8c14b040a0f3d54d95',
     messagingSenderId: '342980802832',
     projectId: 'bobadex',
     storageBucket: 'bobadex.firebasestorage.app',
-    iosBundleId: 'com.hsiehleon.bobadex.dev',
+    iosBundleId: 'com.hsiehleon.bobadex',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyAOkTarfbYqTlC6VkE1lvEXXoa1smYhAuU',
+    apiKey: 'AIzaSyDJFeytHRMpMEWbKZUR2IfE1vDby9YLPfE',
     appId: '1:342980802832:ios:f1cc8c14b040a0f3d54d95',
     messagingSenderId: '342980802832',
     projectId: 'bobadex',
@@ -76,11 +77,13 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyCHO7aUGOXvx75DCGzpuXvMQl-raBDot8g',
+    apiKey: 'AIzaSyAYTBIenVjE24zIOUonTYXMnHMKxeOuiu8',
     appId: '1:342980802832:web:23a0001772252053d54d95',
     messagingSenderId: '342980802832',
     projectId: 'bobadex',
     authDomain: 'bobadex.firebaseapp.com',
     storageBucket: 'bobadex.firebasestorage.app',
+    measurementId: 'G-B3CHSKWTPZ',
   );
+
 }

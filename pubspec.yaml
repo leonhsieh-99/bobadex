@@ -56,6 +56,8 @@ dependencies:
   path_provider: ^2.1.5
   path: ^1.9.1
   firebase_core: ^4.1.0
+  package_info_plus: ^9.0.0
+  in_app_review: ^2.0.11
 
 
   # The following adds the Cupertino Icons font to your application.

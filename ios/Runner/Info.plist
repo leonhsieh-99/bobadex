@@ -37,8 +37,6 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Camera access is needed to take photos.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>We save taken photos to your library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Photo library access is needed to select photos.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
