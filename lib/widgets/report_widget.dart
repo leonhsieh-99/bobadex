@@ -43,7 +43,7 @@ Widget build(BuildContext context) {
       mainAxisSize: MainAxisSize.min,
       children: [
         DropdownButtonFormField<String>(
-          value: _selectedReason,
+          initialValue: _selectedReason,
           items: _reasons.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
           onChanged: (val) => setState(() => _selectedReason = val),
           decoration: InputDecoration(labelText: 'Reason'),

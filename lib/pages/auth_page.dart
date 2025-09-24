@@ -212,10 +212,16 @@ class _AuthPageState extends State<AuthPage> {
                       onPressed: () => setState(() => _showPassword = !_showPassword),
                     ),
                   ),
-                  validator: (value) => 
-                    value != null && Constants.passwordRegex.hasMatch(value)
-                      ? null
-                      : 'Password must be at least 8 characters and include both letters and numbers.',
+                  validator: (value) {
+                    if (!_isSigningUp) return null;
+
+                    final v = value?.trim() ?? '';
+                    if (v.isEmpty) return 'Please enter a password.';
+                    if (!Constants.passwordRegex.hasMatch(v)) {
+                      return 'Password must be at least 8 characters and include both letters and numbers.';
+                    }
+                    return null;
+                  },
                   obscureText: !_showPassword,
                   autofillHints: const [AutofillHints.password],
                 ),

@@ -63,6 +63,7 @@ class _BobadexAppState extends State<BobadexApp> {
           final themeColor = Constants.getThemeColor(userState.current.themeSlug);
           return MaterialApp(
             title: 'Bobadex',
+            home: const SizedBox.shrink(),
             routes: {
               '/auth': (_) => const AuthPage(),
               '/reset': (_) => const ResetPasswordPage(),
@@ -73,18 +74,8 @@ class _BobadexAppState extends State<BobadexApp> {
             navigatorObservers: [_observer],
             locale: Locale('en'),
             theme: ThemeData(
-              primarySwatch: themeColor,
-              colorScheme: ColorScheme(
-                brightness: Brightness.light,
-                primary: themeColor,
-                onPrimary: Colors.black,
-                secondary: Colors.grey.shade500,
-                onSecondary: Colors.black,
-                error: Colors.grey.shade500,
-                onError: Colors.black,
-                surface: themeColor.shade50,
-                onSurface: Colors.black
-              ),
+              colorScheme: ColorScheme.fromSeed(seedColor: themeColor),
+              useMaterial3: true,
               scaffoldBackgroundColor: themeColor.shade50,
               dialogTheme: DialogThemeData(
                 backgroundColor: themeColor.shade50,
@@ -100,7 +91,7 @@ class _BobadexAppState extends State<BobadexApp> {
                   backgroundColor: WidgetStatePropertyAll<Color>(themeColor.shade400),
                   foregroundColor: WidgetStatePropertyAll<Color>(Colors.white),
                   textStyle: WidgetStatePropertyAll<TextStyle>(
-                    TextStyle(fontWeight: FontWeight.w500)
+                    const TextStyle(fontWeight: FontWeight.w500)
                   )
                 )
               ),
@@ -110,7 +101,7 @@ class _BobadexAppState extends State<BobadexApp> {
                   backgroundColor: WidgetStatePropertyAll<Color>(themeColor.shade400),
                   foregroundColor: WidgetStatePropertyAll<Color>(Colors.white),
                   textStyle: WidgetStatePropertyAll<TextStyle>(
-                    TextStyle(fontWeight: FontWeight.w500)
+                    const TextStyle(fontWeight: FontWeight.w500)
                   )
                 )
               ),
@@ -138,7 +129,6 @@ class _BobadexAppState extends State<BobadexApp> {
                 ],
               ),
             ),
-            home: SplashPage(),
           );
         },
       ),

@@ -49,6 +49,11 @@ class _AppInitializerState extends State<AppInitializer> {
     super.dispose();
   }
 
+  Future<void> _holdSplash([Duration d = const Duration(milliseconds: 350)]) async {
+    // Ensures Flutter splash paints at least once when we decide to show it
+    await Future.delayed(d);
+  }
+
   void _resetAllStates() {
     if (!mounted) return;
 
@@ -70,10 +75,16 @@ class _AppInitializerState extends State<AppInitializer> {
   }
 
   Future<void> _go(String route) async {
-    // Ensure navigator is ready before pushing
-    while (navigatorKey.currentState == null) {
+    if (WidgetsBinding.instance.hasScheduledFrame) {
+      await WidgetsBinding.instance.endOfFrame;
+    } else {
+      WidgetsBinding.instance.scheduleFrame();
+      await WidgetsBinding.instance.endOfFrame;
+    }
+    while (navigatorKey.currentState == null && mounted) {
       await Future<void>.delayed(const Duration(milliseconds: 10));
     }
+    if (!mounted) return;
     navigatorKey.currentState!.pushNamedAndRemoveUntil(route, (_) => false);
   }
 
@@ -81,8 +92,22 @@ class _AppInitializerState extends State<AppInitializer> {
     final auth = Supabase.instance.client.auth;
     final analytics = context.read<AnalyticsService>();
 
-    // Show splash once
-    unawaited(_go('/splash'));
+    final firstSession = auth.currentSession;
+    if (!_routingLock) {
+      _routingLock = true;
+      try {
+        if (firstSession == null) {
+          await _go('/auth');
+        } else {
+          unawaited(_go('/splash'));
+          await _holdSplash();
+          final ok = await _handleSignedIn(firstSession);
+          await _go(ok ? '/home' : '/auth');
+        }
+      } finally {
+        _routingLock = false;
+      }
+    }
 
     // (Re)subscribe
     await _authSub?.cancel();
@@ -95,15 +120,6 @@ class _AppInitializerState extends State<AppInitializer> {
 
       debugPrint('Auth state changed: $event');
 
-      if (event == AuthChangeEvent.passwordRecovery) {
-        if (navigatorKey.currentState?.canPop() ?? false) {
-          navigatorKey.currentState!.pop();
-        }
-        _justDidPasswordReset = true;
-        await _go('/reset');
-        return;
-      }
-
       if (_routingLock) return;
       _routingLock = true;
       try {
@@ -111,6 +127,7 @@ class _AppInitializerState extends State<AppInitializer> {
           case AuthChangeEvent.initialSession:
             if (session != null) {
               unawaited(_go('/splash'));
+              await _holdSplash();
               final ok = await _handleSignedIn(session);
               await _go(ok ? '/home' : '/auth');
             } else {
@@ -121,14 +138,14 @@ class _AppInitializerState extends State<AppInitializer> {
           case AuthChangeEvent.signedIn:
             if (session != null) {
               unawaited(_go('/splash'));
-              
-              // If we just did a password reset, wait longer for database consistency
+
               if (_justDidPasswordReset) {
                 debugPrint('Password reset detected, waiting for database consistency');
                 await Future.delayed(const Duration(milliseconds: 1500));
                 _justDidPasswordReset = false;
               }
-              
+
+              await _holdSplash();
               final ok = await _handleSignedIn(session);
               await _go(ok ? '/home' : '/auth');
             } else {
@@ -144,10 +161,17 @@ class _AppInitializerState extends State<AppInitializer> {
             await _go('/auth');
             break;
 
+          case AuthChangeEvent.passwordRecovery:
+            if (navigatorKey.currentState?.canPop() ?? false) {
+              navigatorKey.currentState!.pop();
+            }
+            _justDidPasswordReset = true;
+            await _go('/reset');
+            break;
+
           case AuthChangeEvent.tokenRefreshed:
             if (session != null && _lastUserId != session.user.id) {
               try {
-                // refresh data quietly; no nav here
                 await _handleSignedIn(session);
                 _lastUserId = session.user.id;
               } catch (e) {

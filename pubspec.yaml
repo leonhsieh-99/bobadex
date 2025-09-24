@@ -58,6 +58,7 @@ dependencies:
   firebase_core: ^4.1.0
   package_info_plus: ^9.0.0
   in_app_review: ^2.0.11
+  flutter_native_splash: ^2.4.6
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -116,6 +117,7 @@ flutter:
     - lib/assets/badges/
     - lib/assets/cities.json
     - lib/assets/logo.svg
+    - lib/assets/logo.png
     - lib/assets/bobadex.svg
     
 
@@ -144,3 +146,12 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_native_splash:
+  color: "#E5BB7C"
+  image: lib/assets/bobadex.png
+  ios: true
+  android: true
+  android_12:
+    color: "#E5BB7C"
+    image: lib/assets/bobadex.png
