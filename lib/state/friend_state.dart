@@ -118,6 +118,35 @@ class FriendState extends ChangeNotifier {
     }
   }
 
+  Future<void> removeFriend(String otherUserId) async {
+    // Optimistic update
+    final idx = _friendships.indexWhere((f) =>
+      (f.requester.id == userId && f.addressee.id == otherUserId) ||
+      (f.requester.id == otherUserId && f.addressee.id == userId)
+    );
+    if (idx == -1) return;
+
+    final removed = _friendships.removeAt(idx);
+    notifyListeners();
+
+    try {
+      await supabase
+        .from('friendships')
+        .delete()
+        // delete regardless of who requested it
+        .or(
+          'and(requester_id.eq.$userId,addressee_id.eq.$otherUserId),'
+          'and(requester_id.eq.$otherUserId,addressee_id.eq.$userId)'
+        );
+    } catch (e) {
+      debugPrint('Remove friend failed: $e');
+      // rollback
+      _friendships.insert(idx, removed);
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   void reset() {
     _friendships.clear();
     notifyListeners();

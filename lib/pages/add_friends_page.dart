@@ -1,8 +1,6 @@
-import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/state/friend_state.dart';
-import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/custom_search_bar.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
@@ -66,7 +64,6 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.read<UserState>().current;
     final friendState = context.watch<FriendState>();
     return Scaffold(
       appBar: AppBar(
@@ -104,8 +101,6 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Constants.getThemeColor(user.themeSlug).shade200,
-                      foregroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
                     ),

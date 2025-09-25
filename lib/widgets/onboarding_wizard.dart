@@ -65,10 +65,9 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                   SizedBox(height: 24),
                   Text(
                     'Bobadex is a passion project I started to make it fun and easy to log all my milk tea adventures. '
-                    'This app was developed by just myself, so if you find bugs or run into missing features, '
+                    'This app was developed by just one person, so if you find bugs or run into missing features, '
                     'please be patient and let me know through the contact page so I can make Bobadex better for everyone.\n\n'
-                    'Thanks for giving it a try. Let’s start tracking your boba journey together!\n\n'
-                    '- Leon Hsieh',
+                    'Thanks for giving it a try. Let’s start tracking your boba journey together!',
                     style: TextStyle(fontSize: 16),
                   ),
                   SizedBox(height: 24),

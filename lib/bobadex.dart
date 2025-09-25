@@ -63,7 +63,7 @@ class _BobadexAppState extends State<BobadexApp> {
           final themeColor = Constants.getThemeColor(userState.current.themeSlug);
           return MaterialApp(
             title: 'Bobadex',
-            home: const SizedBox.shrink(),
+            home: const SplashPage(),
             routes: {
               '/auth': (_) => const AuthPage(),
               '/reset': (_) => const ResetPasswordPage(),
@@ -72,6 +72,7 @@ class _BobadexAppState extends State<BobadexApp> {
             },
             navigatorKey: navigatorKey,
             navigatorObservers: [_observer],
+            debugShowCheckedModeBanner: false,
             locale: Locale('en'),
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(seedColor: themeColor),

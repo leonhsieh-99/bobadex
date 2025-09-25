@@ -38,7 +38,9 @@ class _AppInitializerState extends State<AppInitializer> {
   @override
   void initState() {
     super.initState();
-    initializeAuthFlow();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      initializeAuthFlow();
+    });
   }
 
   @override
@@ -47,11 +49,6 @@ class _AppInitializerState extends State<AppInitializer> {
     _authSub?.cancel();
     _mediaRT.stop();
     super.dispose();
-  }
-
-  Future<void> _holdSplash([Duration d = const Duration(milliseconds: 350)]) async {
-    // Ensures Flutter splash paints at least once when we decide to show it
-    await Future.delayed(d);
   }
 
   void _resetAllStates() {
@@ -75,39 +72,19 @@ class _AppInitializerState extends State<AppInitializer> {
   }
 
   Future<void> _go(String route) async {
-    if (WidgetsBinding.instance.hasScheduledFrame) {
-      await WidgetsBinding.instance.endOfFrame;
-    } else {
-      WidgetsBinding.instance.scheduleFrame();
-      await WidgetsBinding.instance.endOfFrame;
-    }
-    while (navigatorKey.currentState == null && mounted) {
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-    }
+    await WidgetsBinding.instance.endOfFrame;
     if (!mounted) return;
-    navigatorKey.currentState!.pushNamedAndRemoveUntil(route, (_) => false);
+    for (int i = 0; i < 30 && navigatorKey.currentState == null; i++) {
+      await Future.delayed(const Duration(milliseconds: 16));
+    }
+    final nav = navigatorKey.currentState;
+    if (nav == null) return;
+    nav.pushNamedAndRemoveUntil(route, (_) => false);
   }
 
   Future<void> initializeAuthFlow() async {
     final auth = Supabase.instance.client.auth;
     final analytics = context.read<AnalyticsService>();
-
-    final firstSession = auth.currentSession;
-    if (!_routingLock) {
-      _routingLock = true;
-      try {
-        if (firstSession == null) {
-          await _go('/auth');
-        } else {
-          unawaited(_go('/splash'));
-          await _holdSplash();
-          final ok = await _handleSignedIn(firstSession);
-          await _go(ok ? '/home' : '/auth');
-        }
-      } finally {
-        _routingLock = false;
-      }
-    }
 
     // (Re)subscribe
     await _authSub?.cancel();
@@ -126,8 +103,6 @@ class _AppInitializerState extends State<AppInitializer> {
         switch (event) {
           case AuthChangeEvent.initialSession:
             if (session != null) {
-              unawaited(_go('/splash'));
-              await _holdSplash();
               final ok = await _handleSignedIn(session);
               await _go(ok ? '/home' : '/auth');
             } else {
@@ -137,15 +112,12 @@ class _AppInitializerState extends State<AppInitializer> {
 
           case AuthChangeEvent.signedIn:
             if (session != null) {
-              unawaited(_go('/splash'));
-
               if (_justDidPasswordReset) {
                 debugPrint('Password reset detected, waiting for database consistency');
                 await Future.delayed(const Duration(milliseconds: 1500));
                 _justDidPasswordReset = false;
               }
 
-              await _holdSplash();
               final ok = await _handleSignedIn(session);
               await _go(ok ? '/home' : '/auth');
             } else {

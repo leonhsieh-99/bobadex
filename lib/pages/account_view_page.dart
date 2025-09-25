@@ -159,9 +159,36 @@ class _AccountViewPageState extends State<AccountViewPage> {
       appBar: AppBar(
         actions: [
           if (!isCurrentUser)
-            PopupMenuButton(
-              onSelected: (value) {
-                switch(value) {
+            PopupMenuButton<String>(
+              onSelected: (value) async {
+                switch (value) {
+                  case 'remove':
+                    try {
+                      await context.read<FriendState>().removeFriend(widget.userId);
+                      notify('Removed friend', SnackType.success);
+                    } catch (_) {
+                      notify('Could not remove friend. Try again.', SnackType.error);
+                    }
+                    break;
+
+                  case 'cancel_request':
+                    try {
+                      await context.read<FriendState>().removeFriend(widget.userId);
+                      notify('Friend request canceled', SnackType.success);
+                    } catch (_) {
+                      notify('Could not cancel request. Try again.', SnackType.error);
+                    }
+                    break;
+
+                  case 'reject_request':
+                    try {
+                      await context.read<FriendState>().rejectUser(widget.userId);
+                      notify('Friend request rejected', SnackType.success);
+                    } catch (_) {
+                      notify('Could not reject request. Try again.', SnackType.error);
+                    }
+                    break;
+
                   case 'report':
                     showDialog(
                       context: context,
@@ -173,13 +200,35 @@ class _AccountViewPageState extends State<AccountViewPage> {
                     break;
                 }
               },
-              itemBuilder: (_) => [
-                PopupMenuItem(
+              itemBuilder: (_) {
+                final items = <PopupMenuEntry<String>>[];
+
+                if (friendStatus?.status == 'accepted') {
+                  items.add(const PopupMenuItem(
+                    value: 'remove',
+                    child: Text('Remove friend'),
+                  ));
+                } else if (friendStatus?.status == 'pending') {
+                  if (friendStatus!.requester.id == currentUser.id) {
+                    items.add(const PopupMenuItem(
+                      value: 'cancel_request',
+                      child: Text('Cancel friend request'),
+                    ));
+                  } else if (friendStatus.addressee.id == currentUser.id) {
+                    items.add(const PopupMenuItem(
+                      value: 'reject_request',
+                      child: Text('Reject friend request'),
+                    ));
+                  }
+                }
+
+                items.add(const PopupMenuItem(
                   value: 'report',
-                  child: Text('report')
-                )
-              ]
-            )
+                  child: Text('Report'),
+                ));
+                return items;
+              },
+            ),
         ],
       ),
       body: Padding(
