@@ -65,10 +65,9 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
       );
     }
 
-    if (shopsData!.isEmpty) {
-      return Center(
-        child: Text('No shared shops yet', style: Constants.emptyListTextStyle),
-      );
+    final items = shopsData ?? const <FriendsShop>[];
+    if (items.isEmpty) {
+      return Center(child: Text('No shared shops yet', style: Constants.emptyListTextStyle));
     }
 
     return CustomScrollView(
@@ -77,8 +76,8 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
           padding: EdgeInsets.all(16),
           sliver: SliverGrid(
             delegate: SliverChildBuilderDelegate(
-              (context, i) => _buildShopPearl(shopsData![i]),
-              childCount: shopsData!.length,
+              (context, i) => _buildShopPearl(items[i]),
+              childCount: items.length,
             ),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -134,6 +133,10 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
     final brand = brandState.getBrand(shop.brandSlug);
     final userState = context.read<UserState>();
     final themeColor = Constants.getThemeColor(userState.current.themeSlug);
+
+    final iconPath = brand?.iconPath ?? shop.iconPath;
+    final displayName = brand?.display ?? shop.name;
+
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
@@ -155,12 +158,12 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
               color: themeColor.shade200,
               shape: BoxShape.circle,
             ),
-            child: IconPic(path: brand!.iconPath, size: 64)
+            child: IconPic(path: iconPath, size: 64)
           ),
           const SizedBox(height: 10),
           Text(
-            shop.name,
-            style: TextStyle(
+            displayName,
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
               overflow: TextOverflow.ellipsis,
@@ -174,11 +177,11 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
           ),
           const SizedBox(height: 5),
           Text(
-            'Ratings: ${shop.friendsInfo.length.toString()}',
+            'Ratings: ${shop.friendsInfo.length}',
             style: TextStyle(fontSize: 13, color: Colors.grey[700]),
           ),
         ],
-      )
+      ),
     );
   }
 }

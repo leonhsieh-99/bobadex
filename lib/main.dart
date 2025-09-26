@@ -86,7 +86,7 @@ class _BootstrapApp extends StatelessWidget {
             ),
           );
         }
-        return const BobadexApp();
+        return BobadexApp();
       },
     );
   }

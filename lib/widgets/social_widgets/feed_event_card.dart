@@ -260,7 +260,7 @@ class _VerbPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.7),
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.7),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
@@ -337,7 +337,7 @@ class _ShopLink extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 220),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(onTap == null ? 0.4 : 0.55),
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(onTap == null ? 0.4 : 0.55),
         borderRadius: BorderRadius.circular(999),
       ),
       child: onTap == null

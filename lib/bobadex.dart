@@ -1,9 +1,5 @@
 import 'package:bobadex/analytics_service.dart';
-import 'package:bobadex/navigation.dart';
-import 'package:bobadex/pages/auth_page.dart';
-import 'package:bobadex/pages/home_page.dart';
-import 'package:bobadex/pages/reset_password_page.dart';
-import 'package:bobadex/pages/splash_page.dart';
+import 'package:bobadex/helpers/go_router.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/city_data_provider.dart';
@@ -44,6 +40,8 @@ class _BobadexAppState extends State<BobadexApp> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = AuthState();
+    final router = buildRouter(auth: auth, observers: [_observer]);
     return MultiProvider(
       providers: [
         Provider<AnalyticsService>.value(value: _analytics),
@@ -61,17 +59,9 @@ class _BobadexAppState extends State<BobadexApp> {
       child: Consumer<UserState>(
         builder: (context, userState, _) {
           final themeColor = Constants.getThemeColor(userState.current.themeSlug);
-          return MaterialApp(
+          return MaterialApp.router(
             title: 'Bobadex',
-            home: const SplashPage(),
-            routes: {
-              '/auth': (_) => const AuthPage(),
-              '/reset': (_) => const ResetPasswordPage(),
-              '/home': (_) => HomePage(userId: userState.current.id),
-              '/splash': (_) => SplashPage(),
-            },
-            navigatorKey: navigatorKey,
-            navigatorObservers: [_observer],
+            routerConfig: router,
             debugShowCheckedModeBanner: false,
             locale: Locale('en'),
             theme: ThemeData(

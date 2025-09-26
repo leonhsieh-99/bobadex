@@ -50,7 +50,7 @@ class NotificationBus extends ChangeNotifier {
     if (_draining) return;
     _draining = true;
     try {
-      final overlay = navigatorKey.currentState?.overlay;
+      final overlay = rootNavigatorKey.currentState?.overlay;
       if (overlay == null) return;
       while (_queue.isNotEmpty) {
         final n = _queue.removeAt(0);

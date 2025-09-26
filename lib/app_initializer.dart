@@ -51,6 +51,16 @@ class _AppInitializerState extends State<AppInitializer> {
     super.dispose();
   }
 
+  Future<void> _postSignInLoadAndRoute(Session session) async {
+    try {
+      final ok = await _handleSignedIn(session);
+      await goRoot(ok ? '/home' : '/auth');
+    } catch (e, st) {
+      debugPrint('Post sign-in load failed: $e\n$st');
+      await goRoot('/auth');
+    }
+  }
+
   void _resetAllStates() {
     if (!mounted) return;
 
@@ -69,17 +79,6 @@ class _AppInitializerState extends State<AppInitializer> {
         debugPrint('Error resetting states: $e');
       }
     });
-  }
-
-  Future<void> _go(String route) async {
-    await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) return;
-    for (int i = 0; i < 30 && navigatorKey.currentState == null; i++) {
-      await Future.delayed(const Duration(milliseconds: 16));
-    }
-    final nav = navigatorKey.currentState;
-    if (nav == null) return;
-    nav.pushNamedAndRemoveUntil(route, (_) => false);
   }
 
   Future<void> initializeAuthFlow() async {
@@ -103,10 +102,10 @@ class _AppInitializerState extends State<AppInitializer> {
         switch (event) {
           case AuthChangeEvent.initialSession:
             if (session != null) {
-              final ok = await _handleSignedIn(session);
-              await _go(ok ? '/home' : '/auth');
+              await goRoot('/splash');
+              unawaited(_postSignInLoadAndRoute(session));
             } else {
-              await _go('/auth');
+              await goRoot('/auth');
             }
             break;
 
@@ -118,10 +117,11 @@ class _AppInitializerState extends State<AppInitializer> {
                 _justDidPasswordReset = false;
               }
 
-              final ok = await _handleSignedIn(session);
-              await _go(ok ? '/home' : '/auth');
+              await goRoot('/splash');
+
+              unawaited(_postSignInLoadAndRoute(session));
             } else {
-              await _go('/auth');
+              await goRoot('/auth');
             }
             break;
 
@@ -130,15 +130,13 @@ class _AppInitializerState extends State<AppInitializer> {
             await _achievmentSub?.cancel();
             _achievmentSub = null;
             await _mediaRT.stop();
-            await _go('/auth');
+            await goRoot('/auth');
             break;
 
           case AuthChangeEvent.passwordRecovery:
-            if (navigatorKey.currentState?.canPop() ?? false) {
-              navigatorKey.currentState!.pop();
-            }
+            if (rootCanPop()) rootPop();
             _justDidPasswordReset = true;
-            await _go('/reset');
+            await goRoot('/reset');
             break;
 
           case AuthChangeEvent.tokenRefreshed:
@@ -157,7 +155,7 @@ class _AppInitializerState extends State<AppInitializer> {
         }
       } catch (e, st) {
         debugPrint('Auth flow error: $e\n$st');
-        await _go('/auth');
+        await goRoot('/auth');
       } finally {
         _routingLock = false;
       }

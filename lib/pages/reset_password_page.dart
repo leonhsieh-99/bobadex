@@ -26,7 +26,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       );
       debugPrint('Password reset');
       notify('Password successfully reset', SnackType.success);
-      navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false);
+      await goRoot('/auth');
     } catch (e) {
       debugPrint('Error resetting password: $e');
       notify('Error resetting password, please try again.', SnackType.error);
@@ -47,7 +47,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         title: const Text('Password Reset'),
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
-          onPressed: () => navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (_) => false)
+          onPressed: () => goRoot('/auth')
         ),
       ),
       body: SingleChildScrollView(
