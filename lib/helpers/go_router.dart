@@ -43,6 +43,13 @@ GoRouter buildRouter({ required AuthState auth, List<NavigatorObserver> observer
     observers: observers,
     initialLocation: '/splash',
     routes: [
+      GoRoute(
+        path: '/',
+        redirect: (context, state) {
+          final uid = Supabase.instance.client.auth.currentUser?.id;
+          return uid == null ? '/auth' : '/home';
+        },
+      ),
       GoRoute(path: '/splash', builder: (_, __) => const SplashPage()),
       GoRoute(path: '/auth',  builder: (_, __) => const AuthPage()),
       GoRoute(path: '/reset',  builder: (_, __) => const ResetPasswordPage()),
@@ -55,5 +62,6 @@ GoRouter buildRouter({ required AuthState auth, List<NavigatorObserver> observer
         },
       ),
     ],
+    errorBuilder: (_, __) => const AuthPage(),
   );
 }
