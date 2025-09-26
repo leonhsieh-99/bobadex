@@ -13,6 +13,8 @@ Future<void> changePasswordDialog(BuildContext context) async {
 
   await showDialog(
     context: context,
+    barrierDismissible: true,
+    useRootNavigator: true,
     builder: (_) => StatefulBuilder(
       builder: (context, setState) => Stack(
         children: [
@@ -62,19 +64,19 @@ Future<void> changePasswordDialog(BuildContext context) async {
                   final newPass = newController.text.trim();
 
                   try {
-                    final  user = Supabase.instance.client.auth.currentUser;
+                    final user = Supabase.instance.client.auth.currentUser;
                     final email = user?.email;
-
                     if (email == null) throw Exception('No email found');
 
                     // Re-authenticate
                     try {
                       await Supabase.instance.client.auth.signInWithPassword(
-                        email: email,
-                        password: current
+                        email: email, password: current,
                       );
-                    } catch (e) {
-                      setState(() => currentPasswordError = 'Current password incorrect');
+                    } catch (_) {
+                      if (context.mounted) {
+                        setState(() => currentPasswordError = 'Current password incorrect');
+                      }
                       return;
                     }
 
@@ -83,14 +85,12 @@ Future<void> changePasswordDialog(BuildContext context) async {
                       UserAttributes(password: newPass),
                     );
 
-                    if (context.mounted) {
-                      notify('Password changed successfully', SnackType.success);
-                      Navigator.pop(context);
-                    }
+                    notify('Password changed successfully', SnackType.success);
+                    Future.microtask(() {
+                      if (context.mounted) Navigator.of(context, rootNavigator: true).maybePop();
+                    });
                   } catch (e) {
-                    if (context.mounted) {
-                      notify('Error changing password', SnackType.error);
-                    }
+                    notify('Error changing password', SnackType.error);
                   } finally {
                     setState(() => isLoading = false);
                   }

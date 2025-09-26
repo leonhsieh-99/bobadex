@@ -5,6 +5,16 @@ import 'package:go_router/go_router.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
+Future<void> _dismissModalsIfAny() async {
+  final nav = rootNavigatorKey.currentState;
+  if (nav == null) return;
+  for (var i = 0; i < 5; i++) {
+    if (!nav.canPop()) break;
+    nav.pop(); // dismiss top-most modal/page
+    await Future.delayed(const Duration(milliseconds: 1));
+  }
+}
+
 Future<void> goRoot(String path) async {
   await WidgetsBinding.instance.endOfFrame;
 
@@ -12,6 +22,7 @@ Future<void> goRoot(String path) async {
   for (var i = 0; i < tries; i++) {
     final ctx = rootNavigatorKey.currentContext;
     if (ctx != null && ctx.mounted) {
+      await _dismissModalsIfAny();
       GoRouter.of(ctx).go(path);
       return;
     }
