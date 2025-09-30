@@ -39,9 +39,16 @@ class BrandState extends ChangeNotifier {
     final supabase = Supabase.instance.client;
     final cacheBox = await Hive.openBox(_cacheBox);
 
-    // 1) Warm from cache
-    final cachedData = cacheBox.get('brands');
-    final cachedLastUpdatedStr = cacheBox.get('brands_last_updated') as String?;
+    // determine current scope
+    final isReviewer = (supabase.auth.currentUser?.appMetadata['role'] == 'reviewer');
+    print(supabase.auth.currentUser!.id);
+    print((supabase.auth.currentUser?.appMetadata['role']));
+    final dataKey = isReviewer ? 'brands_demo' : 'brands_public';
+    final timeKey = '${dataKey}_last_updated';
+
+    // 1) Warm from scope-specific cache
+    final cachedData = cacheBox.get(dataKey);
+    final cachedLastUpdatedStr = cacheBox.get(timeKey) as String?;
     final cachedLastUpdated = cachedLastUpdatedStr != null
         ? DateTime.tryParse(cachedLastUpdatedStr)
         : null;
@@ -55,11 +62,11 @@ class BrandState extends ChangeNotifier {
         ..addAll(cachedBrands.where((b) => b.status == BrandStatus.active));
       _updateNameLookup();
       notifyListeners();
-      debugPrint('Loaded ${_brands.length} brands from cache');
+      debugPrint('Loaded ${_brands.length} brands from cache [$dataKey]');
     }
 
     try {
-      // 2) Get server version
+      // 2) Server version (global)
       final versionRow = await RetryHelper.retry(() => supabase
           .from('brand_metadata')
           .select('last_updated')
@@ -75,32 +82,37 @@ class BrandState extends ChangeNotifier {
           cachedLastUpdated == null ||
           serverLastUpdated.isAfter(cachedLastUpdated);
 
-      if (!needsUpdate) {
-        debugPrint('Cache is up to date. No fetch needed');
+      // IMPORTANT: also refresh if scope changed vs what’s currently loaded
+      final currentScopeLoaded =
+          (nameLookup.isNotEmpty && cacheBox.get('current_scope') == (isReviewer ? 'demo' : 'public'));
+      final shouldFetch = needsUpdate || !currentScopeLoaded;
+
+      if (!shouldFetch) {
+        debugPrint('Cache up to date for scope [$dataKey]. No fetch.');
         return;
       }
 
-      // 3) Fetch fresh list
+      // 3) Fetch fresh list (RLS will return only the allowed scope)
       final rows = await RetryHelper.retry(() => supabase
           .from('brands')
           .select('*')
           .order('slug'));
 
-      final freshBrands =
-          (rows as List).map<Brand>((json) => Brand.fromJson(json)).toList();
+      final freshBrands = (rows as List).map<Brand>((json) => Brand.fromJson(json)).toList();
 
       _brands
         ..clear()
         ..addAll(freshBrands.where((b) => b.status == BrandStatus.active));
       _updateNameLookup();
       notifyListeners();
-      debugPrint('Loaded ${_brands.length} brands from Supabase');
+      debugPrint('Loaded ${_brands.length} brands from Supabase [scope=$dataKey]');
 
-      // 4) Persist cache + SERVER timestamp
-      await cacheBox.put('brands', freshBrands.map((b) => b.toJson()).toList());
+      // 4) Persist cache + timestamp + scope marker
+      await cacheBox.put(dataKey, freshBrands.map((b) => b.toJson()).toList());
       if (serverLastUpdated != null) {
-        await cacheBox.put('brands_last_updated', serverLastUpdated.toIso8601String());
+        await cacheBox.put(timeKey, serverLastUpdated.toIso8601String());
       }
+      await cacheBox.put('current_scope', isReviewer ? 'demo' : 'public');
     } catch (e) {
       if (!_hasError) {
         _hasError = true;

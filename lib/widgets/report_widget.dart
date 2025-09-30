@@ -5,7 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class ReportDialog extends StatefulWidget {
   final String contentType;
   final String contentId;
-  const ReportDialog({super.key, required this.contentType, required this.contentId});
+  final String? reportedUserId;
+  const ReportDialog({super.key, required this.contentType, required this.contentId, required this.reportedUserId});
 
   @override
   State<ReportDialog> createState() => _ReportDialogState();
@@ -22,15 +23,20 @@ class _ReportDialogState extends State<ReportDialog> {
     final supabase = Supabase.instance.client;
     final userId = supabase.auth.currentUser!.id;
 
-    await supabase.from('reports').insert({
-      'reported_by': userId,
-      'content_type': widget.contentType,
-      'content_id': widget.contentId,
-      'reason': _selectedReason,
-      'message': _controller.text.trim(),
-    });
-    if (mounted) Navigator.of(context).pop();
-    notify('Report submitted', SnackType.info);
+    try {
+      await supabase.from('reports').insert({
+        'reported_by': userId,
+        'content_type': widget.contentType,
+        'content_id': widget.contentId,
+        'reason': _selectedReason,
+        'message': _controller.text.trim(),
+        'reported_user_id': widget.reportedUserId
+      });
+      if (mounted) Navigator.of(context).pop();
+      notify('Report submitted', SnackType.info);
+    } catch (e) {
+      debugPrint('Error: $e');
+    }
   }
 
 @override

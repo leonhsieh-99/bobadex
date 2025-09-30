@@ -195,6 +195,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
                       builder: (_) => ReportDialog(
                         contentType: 'user',
                         contentId: widget.userId,
+                        reportedUserId: widget.userId,
                       ),
                     );
                     break;

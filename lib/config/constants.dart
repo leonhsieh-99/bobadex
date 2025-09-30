@@ -16,11 +16,12 @@ class Constants {
     'Brown': Colors.brown,
   };
 
+  static const defaultTheme = 'Blue Grey';
+
   static MaterialColor getThemeColor(String slug) =>
-      themeMap[slug] ?? Colors.brown;
+      themeMap[slug] ?? themeMap[defaultTheme]!;
 
   static const defaultGridColumns = 2;
-  static const defaultTheme = 'grey';
   static const heartColor = Color(0xFFE49B9B);
   static const starColor = Color(0xFFF8EE9B);
   static final badgeBgColor = Colors.grey.shade300;
@@ -37,21 +38,9 @@ class Constants {
   static const int defaultGalleryLimit = 20;
   static const int snackBarDuration = 2900; // milliseconds
   // image sizes
-  static const avatarSmall = <int>[64, 128, 192, 256];
-  static const avatarLarge = <int>[192, 256, 320, 512];
-  static List<(int w, int h)> allVariants() {
-    final set = <String>{};
-    void addIntList(List<int> xs) {
-      for (final s in xs) { set.add('$s:$s'); }
-    }
-    addIntList(avatarSmall);
-    addIntList(avatarLarge);
-
-    return set.map((s) {
-      final parts = s.split(':');
-      return (int.parse(parts[0]), int.parse(parts[1]));
-    }).toList();
-  }
+  static const thumbSizes = <int>[256, 512];
+  static const String imageBucket = 'media-uploads';
+  static const String iconBucket = 'shop-media';
 
   static const int maxUsernameLength = 20;
   static const int maxNameLength = 40;

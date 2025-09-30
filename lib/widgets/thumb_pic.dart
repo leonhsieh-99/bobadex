@@ -1,27 +1,11 @@
 import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/helpers/url_helper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-const _kAvatarSmall = Constants.avatarSmall;
-const _kAvatarLarge = Constants.avatarLarge;
-
-int _ceilBucket(int v, List<int> buckets) {
-  for (final b in buckets) {
-    if (b >= v) return b;
-  }
-  return buckets.last;
-}
-
-List<int> _bucketsFor(double widgetSizePx, double dpr) {
-  final effective = widgetSizePx * dpr;
-  return effective >= 300 ? _kAvatarLarge : _kAvatarSmall;
-}
 
 class ThumbPic extends StatelessWidget {
   final String? path;
   final double size;
-  final int quality;
   final String? initials;
   final VoidCallback? onTap;
 
@@ -29,79 +13,60 @@ class ThumbPic extends StatelessWidget {
     super.key,
     required this.path,
     this.size = 40,
-    this.quality = 80,
     this.initials,
     this.onTap,
   });
 
-  String? _originalUrl() {
-    if (path == null || path!.isEmpty) return null;
-    return Supabase.instance.client.storage.from('media-uploads').getPublicUrl(path!);
-  }
-
-  String? _transformedUrl(BuildContext context, {required int px}) {
-    final base = _originalUrl();
-    if (base == null) return null;
-
-    final u = Uri.parse(base);
-    final renderPath = u.path.replaceFirst(
-      '/storage/v1/object/public/',
-      '/storage/v1/render/image/public/',
-    );
-    final q = quality.clamp(1, 100);
-
-    return Uri(
-      scheme: u.scheme,
-      host: u.host,
-      path: renderPath,
-      queryParameters: {
-        'width': '$px',
-        'height': '$px',
-        'resize': 'cover',
-        'quality': '$q',
-      },
-    ).toString();
-  }
-
   @override
   Widget build(BuildContext context) {
+    if (path == null || path!.isEmpty) {
+      return _fallback();
+    }
+
     final dpr = MediaQuery.of(context).devicePixelRatio.clamp(1.0, 3.0);
-    final target = (size * dpr).round();
-    final buckets = _bucketsFor(size, dpr);
-    final px = _ceilBucket(target, buckets);
+    final px  = pickSquareSize(size, dpr, Constants.thumbSizes);
 
-    final tUrl = _transformedUrl(context, px: px);
-    final oUrl = _originalUrl();
+    final sizedThumb = publicUrl(Constants.imageBucket, thumbPath(path!, px));
+    final smallerThumb = publicUrl(Constants.imageBucket, thumbPath(path!, 256)); // common default
+    final original = publicUrl(Constants.imageBucket, path!);
 
-    final inner = (tUrl != null)
-        ? CachedNetworkImage(
-            imageUrl: tUrl,
-            width: size,
-            height: size,
-            fit: BoxFit.cover,
-            memCacheWidth: px,
-            memCacheHeight: px,
-            placeholder: (_, __) => _placeholder(),
-            errorWidget: (_, __, ___) => (oUrl != null)
-                ? CachedNetworkImage(
-                    imageUrl: oUrl,
-                    width: size,
-                    height: size,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => _placeholder(),
-                    errorWidget: (_, __, ___) => _fallback(),
-                  )
-                : _fallback(),
-          )
-        : _fallback();
+    final inner = CachedNetworkImage(
+      imageUrl: sizedThumb,
+      width: size,
+      height: size,
+      fit: BoxFit.cover,
+      memCacheWidth: px,
+      memCacheHeight: px,
+      fadeInDuration: Duration.zero,
+      fadeOutDuration: Duration.zero,
+      placeholderFadeInDuration: Duration.zero,
+      placeholder: (_, __) => _placeholder(),
+      errorWidget: (_, __, ___) => CachedNetworkImage(
+        imageUrl: smallerThumb,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        memCacheWidth: 256,
+        memCacheHeight: 256,
+        placeholder: (_, __) => _placeholder(),
+        errorWidget: (_, __, ___) => CachedNetworkImage(
+          imageUrl: original,   // last resort
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => _placeholder(),
+          errorWidget: (_, __, ___) => _fallback(),
+        ),
+      ),
+    );
 
     return GestureDetector(onTap: onTap, child: ClipOval(child: inner));
   }
 
   Widget _placeholder() => SizedBox(
-        width: size, height: size,
-        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-      );
+    width: size, height: size,
+    child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+  );
 
   Widget _fallback() {
     final text = (initials ?? '').trim();

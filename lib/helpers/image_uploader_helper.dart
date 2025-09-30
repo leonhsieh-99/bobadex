@@ -1,73 +1,137 @@
 import 'dart:io';
 import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/helpers/media_cache.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'package:path/path.dart' as p;
+import 'package:image/image.dart' as im;
 
 class ImageUploaderHelper {
   static final _supabase = Supabase.instance.client;
-  static const List<String> _supportedExtensions = [
-    'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'
-  ];
 
   static Future<String> uploadImage({
     required File file,
     required String folder,
+    int maxOriginalEdge = 1024, // cap long edge for bandwidth
   }) async {
-    if (!await file.exists()) {
-      throw Exception('File does not exist');
-    }
-
-    final extension = file.path.split('.').last.toLowerCase();
-    if (!_supportedExtensions.contains(extension)) {
-      throw Exception(
-        'Unsupported file format. Please use: ${_supportedExtensions.join(', ')}',
-      );
-    }
+    if (!await file.exists()) throw Exception('File does not exist');
 
     final uuid = const Uuid().v4();
-    final path = '$folder/$uuid.jpg';
+    final originalPath = p.join(folder, '$uuid.jpg'); // normalize to jpg
 
-    final isGif = extension == 'gif';
-    List<int>? fileBytes;
+    final src = await file.readAsBytes();
+    final decoded = im.decodeImage(src);
+    if (decoded == null) throw Exception('Unsupported image format');
 
-    if (isGif) {
-      fileBytes = await file.readAsBytes();
-    } else {
-      fileBytes = await FlutterImageCompress.compressWithFile(
-        file.path,
-        minWidth: 800,
-        quality: 80,
-        format: CompressFormat.jpeg,
-      );
-      if (fileBytes == null) {
-        throw Exception('Failed to compress image');
-      }
-    }
+    // Cap original long edge
+    final w = decoded.width, h = decoded.height;
+    final long = w > h ? w : h;
+    final base = long > maxOriginalEdge
+        ? (w >= h
+            ? im.copyResize(decoded, width: maxOriginalEdge)
+            : im.copyResize(decoded, height: maxOriginalEdge))
+        : decoded;
 
-    if (fileBytes.length > Constants.maxFileSize) {
-      throw Exception('File size exceeds maximum limit of 10MB after compression.');
-    }
+    final origBytes = Uint8List.fromList(im.encodeJpg(base, quality: 85));
 
-    await _supabase.storage.from('media-uploads').uploadBinary(
-      path,
-      Uint8List.fromList(fileBytes),
-      fileOptions: FileOptions(
-        contentType: isGif ? 'image/gif' : 'image/jpeg',
+    // Precompute thumbs (square cover-crop)
+    final Map<int, Uint8List> thumbBytes = {
+      for (final s in Constants.thumbSizes)
+        s: Uint8List.fromList(
+          im.encodeJpg(
+            im.copyResizeCropSquare(base, size: s),
+            quality: 80,
+          ),
+        ),
+    };
+
+    final uploads = <Future<void>>[];
+
+    uploads.add(_supabase.storage.from(Constants.imageBucket).uploadBinary(
+      originalPath,
+      origBytes,
+      fileOptions: const FileOptions(
+        contentType: 'image/jpeg',
         cacheControl: 'public, max-age=31536000',
+        upsert: false,
       ),
-    );
+    ));
 
-    return path;
+    for (final entry in thumbBytes.entries) {
+      final size = entry.key;
+      final bytes = entry.value;
+      uploads.add(_supabase.storage.from(Constants.imageBucket).uploadBinary(
+        'thumbs/s$size/$originalPath',
+        bytes,
+        fileOptions: const FileOptions(
+          contentType: 'image/jpeg',
+          cacheControl: 'public, max-age=31536000',
+          upsert: true,
+        ),
+      ));
+    }
+
+    await Future.wait(uploads);
+
+    return originalPath; // store in DB
   }
 
-  static Future<void> deleteImage(String path) async {
-    if (path.isEmpty || path.startsWith('/')) return;
+  static Future<void> deleteImage(
+    String originalPath, {
+    String bucket = Constants.imageBucket,
+    List<int> sizes = Constants.thumbSizes,
+    bool evictLocalCache = true,
+  }) async {
+    if (originalPath.isEmpty || originalPath.startsWith('/')) return;
+
+    final paths = <String>[
+      originalPath,
+      for (final s in sizes) 'thumbs/s$s/$originalPath',
+    ];
+
     try {
-      await _supabase.storage.from('media-uploads').remove([path]);
+      await _supabase.storage.from(bucket).remove(paths);
     } catch (e) {
-      throw Exception('Failed to delete image: $e');
+      // pass
+    }
+
+    if (evictLocalCache) {
+      await evictAllThumbsFor(
+        bucket: bucket,
+        originalPath: originalPath,
+        sizes: sizes,
+      );
+    }
+  }
+
+  static Future<void> deleteManyImages(
+    Iterable<String> originalPaths, {
+    String bucket = Constants.imageBucket,
+    List<int> sizes = Constants.thumbSizes,
+    int batch = 1000,
+    bool evictLocalCache = true,
+  }) async {
+    // Build the full list once
+    final all = <String>[];
+    for (final path in originalPaths) {
+      if (path.isEmpty || path.startsWith('/')) continue;
+      all.add(path);
+      for (final s in sizes) {
+        all.add('thumbs/s$s/$path');
+      }
+    }
+    // Chunk to stay under API limits
+    for (var i = 0; i < all.length; i += batch) {
+      final chunk = all.sublist(i, (i + batch).clamp(0, all.length));
+      try {
+        await _supabase.storage.from(bucket).remove(chunk);
+      } catch (_) {}
+    }
+    if (evictLocalCache) {
+      for (final p in originalPaths) {
+        await evictAllThumbsFor(bucket: bucket, originalPath: p, sizes: sizes);
+      }
     }
   }
 }

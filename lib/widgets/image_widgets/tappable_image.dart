@@ -1,12 +1,8 @@
-import 'package:bobadex/helpers/build_transformed_url.dart';
+import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/helpers/url_helper.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-String _originalUrl(String path) {
-  return Supabase.instance.client.storage.from('media-uploads').getPublicUrl(path);
-}
 
 class TappableImage extends StatelessWidget {
   final ShopMedia media;
@@ -46,36 +42,26 @@ class TappableImage extends StatelessWidget {
         );
       } else {
         final path = media.imagePath;
-        final hasPath = path.isNotEmpty;
-        final tUrl = hasPath
-          ? buildTransformedUrl(
-              bucket: 'media-uploads',
-              path: path,
-              resize: 'cover',
-              quality: 100
-            )
-          : null;
-        final oUrl = (path.isNotEmpty) ? _originalUrl(path) : null;
+        final sized = publicUrl(Constants.imageBucket, thumbPath(path, 512));
+        final orig  = publicUrl(Constants.imageBucket, path);
 
-        Widget net = (tUrl != null)
-          ? CachedNetworkImage(
-              imageUrl: tUrl,
-              width: width,
-              height: height,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => _placeholder(width, height),
-              errorWidget: (_, __, ___) => (oUrl != null)
-                ? CachedNetworkImage(
-                    imageUrl: oUrl,
-                    width: width,
-                    height: height,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => _placeholder(width, height),
-                    errorWidget: (_, __, ___) => const SizedBox.shrink(),
-                  )
-                : const SizedBox.shrink(),
-            )
-          : const SizedBox.shrink();
+        Widget net = CachedNetworkImage(
+          imageUrl: sized,
+          width: width,
+          height: height,
+          fit: BoxFit.cover,
+          memCacheWidth: 512,
+          memCacheHeight: 512,
+          placeholder: (_, __) => _placeholder(width, height),
+          errorWidget: (_, __, ___) => CachedNetworkImage(
+            imageUrl: orig,
+            width: width,
+            height: height,
+            fit: BoxFit.cover,
+            placeholder: (_, __) => _placeholder(width, height),
+            errorWidget: (_, __, ___) => const SizedBox.shrink(),
+          ),
+        );
 
         image = useHero ? Hero(tag: media.id, child: net) : net;
       }
@@ -92,8 +78,6 @@ class TappableImage extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             child: image,
           ),
-
-          // Pending overlay
           if (media.isPending && media.localFile != null)
             Positioned.fill(
               child: Container(
@@ -101,8 +85,6 @@ class TappableImage extends StatelessWidget {
                 child: const Center(child: CircularProgressIndicator()),
               ),
             ),
-
-          // Selection highlight
           if (selectable && selected)
             Positioned.fill(
               child: Container(

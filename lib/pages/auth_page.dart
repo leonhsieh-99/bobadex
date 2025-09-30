@@ -144,7 +144,7 @@ class _AuthPageState extends State<AuthPage> {
         email: email,
       );
 
-      notify('Verification email resent. Check your inbox.', SnackType.success);
+      notify('If that email can receive mail, you’ll get a confirmation link.', SnackType.info);
     } on AuthException catch (e) {
       notify(e.message, SnackType.error);
       debugPrint('Auth resend error: $e');

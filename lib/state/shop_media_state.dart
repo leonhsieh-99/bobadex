@@ -1,3 +1,4 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:bobadex/models/shop_media.dart';
@@ -302,18 +303,16 @@ class ShopMediaState extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // delete file (best effort)
-      if (removed.imagePath.isNotEmpty) {
-        await ImageUploaderHelper.deleteImage(removed.imagePath);
-      }
-    } catch (e) {
-      debugPrint('Storage delete failed (non-fatal): $e');
-    }
-
-    try {
       await Supabase.instance.client.from('shop_media').delete().eq('id', id);
 
       // if we removed a banner, clear banner cache for this shop
+      if (removed.imagePath.isNotEmpty) {
+        await ImageUploaderHelper.deleteImage(
+          removed.imagePath,
+          bucket: Constants.imageBucket,
+          sizes: Constants.thumbSizes,
+        );
+      }
       if (removed.isBanner == true) {
         _bannerPathByShop.remove(shopId);
       }
@@ -331,24 +330,25 @@ class ShopMediaState extends ChangeNotifier {
   Future<void> removeAllMediaForShop(String shopId) async {
     final medias = List<ShopMedia>.from(_byShop[shopId] ?? const []);
 
-    // Best-effort storage cleanup
-    await Future.wait(medias.map((m) async {
-      if (m.imagePath.isNotEmpty) {
-        try { await ImageUploaderHelper.deleteImage(m.imagePath); } catch (_) {}
-      }
-    }));
-
-    // Local purge
     _byShop.remove(shopId);
     _shopLoadedAt.remove(shopId);
     _bannerPathByShop.remove(shopId);
     notifyListeners();
 
+
     try {
+      // DB delete first
       await Supabase.instance.client
-          .from('shop_media')
-          .delete()
-          .eq('shop_id', shopId);
+        .from('shop_media')
+        .delete()
+        .eq('shop_id', shopId);
+
+      // batch Storage cleanup
+      await ImageUploaderHelper.deleteManyImages(
+        medias.map((m) => m.imagePath).where((p) => p.isNotEmpty),
+        bucket: Constants.imageBucket,
+        sizes: Constants.thumbSizes,
+      );
     } catch (e) {
       debugPrint('DB delete shop_media failed: $e');
       rethrow;

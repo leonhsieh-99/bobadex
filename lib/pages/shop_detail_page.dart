@@ -391,6 +391,18 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                           );
                                         },
                                       ),
+                                    if (!_isCurrentUser && !brandRemoved)
+                                      ActionChip(
+                                        label: const Text(
+                                          'Visit Brand',
+                                          style: TextStyle(fontSize: 13),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                                        visualDensity: VisualDensity.compact,
+                                        backgroundColor: Constants.getThemeColor(user.themeSlug).shade100,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand))),
+                                      )
                                   ],
                                 ),
                                 Row(
@@ -583,7 +595,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                                           AnimatedRotation(
                                                             turns: _expandedDrinkIds.contains(drink.id) ? 0.25 : 0.00,
                                                             duration: const Duration(milliseconds: 200),
-                                                            child: const Icon(Icons.chevron_right, size: 20, color: Colors.brown),
+                                                            child: const Icon(Icons.chevron_right, size: 20),
                                                           ),
                                                           const SizedBox(width: 4),
                                                           Expanded(
@@ -749,8 +761,8 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                           // delete shop
                                           await shopState.remove(widget.shopId);
                                           await feedState.removeFeedEvent(widget.shopId);
+                                          notify('Shop deleted', SnackType.success);
                                           if (context.mounted) {
-                                            notify('Shop deleted', SnackType.success);
                                             Navigator.pop(context);
                                           }
                                         } catch (e) {

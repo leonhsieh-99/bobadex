@@ -225,6 +225,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
                   onSetBanner: widget.onSetBanner,
                   onEndReached: widget.onFetchMore != null ? _loadMore : null,
                   isLoadingMore: _isLoadingMore,
+                  showUserInfo: false,
                 ),
           ),
         ),

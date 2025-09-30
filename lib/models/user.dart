@@ -1,3 +1,4 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -5,7 +6,7 @@ class User {
   final String id;
   String username;
   String displayName;
-  String themeSlug = 'brown';
+  String themeSlug = Constants.defaultTheme;
   String? profileImagePath;
   String? bio;
   int gridColumns;
@@ -16,7 +17,7 @@ class User {
     required this.id,
     required this.username,
     required this.displayName,
-    this.themeSlug = 'brown',
+    this.themeSlug = Constants.defaultTheme,
     this.profileImagePath,
     this.bio,
     this.gridColumns = 2,
@@ -49,7 +50,7 @@ class User {
       displayName: profile['display_name'],
       profileImagePath: profile['profile_image_path'],
       bio: profile['bio'],
-      themeSlug: settings?['theme_slug'] ?? 'brown',
+      themeSlug: settings?['theme_slug'] ?? Constants.defaultTheme,
       gridColumns: settings?['grid_columns'] ?? 2,
       useIcons: settings?['use_icons'] ?? false,
       onboarded: settings?['onboarded'] ?? false,
@@ -70,7 +71,7 @@ class User {
     id: '',
     username: '',
     profileImagePath: '',
-    themeSlug: 'brown',
+    themeSlug: Constants.defaultTheme,
     displayName: '',
     bio: '',
     gridColumns: 2,

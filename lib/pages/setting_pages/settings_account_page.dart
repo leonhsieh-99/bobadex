@@ -1,6 +1,7 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/helpers/export_data.dart';
 import 'package:bobadex/helpers/image_uploader_helper.dart';
+import 'package:bobadex/navigation.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/utils/validators.dart';
 import 'package:bobadex/widgets/change_password_dialong.dart';
@@ -147,7 +148,6 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                     onSubmitted: (_) async {
                       if (controller.text.trim() == deleteKey) {
                         await closeKeyboard();
-                        if (context.mounted) Navigator.of(context).pop(true);
                       }
                     },
                   ),
@@ -212,7 +212,8 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
     try {
       final res = await Supabase.instance.client.functions.invoke('delete-user');
       if (res.status == 200) {
-        if (context.mounted) Navigator.pushNamedAndRemoveUntil(context, '/auth', (_) => false);
+        await goRoot('/auth');
+        notify('Account successfully deleted', SnackType.info);
         return '';
       }
       return 'Failed (${res.status})';

@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:bobadex/helpers/build_transformed_url.dart';
+import 'package:bobadex/helpers/url_helper.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/achievements_page.dart';
@@ -198,18 +198,11 @@ class _HomePageState extends State<HomePage> {
             final bool hasBrandIcon = brandIconPath != null && brandIconPath.isNotEmpty;
 
             final String? displayUrl = hasBanner
-              ? buildTransformedUrl(
-                  bucket: 'media-uploads',
-                  path: bannerPath,
-                  resize: 'cover',
-                )
+              ? publicUrl('media-uploads', thumbPath(bannerPath, 512))
               : (hasBrandIcon
-                ? buildTransformedUrl(
-                    bucket: 'shop-media',
-                    path: brandIconPath,
-                    resize: 'contain',
-                  )
-                : null);
+                ? publicUrl('shop-media', thumbPath(brandIconPath, 512))
+                : null
+              );
 
             int uiDrinkCount(BuildContext context, String shopId) {
               final drinkState = context.watch<DrinkState>();
@@ -317,7 +310,12 @@ class _HomePageState extends State<HomePage> {
                                 width: double.infinity,
                                 height: double.infinity,
                                 placeholder: (context, url) => Center(child: CircularProgressIndicator()),
-                                errorWidget: (context, url, error) => Icon(Icons.broken_image, size: 50 * textScale),
+                                errorWidget: (context, url, error) => Image.asset(
+                                  'lib/assets/default_icon.png',
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                ),
                               )
                             : Image.asset(
                                 'lib/assets/default_icon.png',
@@ -528,7 +526,7 @@ class _HomePageState extends State<HomePage> {
                               : shopState.shopsFor(_uid);
 
                           if (shops.isEmpty) {
-                            return const HomePageSkeleton();
+                            Center(child: Text('No shops yet', style: Constants.emptyListTextStyle));
                           }
 
                           final shopIds = getVisibleShops(shops)
@@ -628,12 +626,6 @@ class HomePageSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     const columns = Constants.defaultGridColumns;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Bobadex"),
-        centerTitle: true,
-        backgroundColor: Colors.grey.shade100,
-        elevation: 0,
-      ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(8, 12, 8, 12),
         child: GridView.builder(

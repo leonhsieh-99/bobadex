@@ -1,19 +1,17 @@
 import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/helpers/url_helper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class IconPic extends StatelessWidget {
   final String? path;
   final double size;
-  final int quality;
   final bool circular;
 
   const IconPic({
     super.key,
     required this.path,
     this.size = 70,
-    this.quality = 80,
     this.circular = true,
   });
 
@@ -24,13 +22,14 @@ class IconPic extends StatelessWidget {
     }
 
     final dpr = MediaQuery.of(context).devicePixelRatio.clamp(1.0, 3.0);
-    final px = _nearestPx((size * dpr).round(), _kSquareBuckets);
+    final px  = pickSquareSize(size, dpr, Constants.thumbSizes);
 
-    final tUrl = _transformedUrl(px: px);
-    final oUrl = _originalUrl();
+    final sizedThumb = publicUrl(Constants.iconBucket, thumbPath(path!, px));
+    final smallerThumb = publicUrl(Constants.iconBucket, thumbPath(path!, 256)); // common default
+    final original = publicUrl(Constants.iconBucket, path!);
 
-    final Widget img = CachedNetworkImage(
-      imageUrl: tUrl ?? oUrl ?? '',
+    final img = CachedNetworkImage(
+      imageUrl: sizedThumb,
       width: size,
       height: size,
       fit: BoxFit.cover,
@@ -40,24 +39,23 @@ class IconPic extends StatelessWidget {
       fadeOutDuration: Duration.zero,
       placeholderFadeInDuration: Duration.zero,
       placeholder: (_, __) => _placeholder(),
-      errorWidget: (_, __, ___) {
-        if (tUrl != null && oUrl != null && tUrl != oUrl) {
-          return CachedNetworkImage(
-            imageUrl: oUrl,
-            width: size,
-            height: size,
-            fit: BoxFit.cover,
-            memCacheWidth: px,
-            memCacheHeight: px,
-            fadeInDuration: Duration.zero,
-            fadeOutDuration: Duration.zero,
-            placeholderFadeInDuration: Duration.zero,
-            placeholder: (_, __) => _placeholder(),
-            errorWidget: (_, __, ___) => _fallback(),
-          );
-        }
-        return _fallback();
-      },
+      errorWidget: (_, __, ___) => CachedNetworkImage(
+        imageUrl: smallerThumb,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        memCacheWidth: 256,
+        memCacheHeight: 256,
+        placeholder: (_, __) => _placeholder(),
+        errorWidget: (_, __, ___) => CachedNetworkImage(
+          imageUrl: original,   // last resort
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => _placeholder(),
+          errorWidget: (_, __, ___) => _fallback(),
+        ),
+      ),
     );
 
     return _wrap(img);
@@ -82,42 +80,4 @@ class IconPic extends StatelessWidget {
     height: size,
     fit: BoxFit.cover,
   );
-
-  String? _originalUrl() {
-    try {
-      return Supabase.instance.client.storage.from('shop-media').getPublicUrl(path!);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  String? _transformedUrl({required int px}) {
-    final base = _originalUrl();
-    if (base == null) return null;
-    final u = Uri.parse(base);
-    final renderPath = u.path.replaceFirst(
-      '/storage/v1/object/public/',
-      '/storage/v1/render/image/public/',
-    );
-    final q = quality.clamp(1, 100);
-    return Uri(
-      scheme: u.scheme,
-      host: u.host,
-      port: u.hasPort ? u.port : null,
-      path: renderPath,
-      queryParameters: {
-        'width': '$px',
-        'height': '$px',
-        'resize': 'contain',
-        'quality': '$q',
-      },
-    ).toString();
-  }
 }
-
-// --- helpers ---
-
-const _kSquareBuckets = Constants.avatarSmall;
-
-int _nearestPx(int v, List<int> buckets) =>
-    buckets.reduce((a, b) => (v - a).abs() <= (v - b).abs() ? a : b);

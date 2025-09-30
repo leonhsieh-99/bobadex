@@ -16,6 +16,7 @@ class GalleryGrid extends StatefulWidget {
   final VoidCallback? onEndReached;
   final ValueChanged<List<ShopMedia>>? onSelectionChanged;
   final bool? isLoadingMore;
+  final bool showUserInfo;
 
   const GalleryGrid({
     super.key,
@@ -28,6 +29,7 @@ class GalleryGrid extends StatefulWidget {
     this.onEndReached,
     this.onSelectionChanged,
     this.isLoadingMore,
+    this.showUserInfo = true,
   });
 
   @override
@@ -64,6 +66,7 @@ class _GalleryGridState extends State<GalleryGrid> {
             initialIndex: idx, // start on tapped image
             mode: widget.isEditable ? FullscreenImageMode.edit : FullscreenImageMode.view,
             isCurrentUser: widget.isCurrentUser,
+            showUserInfo: widget.showUserInfo,
             onEdit: widget.isEditable
               ? (img, comment, visibility) async {
                 try {

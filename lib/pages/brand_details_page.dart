@@ -310,7 +310,6 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                     buildGlobalGallery(widget.brand, _globalGalleryFuture),
                     const SizedBox(height: 24),
                     Text("Recent Activity", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                    const SizedBox(height: 8),
                   ],
                 ),
               ),

@@ -226,14 +226,14 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                       path: img.userImagePath ?? '',
                       size: 40,
                       onTap: img.userId == null
-                          ? null
-                          : () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => AccountViewPage(userId: img.userId!),
-                                ),
-                              );
-                            },
+                        ? null
+                        : () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => AccountViewPage(userId: img.userId!),
+                              ),
+                            );
+                          },
                     ),
                     SizedBox(width: 12),
                     Text(
@@ -258,7 +258,35 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
     );
 
     return Scaffold(
-      appBar: PreferredSize(preferredSize: Size.fromHeight(30), child: AppBar()),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(40),
+        child: AppBar(
+          actions: [
+            PopupMenuButton(
+              onSelected: (value) {
+                switch(value) {
+                  case 'report':
+                    showDialog(
+                      context: context,
+                      builder: (_) => ReportDialog(
+                        contentType: 'photo',
+                        contentId: img.id ?? '',
+                        reportedUserId: img.userId,
+                      ),
+                    );
+                    break;
+                }
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'report',
+                  child: Text('Report'),
+                ),
+              ]
+            ),
+          ]
+        )
+      ),
       backgroundColor: bgColor,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
@@ -328,31 +356,6 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                       },
                     )
                   ),
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: PopupMenuButton(
-                      onSelected: (value) {
-                        switch(value) {
-                          case 'report':
-                            showDialog(
-                              context: context,
-                              builder: (_) => ReportDialog(
-                                contentType: 'photo',
-                                contentId: img.id ?? '',
-                              ),
-                            );
-                            break;
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        PopupMenuItem(
-                          value: 'report',
-                          child: Text('Report'),
-                        ),
-                      ]
-                    )
-                  )
                 ]
               )
             ),
