@@ -218,7 +218,7 @@ class _AuthPageState extends State<AuthPage> {
                     final v = value?.trim() ?? '';
                     if (v.isEmpty) return 'Please enter a password.';
                     if (!Constants.passwordRegex.hasMatch(v)) {
-                      return 'Password must be at least 8 characters and include both letters and numbers.';
+                      return 'Password must be 8+ chars with letters & numbers.';
                     }
                     return null;
                   },
@@ -241,21 +241,22 @@ class _AuthPageState extends State<AuthPage> {
                     },
                     obscureText: !_showConfirmPassword,
                   ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    style: AppButtonStyles.textButton,
-                    onPressed: () {
-                      // Dismiss keyboard before showing dialog
-                      FocusScope.of(context).unfocus();
-                      showDialog(
-                        context: context,
-                        builder: (_) => const ForgotPasswordDialog(),
-                      );
-                    },
-                    child: const Text('Forgot password?'),
+                if (!_isSigningUp)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      style: AppButtonStyles.textButton,
+                      onPressed: () {
+                        // Dismiss keyboard before showing dialog
+                        FocusScope.of(context).unfocus();
+                        showDialog(
+                          context: context,
+                          builder: (_) => const ForgotPasswordDialog(),
+                        );
+                      },
+                      child: const Text('Forgot password?'),
+                    ),
                   ),
-                ),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,

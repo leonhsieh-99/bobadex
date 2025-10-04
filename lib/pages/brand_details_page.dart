@@ -216,11 +216,13 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                   ),
                   // back button
                   Positioned(
-                    top: 25,
+                    top: 0,
                     left: 4,
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.of(context).pop(),
+                    child: SafeArea(
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
                     ),
                   ),
                   // add visit button

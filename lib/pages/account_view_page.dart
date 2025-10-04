@@ -305,6 +305,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
                 textAlign: TextAlign.center,
                 style: (user.bio == null || user.bio!.isEmpty) ? Constants.emptyListTextStyle : null,
               ),
+              SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: _isLoading

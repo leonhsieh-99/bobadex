@@ -1,3 +1,4 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/brand_stats.dart';
 import 'package:bobadex/models/user_stats.dart';
 import 'package:bobadex/notification_bus.dart';
@@ -86,55 +87,62 @@ class _RankingsPageState extends State<RankingsPage> {
                     );
                   }
                 ),
-                ListView.builder(
-                  itemCount: brandRankings.length,
-                  itemBuilder: (context, index) {
-                    final brand = brandRankings[index];
-                    return ListTile(
-                      minTileHeight: 60,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                      title: Row(
-                        children: [
-                          Expanded(
-                            flex: 6, // 60% of the row
-                            child: Text(
-                              brand.display,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontWeight: FontWeight.w500),
+                brandRankings.isEmpty
+                  ? Center(
+                    child: Text(
+                      'No user rankings yet',
+                      style: Constants.emptyListTextStyle,
+                    ),
+                  )
+                  : ListView.builder(
+                    itemCount: brandRankings.length,
+                    itemBuilder: (context, index) {
+                      final brand = brandRankings[index];
+                      return ListTile(
+                        minTileHeight: 60,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              flex: 6, // 60% of the row
+                              child: Text(
+                                brand.display,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontWeight: FontWeight.w500),
+                              ),
                             ),
-                          ),
-                          SizedBox(width: 8),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                brand.avgRating.toStringAsFixed(1),
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                              ),
-                              SizedBox(width: 4),
-                              SvgPicture.asset(
-                                'lib/assets/icons/star.svg',
-                                width: 18,
-                                height: 18,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          '(${brand.shopCount} ratings)',
-                          style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                            SizedBox(width: 8),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  brand.avgRating.toStringAsFixed(1),
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                ),
+                                SizedBox(width: 4),
+                                SvgPicture.asset(
+                                  'lib/assets/icons/star.svg',
+                                  width: 18,
+                                  height: 18,
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand))
-                      ),
-                    );
-                  }
-                ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            '(${brand.shopCount} ratings)',
+                            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                          ),
+                        ),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand))
+                        ),
+                      );
+                    }
+                  ),
               ]
             );
           }

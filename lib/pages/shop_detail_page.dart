@@ -657,11 +657,13 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                         },
                       ),
                       Positioned(
-                        top: 40,
+                        top: 0,
                         left: 4,
-                        child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-                          onPressed: () => Navigator.of(context).pop(),
+                        child: SafeArea(
+                          child: IconButton(
+                            icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
                         ),
                       ),
                       if (_isCurrentUser)

@@ -289,6 +289,8 @@ class _MultiselectImagePicker extends State<MultiselectImagePicker> {
                       : null,
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey.shade300,
+                    disabledForegroundColor: Colors.grey.shade600,
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
