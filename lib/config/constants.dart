@@ -44,6 +44,8 @@ class Constants {
 
   static const int maxUsernameLength = 20;
   static const int maxNameLength = 40;
+  static const int maxShopNotesLength =  120;
+  static const int maxDrinkNameLength =  35;
   static final passwordRegex = RegExp(r'^(?=.*[A-Za-z])(?=.*\d)\S{8,}$');
   static final emailRegex = RegExp(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$");
 

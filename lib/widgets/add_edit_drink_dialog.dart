@@ -1,3 +1,4 @@
+import 'package:bobadex/config/constants.dart';
 import 'package:flutter/material.dart';
 import '../../models/drink_form_data.dart';
 import 'rating_picker.dart';
@@ -74,7 +75,7 @@ class _AddOrEditDrinkDialogState extends State<AddOrEditDrinkDialog> {
                 controller: _nameController,
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(labelText: 'Drink Name'),
-                maxLength: 25,
+                maxLength: Constants.maxDrinkNameLength,
                 validator: (val) => val == null || val.isEmpty ? 'Enter a name' : null,
               ),
               Align(
@@ -97,7 +98,7 @@ class _AddOrEditDrinkDialogState extends State<AddOrEditDrinkDialog> {
                   alignLabelWithHint: true,
                 ),
                 keyboardType: TextInputType.multiline,
-                maxLength: 100,
+                maxLength: 120,
                 maxLines: null,
                 minLines: 2,
               ),

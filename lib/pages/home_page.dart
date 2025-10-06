@@ -25,7 +25,7 @@ import '../widgets/filter_sort_bar.dart';
 import '../state/user_state.dart';
 import '../state/shop_state.dart';
 import '../state/drink_state.dart';
-import '../config/constants.dart';
+import 'package:bobadex/config/constants.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'add_shop_search_page.dart';
 import '../widgets/command_icon.dart';

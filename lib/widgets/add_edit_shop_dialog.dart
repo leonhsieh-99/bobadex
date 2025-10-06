@@ -1,4 +1,5 @@
 import 'package:bobadex/analytics_service.dart';
+import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/state/achievements_state.dart';
@@ -294,8 +295,8 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                             alignLabelWithHint: true,
                           ),
                           keyboardType: TextInputType.multiline,
-                          maxLines: null,
                           minLines: 2,
+                          maxLength: Constants.maxShopNotesLength,
                         ),
                         // --- ADD PHOTOS (ONLY for new shop) ---
                         if (isNewShop) ...[

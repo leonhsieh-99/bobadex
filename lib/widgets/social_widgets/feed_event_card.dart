@@ -75,13 +75,15 @@ class FeedEventCard extends StatelessWidget {
         children: [
           _VerbPill(
             icon: _verbIcon(event.eventType, isHidden),
-            text: _verb(event.eventType, isHidden),
+            text: _verb(event.eventType, isHidden)
           ),
           const SizedBox(width: 8),
           if (event.eventType == 'shop_add' && shopName.isNotEmpty)
-            _ShopLink(
-              text: shopName,
-              onTap: (brandSlug.isNotEmpty && brandState.getBrand(brandSlug) != null)
+            Flexible(
+              fit: FlexFit.loose,
+              child: _ShopLink(
+                text: shopName,
+                onTap: (brandSlug.isNotEmpty && brandState.getBrand(brandSlug) != null)
                   ? () {
                       final brand = brandState.getBrand(brandSlug)!;
                       Navigator.of(context).push(
@@ -89,6 +91,7 @@ class FeedEventCard extends StatelessWidget {
                       );
                     }
                   : null,
+              ),
             ),
         ],
       );
@@ -179,6 +182,7 @@ class FeedEventCard extends StatelessWidget {
               padding: const EdgeInsets.only(left: 8),
               child: NumberRating(rating: rating == 0 ? 'N/A' : rating.toString()),
             ),
+
         ],
       );
     }
@@ -309,47 +313,68 @@ class _ShopLink extends StatelessWidget {
   final VoidCallback? onTap;
   const _ShopLink({required this.text, this.onTap});
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final child = Row(
-      mainAxisSize: MainAxisSize.min,
+@override
+Widget build(BuildContext context) {
+  final theme = Theme.of(context);
+
+  return LayoutBuilder(builder: (ctx, constraints) {
+    final style = theme.textTheme.labelLarge?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: onTap == null
+          ? theme.textTheme.bodyMedium?.color?.withOpacity(0.7)
+          : theme.colorScheme.primary,
+    );
+
+    final tp = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    const double hp = 10;
+    const double gap = 4;
+    const double chev = 16;
+    final bool hasChevron = onTap != null;
+
+    final pillMinWidth = tp.width + (hasChevron ? gap + chev : 0) + hp + 10;
+    final bool fits = pillMinWidth <= constraints.maxWidth;
+
+    final double? forcedWidth = fits ? null : double.infinity;
+
+    final rightPad = fits ? 10.0 : 4.0;
+
+    final content = Row(
+      mainAxisSize: fits ? MainAxisSize.min : MainAxisSize.max,
       children: [
-        Text(
-          text,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: onTap == null
-                ? theme.textTheme.bodyMedium?.color?.withOpacity(0.7)
-                : theme.colorScheme.primary,
-          ),
-        ),
-        if (onTap != null) ...[
-          const SizedBox(width: 4),
+        fits
+            ? Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: style)
+            : Expanded(child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: style)),
+        if (hasChevron) ...[
+          const SizedBox(width: gap),
           Icon(Icons.chevron_right, size: 16, color: theme.colorScheme.primary),
-        ]
+        ],
       ],
     );
 
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 220),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    final pill = Container(
+      padding: EdgeInsets.only(left: hp, right: rightPad, top: 6, bottom: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(onTap == null ? 0.4 : 0.55),
+        color: theme.colorScheme.surfaceContainerHighest
+            .withOpacity(onTap == null ? 0.4 : 0.55),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: onTap == null
-          ? child
-          : InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(999),
-              child: child,
-            ),
+      child: content,
     );
-  }
+
+    final wrapped = SizedBox(width: forcedWidth, child: pill);
+
+    return onTap == null
+        ? wrapped
+        : InkWell(onTap: onTap, borderRadius: BorderRadius.circular(999), child: wrapped);
+  });
 }
+}
+
 
 class FeedEventCardSkeleton extends StatelessWidget {
   const FeedEventCardSkeleton({super.key});

@@ -23,7 +23,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/add_edit_shop_dialog.dart';
 import '../widgets/filter_sort_bar.dart';
 import '../state/drink_state.dart';
-import '../config/constants.dart';
+import 'package:bobadex/config/constants.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class ShopDetailPage extends StatefulWidget{
@@ -430,6 +430,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                     style: const TextStyle(
                                       fontSize: 14, color: Colors.black,
                                       fontWeight: FontWeight.w300,
+                                      overflow: TextOverflow.ellipsis
                                     ),
                                   ),
                                 ),

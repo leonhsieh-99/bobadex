@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../state/user_state.dart';
-import '../../config/constants.dart';
+import 'package:bobadex/config/constants.dart';
 
 class SettingsThemePage extends StatefulWidget{
   const SettingsThemePage({super.key});

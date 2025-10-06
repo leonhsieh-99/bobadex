@@ -1,7 +1,7 @@
 import 'package:bobadex/widgets/compact_text_row.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../config/constants.dart';
+import 'package:bobadex/config/constants.dart';
 import '../state/user_state.dart';
 
 class SortOption {

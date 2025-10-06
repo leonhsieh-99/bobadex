@@ -7,7 +7,7 @@ import 'package:bobadex/widgets/custom_search_bar.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../config/constants.dart';
+import 'package:bobadex/config/constants.dart';
 
 class FriendsPage extends StatefulWidget {
   const FriendsPage ({

@@ -15,7 +15,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'app_initializer.dart';
 import 'package:provider/provider.dart';
-import 'config/constants.dart';
+import 'package:bobadex/config/constants.dart';
 
 class BobadexApp extends StatefulWidget {
   const BobadexApp({super.key});
