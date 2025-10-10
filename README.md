@@ -29,7 +29,7 @@ Bobadex lets you catalog and rate your favorite boba shops and drinks while shar
 
 [![Watch 80-second demo](https://img.youtube.com/vi/4EYwQm6eHbI/hqdefault.jpg)](https://youtu.be/4EYwQm6eHbI "Watch the short demo on YouTube")
 
-📱 [**App Store**](https://apps.apple.com/us/app/bobadex/id6752920262)
+📱 [**App Store Link**](https://apps.apple.com/us/app/bobadex/id6752920262)
 
 ### 📸 Screenshots
 <details>
