@@ -1,6 +1,7 @@
 class AccountStats {
   final int shopCount;
   final int drinkCount;
+  final int badgeCount;
   final String topShopId;
   final String topDrinkName;
   final String topShopIcon;
@@ -9,6 +10,7 @@ class AccountStats {
   const AccountStats({
     required this.shopCount,
     required this.drinkCount,
+    required this.badgeCount,
     required this.topShopId,
     required this.topDrinkName,
     required this.topShopIcon,
@@ -19,6 +21,7 @@ class AccountStats {
     return AccountStats(
       shopCount: stats['num_shops'] ?? 0,
       drinkCount: stats['num_drinks'] ?? 0,
+      badgeCount: stats['num_badges'] ?? 0,
       topShopId: topShop['shop_id'] ?? '',
       topDrinkName: topShop['drink_name'] ?? '',
       topShopIcon: topShop['icon_path'] ?? '',
@@ -27,6 +30,6 @@ class AccountStats {
   }
 
   static AccountStats emptyStats() {
-    return AccountStats(shopCount: 0, drinkCount: 0, topShopId: '', topDrinkName: '', topShopIcon: '', topShopSlug: '');
+    return AccountStats(shopCount: 0, drinkCount: 0, badgeCount: 0, topShopId: '', topDrinkName: '', topShopIcon: '', topShopSlug: '');
   }
 }

@@ -29,11 +29,9 @@ class ProfileSummaryCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(4, 8, 4, 12),
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 18, offset: const Offset(0, 10))],
         border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
       ),
       child: Stack(

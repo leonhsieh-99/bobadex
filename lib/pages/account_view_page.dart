@@ -317,16 +317,6 @@ class _AccountViewPageState extends State<AccountViewPage> {
                 favoriteShopTile: favTile,
               ),
               SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: _isLoading
-                  ? [StatCardSkeleton(), StatCardSkeleton()]
-                  : [
-                      StatCard(label: 'Shops',  value: stats.shopCount,  emoji: '⭐'),
-                      StatCard(label: 'Drinks', value: stats.drinkCount, emoji: '🧋'),
-                    ],
-              ),
-              SizedBox(height: 16),
               _BadgesSection(
                 badges: pinnedBadges,
                 isOwner: isCurrentUser,
@@ -356,6 +346,27 @@ class _AccountViewPageState extends State<AccountViewPage> {
                   );
                 } : null,
                 isLoading: _isLoading,
+              ),
+              SizedBox(height: 16),
+
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  const gap = 20.0;
+                  const totalItems = 3;
+                  final maxW = constraints.maxWidth;
+                  final itemW = (maxW - (gap*(totalItems-1)))/totalItems;
+
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: _isLoading
+                      ? [StatCardSkeleton(size: itemW), StatCardSkeleton(size: itemW), StatCardSkeleton(size: itemW)]
+                      : [
+                          StatCard(label: 'Shops', size: itemW, value: stats.shopCount,  emoji: '⭐'),
+                          StatCard(label: 'Drinks', size: itemW, value: stats.drinkCount, emoji: '🧋'),
+                          StatCard(label: 'Badges', size: itemW, value: stats.badgeCount, emoji: '🏆',)
+                        ],
+                  );
+                },
               ),
               const Divider(height: 32),
               const Align(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class StatCard extends StatelessWidget {
   final String label;
   final int value;
+  final double size;
   final IconData? icon;
   final String? emoji;
   final Duration animateIn; // count-up duration
@@ -10,6 +11,7 @@ class StatCard extends StatelessWidget {
   const StatCard({
     super.key,
     required this.label,
+    this.size = 110,
     required this.value,
     this.icon,
     this.emoji,
@@ -23,25 +25,18 @@ class StatCard extends StatelessWidget {
     final fg = cs.onSurface;
 
     return Container(
-      width: 150,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      width: size,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
         border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
       ),
       child: Row(
         children: [
           Container(
-            width: 38,
-            height: 38,
+            width: size/4,
+            height: size/4,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
@@ -68,6 +63,8 @@ class StatCard extends StatelessWidget {
                   ),
                   Text(
                     label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: fg.withOpacity(0.6),
                       fontSize: 12,
@@ -119,12 +116,13 @@ class _CountUpState extends State<_CountUp> with SingleTickerProviderStateMixin 
 
 
 class StatCardSkeleton extends StatelessWidget {
-  const StatCardSkeleton({super.key});
+  final double size;
+  const StatCardSkeleton({super.key, required this.size});
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 150,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      width: size,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.grey[300],
         borderRadius: BorderRadius.circular(16),
@@ -133,18 +131,6 @@ class StatCardSkeleton extends StatelessWidget {
             color: Colors.black.withOpacity(0.06),
             blurRadius: 16,
             offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-            ),
           ),
         ],
       ),
