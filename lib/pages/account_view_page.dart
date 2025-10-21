@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:bobadex/analytics_service.dart';
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/account_stats.dart';
@@ -15,9 +17,9 @@ import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/user_stats_cache.dart';
 import 'package:bobadex/widgets/badge_picker_dialog.dart';
 import 'package:bobadex/widgets/icon_pic.dart';
+import 'package:bobadex/widgets/profile_summary_card.dart';
 import 'package:bobadex/widgets/report_widget.dart';
 import 'package:bobadex/widgets/stat_box.dart';
-import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:bobadex/widgets/social_widgets/user_feed_view.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -155,6 +157,74 @@ class _AccountViewPageState extends State<AccountViewPage> {
       return false;
     }
 
+    final themeColor = Constants.getThemeColor(userState.current.themeSlug);
+
+    final friendBtn = (!isCurrentUser)
+      ? Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: TextButton.icon(
+            icon: const Icon(Icons.person_add_rounded, size: 18, color: Colors.white),
+            label: Text(getFriendButtonText(friendStatus, currentUser.id, widget.userId)),
+            onPressed: isFriendButtonEnabled(friendStatus, currentUser.id, widget.userId)
+              ? () async {
+                  if (friendStatus == null) {
+                    await friendState.addUser(user);
+                  } else if (friendStatus.status == 'pending' && friendStatus.requester.id == widget.userId) {
+                    await friendState.acceptUser(widget.userId);
+                    await analytics.friendRequestAccepted();
+                  }
+                }
+              : null,
+            style: ButtonStyle(
+              backgroundColor:  WidgetStatePropertyAll(friendStatus?.status == 'accepted' ? themeColor.shade100 : themeColor.shade400),
+              padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 14, vertical: 6)),
+              shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))),
+            ),
+          ),
+        )
+      : null;
+
+    final viewBtn = (!isCurrentUser)
+      ? Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: TextButton.icon(
+            icon: const Icon(Icons.menu_book_rounded, size: 18, color: Colors.white),
+            label: const Text('View Bobadex'),
+            onPressed: (_user != null)
+              ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => HomePage(userId: _user!.id)))
+              : null,
+            style: ButtonStyle(
+              backgroundColor: WidgetStatePropertyAll(themeColor.shade400),
+              padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 14, vertical: 6)),
+              shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))),
+            ),
+          ),
+        )
+      : Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: TextButton.icon(
+            icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.white),
+            label: const Text('Edit Profile'),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => SettingsAccountPage())),
+            style: ButtonStyle(
+              backgroundColor: WidgetStatePropertyAll(themeColor.shade400),
+              padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 14, vertical: 6)),
+              shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))),
+            ),
+          ),
+        );
+
+    final favTile = _isLoading
+      ? const ShopTileSkeleton()
+      : (brand != null)
+          ? ListTile(
+              leading: IconPic(path: brand.iconPath, size: 48),
+              title: Text(brand.display, maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text(drinkName, maxLines: 1, overflow: TextOverflow.ellipsis),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand))),
+            )
+          : Center(child: Text(isCurrentUser ? 'No shops yet, add in home page' : 'User has no shops yet', style: Constants.emptyListTextStyle));
+
     return Scaffold(
       appBar: AppBar(
         actions: [
@@ -237,117 +307,37 @@ class _AccountViewPageState extends State<AccountViewPage> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              ThumbPic(
-                path: user.profileImagePath,
-                size: 140, 
-                onTap: isCurrentUser 
-                  ?  () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => SettingsAccountPage()))
-                  : null
-                ),
-              SizedBox(height: 12),
-              Text(user.displayName, textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              Text('@${user.username}', style: TextStyle(color: Colors.grey[700])),
-              SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (widget.userId != currentUser.id)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: ElevatedButton(
-                        style: ButtonStyle(
-                          backgroundColor: WidgetStatePropertyAll(
-                            !isFriendButtonEnabled(friendStatus, currentUser.id, widget.userId)
-                              ? Colors.grey
-                              : Constants.getThemeColor(userState.current.themeSlug).shade400
-                          ),
-                          foregroundColor: WidgetStatePropertyAll(Colors.white)
-                        ),
-                        onPressed: isFriendButtonEnabled(friendStatus, currentUser.id, widget.userId)
-                          ? () async {
-                            if (friendStatus == null) {
-                              await friendState.addUser(user);
-                            } else if (friendStatus.status == 'pending' && friendStatus.requester.id == widget.userId) {
-                              await friendState.acceptUser(widget.userId);
-                              await analytics.friendRequestAccepted();
-                            }
-                          }
-                          : null,
-                        child: Text(getFriendButtonText(friendStatus, currentUser.id, widget.userId)),
-                      ),
-                    ),
-                  if (widget.userId == currentUser.id)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => SettingsAccountPage())
-                        ),
-                        child: Text('Edit Profile')
-                      ),
-                    ),
-                  if (widget.userId != currentUser.id)
-                    ElevatedButton(
-                      onPressed: (!isCurrentUser && _user != null)
-                          ? () => Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => HomePage(userId: _user!.id)))
-                          : null,
-                      child: const Text('View Bobadex'),
-                    ),
-                ],
-              ),
-              SizedBox(height: 16),
-              Text(
-                (user.bio == null || user.bio!.trim().isEmpty)
-                    ? 'No bio set'
-                    : user.bio!,
-                textAlign: TextAlign.center,
-                style: (user.bio == null || user.bio!.isEmpty) ? Constants.emptyListTextStyle : null,
+              ProfileSummaryCard(
+                displayName: user.displayName,
+                username: user.username,
+                bio: user.bio,
+                profileImagePath: user.profileImagePath,
+                leadingAction: friendBtn,
+                trailingAction: viewBtn,
+                favoriteShopTile: favTile,
               ),
               SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: _isLoading
-                  ? [StatBoxSkeleton(), StatBoxSkeleton()]
+                  ? [StatCardSkeleton(), StatCardSkeleton()]
                   : [
-                      StatBox(label: 'Shops', value: stats.shopCount.toString()),
-                      StatBox(label: 'Drinks', value: stats.drinkCount.toString()),
+                      StatCard(label: 'Shops',  value: stats.shopCount,  emoji: '⭐'),
+                      StatCard(label: 'Drinks', value: stats.drinkCount, emoji: '🧋'),
                     ],
               ),
-              Divider(height: 32),
-              Text('Favorite Shop', style: TextStyle(fontWeight: FontWeight.bold)),
-              GestureDetector(
-                onTap: brand != null 
-                  ? () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand)
-                  ))
-                  : null,
-                child: SizedBox(
-                  height: 60,
-                  child: _isLoading
-                    ? ShopTileSkeleton()
-                    : (brand != null)
-                      ? ListTile(
-                          leading: IconPic(path: brand.iconPath, size: 50),
-                          title: Text(brand.display),
-                          subtitle: Text(drinkName),
-                        )
-                      : Center( child: Text( isCurrentUser ? 'No shops yet, add in home page' : 'User has no shops yet', style: Constants.emptyListTextStyle))
-                )
-              ),
-              SizedBox(height: 6),
-              Text('Badges', style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(height: 12),
-              GestureDetector(
-                onTap: widget.userId == currentUser.id
-                  ? () {
-                    showDialog(
-                      context: context,
-                      builder: (ctx) => BadgePickerDialog(
+              SizedBox(height: 16),
+              _BadgesSection(
+                badges: pinnedBadges,
+                isOwner: isCurrentUser,
+                onTapManage: isCurrentUser ? () { 
+                  showDialog(
+                    context: context,
+                    builder: (context) =>
+                      BadgePickerDialog(
                         badges: unlockedBadges,
                         pinnedBadges: pinnedBadges,
-                        onSave: (selected) async {
+                                                onSave: (selected) async {
                           try {
                             for (final a in unlockedBadges) {
                               final shouldPin = selected.contains(a.id);
@@ -362,54 +352,10 @@ class _AccountViewPageState extends State<AccountViewPage> {
                             }
                           }
                         },
-                      ),
-                    );
-                  }
-                  : null,
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 60,
-                  child: _isLoading
-                    ? BadgeRowSkeleton()
-                    : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: pinnedBadges.isNotEmpty
-                        ? pinnedBadges
-                          .map((a) => Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: Tooltip(
-                              message: (a.isHidden && !isCurrentUser) ? 'Hidden ? ? ?' : a.description,
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    CircleAvatar(
-                                      backgroundColor: Constants.badgeBgColor,
-                                      backgroundImage: AssetImage(
-                                        (a.iconPath != null && a.iconPath!.isNotEmpty)
-                                          ? a.iconPath!
-                                          : 'lib/assets/badges/default_badge.png'
-                                      ),
-                                      radius: 22,
-                                    ),
-                                    Text(
-                                      a.name,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w300,
-                                        fontSize: 9,
-                                      ),
-                                    )
-                                  ]
-                                )
-                            )
-                          ))
-                          .toList()
-                        : [
-                            Text( isCurrentUser ? 'No badges yet, tap to pin your badges' : 'User has no badges yet', style: Constants.emptyListTextStyle),
-                          ],
-                    ),
-                ),
+                      )
+                  );
+                } : null,
+                isLoading: _isLoading,
               ),
               const Divider(height: 32),
               const Align(
@@ -474,6 +420,151 @@ class BadgeRowSkeleton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _BadgesSection extends StatelessWidget {
+  const _BadgesSection({
+    required this.badges,
+    required this.isOwner,
+    required this.onTapManage,
+    required this.isLoading,
+  });
+
+  final List<Achievement> badges;
+  final bool isOwner;
+  final VoidCallback? onTapManage;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // header row
+          Row(
+            children: [
+              const Icon(Icons.emoji_events_rounded, size: 18),
+              const SizedBox(width: 8),
+              Text('Badges', style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurface)),
+              const Spacer(),
+              if (isOwner)
+                TextButton.icon(
+                  icon: const Icon(Icons.push_pin, size: 16, color: Colors.black),
+                  label: const Text('Pin', style: TextStyle(color: Colors.black)),
+                  onPressed: onTapManage,
+                  style: ButtonStyle(
+                    padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 10, vertical: 6)),
+                    backgroundColor: WidgetStatePropertyAll(Colors.transparent),
+                    shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))),
+                  ),
+                )
+            ],
+          ),
+
+          // content
+          if (isLoading)
+            const _BadgeRowSkeleton()
+          else if (badges.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Text(
+                isOwner ? 'No badges yet, tap Pin to choose.' : 'No badges yet',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurface.withOpacity(0.6)),
+              ),
+            )
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final cs = Theme.of(context).colorScheme;
+                final count = badges.length;
+                if (count == 0) return const SizedBox.shrink();
+
+                const gap = 10.0;
+                final totalGaps = gap * (count - 1);
+                final maxW = (constraints.maxWidth - totalGaps) / 3;
+                final slotW = min((constraints.maxWidth - totalGaps) / count, maxW);
+
+                final avatarR = slotW * 0.38;                     // radius
+                final labelFS = (slotW * 0.1).clamp(8.0, 11.0);  // font size
+                final labelHPad = (slotW * 0.14).clamp(6.0, 10.0);
+                final labelVPad = (slotW * 0.07).clamp(3.0, 6.0);
+
+                final children = <Widget>[];
+                for (int i = 0; i < count; i++) {
+                  final a = badges[i];
+                  final img = (a.iconPath != null && a.iconPath!.isNotEmpty)
+                      ? AssetImage(a.iconPath!)
+                      : const AssetImage('lib/assets/badges/default_badge.png');
+
+                  children.add(
+                    SizedBox(
+                      width: slotW,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(
+                            radius: avatarR,
+                            backgroundColor: Constants.badgeBgColor,
+                            backgroundImage: img,
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: labelHPad, vertical: labelVPad),
+                            decoration: BoxDecoration(
+                              color: cs.surface.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(color: cs.outlineVariant.withOpacity(0.4)),
+                            ),
+                            child: Text(
+                              a.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: labelFS, fontWeight: FontWeight.w600, height: 1),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+
+                  if (i != count - 1) {
+                    children.add(const SizedBox(width: gap));
+                  }
+                }
+
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: children,
+                );
+              },
+            )
+        ],
+      ),
+    );
+  }
+}
+
+class _BadgeRowSkeleton extends StatelessWidget {
+  const _BadgeRowSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Wrap(
+      spacing: 16, runSpacing: 8,
+      children: List.generate(3, (_) => CircleAvatar(radius: 22, backgroundColor: cs.surfaceVariant)),
     );
   }
 }

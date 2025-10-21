@@ -7,6 +7,8 @@ class OutlinedStar extends StatelessWidget {
   final bool half;
   final Color fillColor;
   final Color borderColor;
+  final double cornerRadius;
+  final double innerRadiusFactor;
 
   const OutlinedStar({
     super.key,
@@ -15,6 +17,8 @@ class OutlinedStar extends StatelessWidget {
     this.half = false,
     this.fillColor = Colors.amber,
     this.borderColor = Colors.black,
+    this.cornerRadius = 0,
+    this.innerRadiusFactor = 0.4,
   });
 
   @override
@@ -28,6 +32,8 @@ class OutlinedStar extends StatelessWidget {
           half: half,
           fillColor: fillColor,
           borderColor: borderColor,
+          cornerRadius: cornerRadius <= 0 ? size * 0.1 : cornerRadius,
+          innerRadiusFactor: innerRadiusFactor,
         ),
       ),
     );
@@ -39,87 +45,123 @@ class _StarPainter extends CustomPainter {
   final bool half;
   final Color fillColor;
   final Color borderColor;
+  final double cornerRadius;
+  final double innerRadiusFactor;
 
   _StarPainter({
     required this.filled,
     required this.half,
     required this.fillColor,
     required this.borderColor,
+    required this.cornerRadius,
+    required this.innerRadiusFactor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final Path starPath = _starPath(size);
+    final Path starPath = _roundedStarPath(size, cornerRadius, innerRadiusFactor);
 
-    // Draw half-filled star
+    // Half-filled star: clip to star, then clip to left half, then fill
     if (half) {
-      // Draw filled left half
       canvas.save();
+      canvas.clipPath(starPath);
       canvas.clipRect(Rect.fromLTWH(0, 0, size.width / 2, size.height));
-      canvas.drawPath(
-        starPath,
-        Paint()
-          ..color = fillColor
-          ..style = PaintingStyle.fill,
+      canvas.drawRect(
+        Offset.zero & size,
+        Paint()..color = fillColor..style = PaintingStyle.fill,
       );
       canvas.restore();
-      // Draw outline on top
+
+      // Outline on top
       canvas.drawPath(
         starPath,
         Paint()
           ..color = borderColor
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1,
+          ..strokeWidth = 1
+          ..strokeJoin = StrokeJoin.round
+          ..isAntiAlias = true,
       );
       return;
     }
 
-    // Draw fully filled star
+    // Full fill
     if (filled) {
       canvas.drawPath(
         starPath,
         Paint()
           ..color = fillColor
-          ..style = PaintingStyle.fill,
+          ..style = PaintingStyle.fill
+          ..isAntiAlias = true,
       );
     }
-    // Draw outline
+
+    // Outline
     canvas.drawPath(
       starPath,
       Paint()
         ..color = borderColor
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1,
+        ..strokeWidth = 1
+        ..strokeJoin = StrokeJoin.round // smooth joins
+        ..isAntiAlias = true,
     );
   }
 
-  Path _starPath(Size size) {
+  Path _roundedStarPath(Size size, double r, double innerFactor) {
     final double w = size.width;
     final double h = size.height;
-    final double cx = w / 2;
-    final double cy = h / 2;
-    final double outerRadius = w / 2;
-    final double innerRadius = outerRadius * 0.4;
-    final Path path = Path();
+    final Offset c = Offset(w / 2, h / 2);
+    final double outerR = w / 2; // assumes square box
+    final double innerR = outerR * innerFactor;
 
-    for (int i = 0; i < 5; i++) {
-      double angle = math.pi / 2 + i * 2 * math.pi / 5;
-      double x = cx + outerRadius * math.cos(angle);
-      double y = cy - outerRadius * math.sin(angle);
+    final List<Offset> pts = [];
+    for (int i = 0; i < 10; i++) {
+      final bool isOuter = i.isEven;
+      final double radius = isOuter ? outerR : innerR;
+      // Start at -90° (top) and step 36° each point (360/10)
+      final double angle = -math.pi / 2 + i * (2 * math.pi / 10);
+      pts.add(Offset(
+        c.dx + radius * math.cos(angle),
+        c.dy + radius * math.sin(angle),
+      ));
+    }
+
+    Path path = Path();
+    for (int i = 0; i < pts.length; i++) {
+      final Offset prev = pts[(i - 1 + pts.length) % pts.length];
+      final Offset curr = pts[i];
+      final Offset next = pts[(i + 1) % pts.length];
+
+      final Offset vIn = (curr - prev);
+      final Offset vOut = (curr - next);
+
+      final double lenIn = vIn.distance;
+      final double lenOut = vOut.distance;
+
+      final double cut = math.min(r, math.min(lenIn, lenOut) * 0.45);
+
+      final Offset p1 = curr - (vIn / lenIn) * cut; // approach point
+      final Offset p2 = curr - (vOut / lenOut) * cut; // exit point
+
       if (i == 0) {
-        path.moveTo(x, y);
+        path.moveTo(p1.dx, p1.dy);
       } else {
-        path.lineTo(x, y);
+        path.lineTo(p1.dx, p1.dy);
       }
-      angle += math.pi / 5;
-      x = cx + innerRadius * math.cos(angle);
-      y = cy - innerRadius * math.sin(angle);
-      path.lineTo(x, y);
+      path.quadraticBezierTo(curr.dx, curr.dy, p2.dx, p2.dy);
     }
     path.close();
     return path;
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _StarPainter old) {
+    return old.filled != filled ||
+        old.half != half ||
+        old.fillColor != fillColor ||
+        old.borderColor != borderColor ||
+        old.cornerRadius != cornerRadius ||
+        old.innerRadiusFactor != innerRadiusFactor;
+  }
 }
