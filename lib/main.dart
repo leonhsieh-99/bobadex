@@ -15,6 +15,8 @@ void _runBootstrapApp() => runApp(const _BootstrapApp());
 Future<void> _bootstrap() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
+  const envFile = String.fromEnvironment('ENV_FILE', defaultValue: '.env.dev');
+  await dotenv.load(fileName: envFile);
   final supabaseUrl = dotenv.env['SUPABASE_URL'];
   final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
   if (supabaseUrl == null || supabaseAnonKey == null) {
