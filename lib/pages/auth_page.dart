@@ -3,7 +3,6 @@ import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/forgot_password_dialog.dart';
 import 'package:flutter/material.dart';
-// import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 // Import your helper files here...

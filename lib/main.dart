@@ -4,11 +4,11 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'bobadex.dart';
 import 'firebase_options.dart';
+import 'helpers/app_prefs.dart';
 
 void _runBootstrapApp() => runApp(const _BootstrapApp());
 
@@ -27,16 +27,14 @@ Future<void> _bootstrap() async {
 
   await Supabase.initialize(
     url: supabaseUrl,
-    anonKey: supabaseAnonKey,
+    publishableKey: supabaseAnonKey,
     authOptions: const FlutterAuthClientOptions(
       authFlowType: AuthFlowType.pkce,
       autoRefreshToken: true,
     ),
   );
 
-  await Hive.initFlutter();
-  final prefsBox = await Hive.openBox('prefs');
-  final analyticsEnabled = (prefsBox.get('analytics_enabled') as bool?) ?? true;
+  final analyticsEnabled = await AppPrefs.analyticsEnabled();
   await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(analyticsEnabled);
 }
 

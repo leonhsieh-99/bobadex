@@ -1,6 +1,6 @@
+import 'package:bobadex/helpers/app_prefs.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPrivacyPage extends StatefulWidget{
@@ -11,9 +11,7 @@ class SettingsPrivacyPage extends StatefulWidget{
 }
 
 class _SettingsPrivacyPageState extends State<SettingsPrivacyPage> {
-  late Box _prefs;
   bool _analyticsEnabled = true;
-  // bool _crashEnabled = true;
 
   @override
   void initState() {
@@ -22,24 +20,17 @@ class _SettingsPrivacyPageState extends State<SettingsPrivacyPage> {
   }
 
   Future<void> _load() async {
-    _prefs = await Hive.openBox('prefs');
-    setState(() {
-      _analyticsEnabled = (_prefs.get('analytics_enabled') as bool?) ?? true;
-      // _crashEnabled     = (_prefs.get('crash_enabled') as bool?) ?? true;
-    });
+    final enabled = await AppPrefs.analyticsEnabled();
+    if (!mounted) return;
+    setState(() => _analyticsEnabled = enabled);
   }
 
   Future<void> _setAnalytics(bool v) async {
     await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(v);
-    await _prefs.put('analytics_enabled', v);
+    await AppPrefs.setAnalyticsEnabled(v);
+    if (!mounted) return;
     setState(() => _analyticsEnabled = v);
   }
-
-
-  // Future<void> _setCrash(bool v) async {
-  //   await _prefs.put('crash_enabled', v);
-  //   setState(() => _crashEnabled = v);
-  // }
 
   Future<void> _open(String url) async {
     final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
