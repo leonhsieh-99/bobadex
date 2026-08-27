@@ -82,7 +82,6 @@ class ShopMediaState extends ChangeNotifier {
     if (_shopLoading.contains(shopId)) return;
 
     _shopLoading.add(shopId);
-    notifyListeners();
     try {
       var query = Supabase.instance.client
           .from('shop_media')

@@ -106,12 +106,11 @@ class _AccountViewPageState extends State<AccountViewPage> {
 
   @override
   Widget build(BuildContext context) {
-    final userState = context.watch<UserState>();
+    final currentUser = context.select<UserState, u.User>((s) => s.current);
     final brandState = context.read<BrandState>();
     final friendState = context.watch<FriendState>();
     final analytics = context.read<AnalyticsService>();
 
-    final currentUser = userState.current;
     final isCurrentUser = currentUser.id == widget.userId;
     final user = isCurrentUser ? currentUser : (_user ?? u.User.empty());
 
@@ -157,7 +156,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
       return false;
     }
 
-    final themeColor = Constants.getThemeColor(userState.current.themeSlug);
+    final themeColor = Constants.getThemeColor(currentUser.themeSlug);
 
     final friendBtn = (!isCurrentUser)
       ? Padding(

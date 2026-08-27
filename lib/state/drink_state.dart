@@ -79,7 +79,6 @@ class DrinkState extends ChangeNotifier {
     if (isLoading(shopId)) return;
     
     _loading[shopId] = true;
-    notifyListeners();
     try {
       final rows = await RetryHelper.retry(() => Supabase.instance.client
         .from('drinks')

@@ -1,32 +1,27 @@
 import 'dart:async';
-import 'package:bobadex/helpers/url_helper.dart';
-import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/achievements_page.dart';
 import 'package:bobadex/pages/about_page.dart';
 import 'package:bobadex/pages/settings_page.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
 import 'package:bobadex/pages/social_page.dart';
-import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/widgets/confirmation_dialog.dart';
-import 'package:bobadex/widgets/icon_pic.dart';
 import 'package:bobadex/widgets/onboarding_gate.dart';
 import 'package:bobadex/widgets/onboarding_wizard.dart';
+import 'package:bobadex/widgets/shop_grid_tile.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart' as provider;
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../helpers/sortable_entry.dart';
 import '../models/shop.dart';
+import '../models/user.dart' as u;
 import '../widgets/filter_sort_bar.dart';
 import '../state/user_state.dart';
 import '../state/shop_state.dart';
-import '../state/drink_state.dart';
 import 'package:bobadex/config/constants.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'add_shop_search_page.dart';
 import '../widgets/command_icon.dart';
 import 'friends_page.dart';
@@ -44,11 +39,9 @@ class _HomePageState extends State<HomePage> {
   late final String _uid;
   late final bool _isCurrentUser;
   late Future<void> _ready = Future.value();
-  final supabase = Supabase.instance.client;
   String _searchQuery = '';
   String _selectedSort = 'favorite-asc';
   final _searchController = TextEditingController();
-  final Set<String> _bannerFetchRequestedFor = {};
 
   bool get isCurrentUser {
     final currentUser = Supabase.instance.client.auth.currentUser;
@@ -147,265 +140,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final userState = context.watch<UserState>();
-    final friendState = context.watch<FriendState>();
-    final brandState = context.watch<BrandState>();
-    final user = context.watch<UserState>().getUser(_uid);
-    final shops = context.watch<ShopState>().shopsFor(_uid);
+    final user = context.select<UserState, u.User?>((s) => s.getUser(_uid));
+    final shops = context.select<ShopState, List<Shop>>((s) => s.shopsFor(_uid));
 
-    Widget shopGrid(List<Shop> shops, List<ShopMedia> banners) {
-      final visibleShops = getVisibleShops(shops);
-      final bannerByShop = { for (var b in banners) b.shopId: b };
-      final themeColor = Constants.getThemeColor(user?.themeSlug ?? Constants.defaultTheme);
-      if (shops.isEmpty) {
-        return const Center(child: Text("No shops added.", style: Constants.emptyListTextStyle));
-      } else if (visibleShops.isEmpty) {
-        return const Center(child: Text('No shops found.', style:  Constants.emptyListTextStyle));
-      }
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
-        child: GridView.builder(
-          padding: const EdgeInsets.fromLTRB(4, 0, 4, 120),
-          itemCount: visibleShops.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: user!.gridColumns,
-            crossAxisSpacing: 4,
-            mainAxisSpacing: 4,
-            childAspectRatio: 1,
-          ),
-          itemBuilder: (context, index) {
-            // view settings
-            final screenWidth = MediaQuery.of(context).size.width;
-            final columns = user.gridColumns;
-            const spacing = 4.0;
-            const baseTileWidth = 120.0;
-            final itemWidth = (screenWidth - (spacing * (columns + 1))) / columns;
-            final scaleFactor = itemWidth / baseTileWidth;
-            final imageScale = columns == 2 ? scaleFactor * 1.2 : scaleFactor;
-            final textScale = columns == 2 ? scaleFactor * 1 : scaleFactor;
-
-            // actual data
-            final shop = visibleShops[index];
-            final brand = brandState.getBrand(shop.brandSlug);
-            final useIcons = user.useIcons == true;
-
-            // banner vars
-            final banner = bannerByShop[shop.id];
-            final String? bannerPath = banner?.imagePath;
-            final String? brandIconPath = brand?.iconPath;
-
-            final bool hasBanner = bannerPath != null && bannerPath.isNotEmpty;
-            final bool hasBrandIcon = brandIconPath != null && brandIconPath.isNotEmpty;
-
-            final String? displayUrl = hasBanner
-              ? publicUrl('media-uploads', thumbPath(bannerPath, 512))
-              : (hasBrandIcon
-                ? publicUrl('shop-media', thumbPath(brandIconPath, 512))
-                : null
-              );
-
-            int uiDrinkCount(BuildContext context, String shopId) {
-              final drinkState = context.watch<DrinkState>();
-              final shopState = context.read<ShopState>();
-              final drinks = drinkState.drinksFor(shopId);
-
-              if (drinks.isNotEmpty) return drinks.length;
-              return shopState.countsForShop(shopId).total;
-            }
-
-            return GestureDetector(
-              onTap: () async => _navigateToShop(shop.id!, user.id),
-              child: Card(
-                elevation: 2,
-                color: useIcons ? themeColor == Colors.grey ? themeColor.shade200 : themeColor.shade200 : Colors.grey.shade100,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: useIcons
-                  ? Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Stack(
-                        children: [
-                          Positioned(
-                            top: 4,
-                            left: 4,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(maxWidth: 85 * textScale),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    shop.name,
-                                    style: TextStyle(
-                                      fontSize: 11 * textScale,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    textAlign: TextAlign.left,
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                  ),
-                                  Row(
-                                    children: [
-                                      SvgPicture.asset(
-                                        'lib/assets/icons/star.svg',
-                                        width: 12 * textScale,
-                                        height: 12 * textScale,
-                                      ),
-                                      SizedBox(width: 2),
-                                      Text(
-                                        shop.rating.toStringAsFixed(1),
-                                        style: TextStyle(fontSize: 12 * textScale),
-                                        textAlign: TextAlign.left,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ]
-                                  ),
-                                  SizedBox(height: 2),
-                                  Row(
-                                    children: [
-                                      SvgPicture.asset(
-                                        'lib/assets/icons/boba1.svg',
-                                        width: 13 * textScale,
-                                        height: 13 * textScale,
-                                      ),
-                                      SizedBox(width: 2),
-                                      Text(
-                                        uiDrinkCount(context, shop.id!).toString(),
-                                        style: TextStyle(fontSize: 12 * textScale),
-                                        textAlign: TextAlign.left,
-                                        overflow: TextOverflow.ellipsis,
-                                      )
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 8,
-                            right: 8,
-                            child: IconPic(path: brandIconPath, size: 55 * imageScale)
-                          ),
-                          if (shop.isFavorite)
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: SvgPicture.asset(
-                              'lib/assets/icons/heart.svg',
-                              width: 14 * textScale,
-                              height: 14 * textScale,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          // Banner background
-                          displayUrl != null
-                            ? CachedNetworkImage(
-                                imageUrl: displayUrl,
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                height: double.infinity,
-                                placeholder: (context, url) => Center(child: CircularProgressIndicator()),
-                                errorWidget: (context, url, error) => Image.asset(
-                                  'lib/assets/default_icon.png',
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                ),
-                              )
-                            : Image.asset(
-                                'lib/assets/default_icon.png',
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                height: double.infinity,
-                              ),
-                          // Gradient overlay for bottom
-                          Align(
-                            alignment: Alignment.bottomCenter,
-                            child: Container(
-                              width: double.infinity,
-                              padding: EdgeInsets.symmetric(vertical: 10 * textScale, horizontal: 8 * textScale),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.black.withOpacity(0.8),
-                                    Colors.transparent
-                                  ],
-                                  begin: Alignment.bottomCenter,
-                                  end: Alignment.topCenter,
-                                ),
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    shop.name,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14 * textScale,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  SizedBox(height: 2 * textScale),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SvgPicture.asset(
-                                        'lib/assets/icons/star.svg',
-                                        width: 12 * textScale,
-                                        height: 12 * textScale,
-                                        colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                                      ),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        shop.rating.toStringAsFixed(1),
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                                      SizedBox(width: 10),
-                                      SvgPicture.asset(
-                                        'lib/assets/icons/boba1.svg',
-                                        width: 12 * textScale,
-                                        height: 12 * textScale,
-                                        colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                                      ),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        uiDrinkCount(context, shop.id!).toString(),
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          // Favorite heart
-                          if (shop.isFavorite)
-                          Positioned(
-                            top: 10,
-                            right: 10,
-                            child: SvgPicture.asset(
-                              'lib/assets/icons/heart.svg',
-                              width: 18 * textScale,
-                              height: 18 * textScale,
-                              colorFilter: ColorFilter.mode(Colors.white, BlendMode.srcIn),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-              ),
-            );
-          },
-        ),
-      );
-    }
     return FutureBuilder(
       future: _ready,
       builder: (context, snap) {
@@ -420,6 +157,38 @@ class _HomePageState extends State<HomePage> {
         }
 
         final themeColor = Constants.getThemeColor(user.themeSlug);
+        final visibleShops = getVisibleShops(shops);
+
+        Widget shopGrid() {
+          if (shops.isEmpty) {
+            return const Center(child: Text("No shops added.", style: Constants.emptyListTextStyle));
+          } else if (visibleShops.isEmpty) {
+            return const Center(child: Text('No shops found.', style: Constants.emptyListTextStyle));
+          }
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
+            child: GridView.builder(
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 120),
+              itemCount: visibleShops.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: user.gridColumns,
+                crossAxisSpacing: 4,
+                mainAxisSpacing: 4,
+                childAspectRatio: 1,
+              ),
+              itemBuilder: (context, index) {
+                final shop = visibleShops[index];
+                return ShopGridTile(
+                  shop: shop,
+                  columns: user.gridColumns,
+                  useIcons: user.useIcons == true,
+                  themeColor: themeColor,
+                  onTap: () async => _navigateToShop(shop.id!, user.id),
+                );
+              },
+            ),
+          );
+        }
 
         return Scaffold(
           extendBody: true,
@@ -436,7 +205,7 @@ class _HomePageState extends State<HomePage> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ThumbPic(path: userState.current.profileImagePath, size: 120,),
+                      ThumbPic(path: user.profileImagePath, size: 120,),
                     ],
                   )
                 ),
@@ -516,52 +285,7 @@ class _HomePageState extends State<HomePage> {
                         }
                       ),
                     ),
-                    Expanded(
-                      child: Builder(
-                        builder: (context) {
-                          final shopState = context.watch<ShopState>();
-
-                          final shops = isCurrentUser
-                              ? shopState.shopsForCurrentUser()
-                              : shopState.shopsFor(_uid);
-
-                          if (shops.isEmpty) {
-                            Center(child: Text('No shops yet', style: Constants.emptyListTextStyle));
-                          }
-
-                          final shopIds = getVisibleShops(shops)
-                              .map((s) => s.id)
-                              .whereType<String>()
-                              .toSet();
-
-                          if (!_bannerFetchRequestedFor.contains(_uid)) {
-                            _bannerFetchRequestedFor.add(_uid);
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              context.read<ShopMediaState>().loadBannersForUserViaRpc(_uid);
-                            });
-                          }
-
-                          // Build banner view-models for your grid
-                          final sm = context.watch<ShopMediaState>();
-                          final banners = shopIds.map((sid) {
-                            final path = sm.getBannerPath(sid);
-                            if (path == null) return null;
-
-                            return ShopMedia(
-                              id: 'banner-$sid',
-                              shopId: sid,
-                              userId: _uid,
-                              imagePath: path,
-                              isBanner: true,
-                              visibility: 'public',
-                              comment: '',
-                            );
-                          }).whereType<ShopMedia>().toList();
-
-                          return shopGrid(shops, banners);
-                        },
-                      ),
-                    )
+                    Expanded(child: shopGrid()),
                   ],
                 ),
                 if (isCurrentUser && MediaQuery.of(context).viewInsets.bottom == 0)
@@ -585,9 +309,8 @@ class _HomePageState extends State<HomePage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          CommandIcon(icon: Icons.group, label: "Friends", notificationCount: friendState.incomingRequests.length, onTap: () => _navigateToPage(FriendsPage())),
+                          _FriendsCommandIcon(onTap: () => _navigateToPage(FriendsPage())),
                           CommandIcon(icon: Icons.people, label: "Social", onTap: () => _navigateToPage(SocialPage())),
-
                           Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -617,6 +340,22 @@ class _HomePageState extends State<HomePage> {
         }
       );
     }
+}
+
+class _FriendsCommandIcon extends StatelessWidget {
+  final VoidCallback onTap;
+  const _FriendsCommandIcon({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final count = context.select<FriendState, int>((s) => s.incomingRequests.length);
+    return CommandIcon(
+      icon: Icons.group,
+      label: "Friends",
+      notificationCount: count,
+      onTap: onTap,
+    );
+  }
 }
 
 class HomePageSkeleton extends StatelessWidget {
@@ -696,5 +435,3 @@ class HomePageSkeleton extends StatelessWidget {
     );
   }
 }
-
-

@@ -139,7 +139,9 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final shopState = context.watch<ShopState>();
+    final ownedSlugs = context.select<ShopState, Set<String?>>(
+      (s) => s.shopsForCurrentUser().map((shop) => shop.brandSlug).toSet(),
+    );
     return Scaffold(
       appBar: AppBar(title: Text('Select Shop Brand')),
       body: Column(
@@ -166,7 +168,7 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
                   title: Text(brand.display),
                   subtitle: aliasLabel == null ? null : Text('Also known as $aliasLabel'),
                   trailing: CircleAvatar(
-                    child: shopState.shopsForCurrentUser().map((s) => s.brandSlug).contains(brand.slug)
+                    child: ownedSlugs.contains(brand.slug)
                       ? Icon(Icons.check)
                       : Icon(Icons.add)
                   ),

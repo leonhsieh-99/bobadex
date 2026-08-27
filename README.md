@@ -1,39 +1,15 @@
-# 🧋 Bobadex
+# Bobadex
 
-**Pokedex, but for boba.**  
-Bobadex lets you catalog and rate your favorite boba shops and drinks while sharing your discoveries with friends.
+A Pokédex for boba shops. Catalog shops and drinks, rate them, and share the log with friends.
 
----
+The iOS app is live: [Bobadex on the App Store](https://apps.apple.com/us/app/bobadex/id6752920262) (v1.0.2).
 
-## 🚀 Features
-
-- 📍 Add and rate **boba shops** with photos, notes, and personal ratings  
-- 🧃 Track individual **drink ratings** and tasting notes  
-- 👥 **Friend system** with profile viewing and shared galleries  
-- 🏆 **Global rankings** and achievements  
-- 🖼️ **Image pipeline** with automatic thumbnails and caching  
-- 🧠 Built on a modern **Supabase backend** with real-time sync and RLS security
-
----
-
-## 🧑‍💻 Tech Stack
-
-**Frontend:** Flutter (mobile), SvelteKit (admin), *Next.js (web – in progress)*  
-**Backend:** Supabase (PostgreSQL, RPCs, RLS, Auth, Storage)  
-**Infrastructure:** Firebase Crashlytics/Analytics, Vercel  
-**Languages:** Dart, TypeScript, SQL, Python
-
----
-
-## 🖥️ Demo
+## Demo
 
 [![Watch 80-second demo](https://img.youtube.com/vi/4EYwQm6eHbI/hqdefault.jpg)](https://youtu.be/4EYwQm6eHbI "Watch the short demo on YouTube")
 
-📱 [**App Store Link**](https://apps.apple.com/us/app/bobadex/id6752920262)
-
-### 📸 Screenshots
 <details>
-  <summary>Show screenshots</summary>
+  <summary>Screenshots</summary>
 
   <p align="center">
     <img width="260" alt="IMG_3568" src="https://github.com/user-attachments/assets/968727ce-8b93-4163-884a-ec87acb80cc3" />
@@ -49,15 +25,83 @@ Bobadex lets you catalog and rate your favorite boba shops and drinks while shar
   </p>
 </details>
 
-## 🧰 Local Development
+## Features
+
+- **Shop log** — add visits from a brand catalog, rate, favorite, pin a drink, and keep notes
+- **Drinks** — per-shop drink ratings and tasting notes
+- **Photos** — shop galleries, banners, compressed uploads, and cached thumbs
+- **Friends** — requests, profiles, and viewing someone else’s Bobadex
+- **Social** — friend activity feed and a friends-shop grid
+- **Brands** — brand pages with stats, about copy, photos, and search that matches aliases
+- **Rankings** — user and brand leaderboards
+- **Achievements** — unlocks tied to shops, drinks, friends, notes, and uploads
+- **Account** — theme, home grid layout, privacy/analytics, password, data export, and account deletion
+
+The public brand catalog is currently California-focused.
+
+## Stack
+
+| Layer | Choice |
+|---|---|
+| App | Flutter (iOS / Android), Dart `>=3.10` |
+| State | Provider + `ChangeNotifier` |
+| Routing | go_router (`/splash`, `/auth`, `/home`, `/reset`) |
+| Backend | Supabase (Postgres, Auth/PKCE, Storage, RPCs, RLS) |
+| Observability | Firebase Analytics, Sentry |
+| Local cache | SharedPreferences + on-disk brand catalog |
+
+Related (not in this repo): a SvelteKit admin tool, and a web client that is still in progress.
+
+## Layout
+
+```
+lib/
+  main.dart              bootstrap (env, Firebase, Supabase, Sentry)
+  bobadex.dart           MultiProvider + themed MaterialApp.router
+  app_initializer.dart   auth session → load user data
+  pages/                 screens
+  state/                 ChangeNotifier stores
+  widgets/               shared UI
+  models/                data types
+  helpers/               router, uploads, cache, retries
+```
+
+Sign-in loads user, shops, drinks, brands, friends, media banners, achievements, and feed in `AppInitializer`. Stores reset on sign-out.
+
+## Local development
+
+Requires [Flutter](https://docs.flutter.dev/get-started/install) with Dart 3.10+.
 
 ```bash
-# Clone the repository
 git clone https://github.com/leonhsieh-99/bobadex.git
 cd bobadex
+flutter pub get
+```
 
-# Install dependencies
-npm install
+Env files (`.env.dev`, `.env.prod`) are loaded as Flutter assets. `main.dart` defaults to `.env.prod`. For local work:
 
-# Start local dev server (web)
-npm run dev
+```bash
+flutter run --dart-define=ENV_FILE=.env.dev
+```
+
+Needed keys: `SUPABASE_URL`, `SUPABASE_ANON_KEY`. Optional: `SENTRY_DSN`.
+
+iOS needs CocoaPods (`cd ios && pod install`) after dependency changes. The project uses Swift Package Manager for Flutter plugins.
+
+## Current progress
+
+Shipped on iOS as **1.0.2**. Recent work in this tree:
+
+- Brand search reads `brand_aliases` (cache v2), not a column on `brands`
+- Hive removed; brand catalog is a JSON file cache so Swift Package Manager can build
+- Provider rebuilds narrowed: `context.select` instead of watching whole notifiers, shop tiles subscribe per shop, theme listens to `themeSlug` only, loads no longer notify at start
+
+Still on Provider. A Riverpod move is not planned until per-route / per-id state or context-free testing actually hurts.
+
+Not shipped yet: in-app notification settings (the screen exists but is commented out of Settings).
+
+## License & legal
+
+[Privacy](https://leonhsieh-99.github.io/bobadex-legal/privacy.html) · [Terms](https://leonhsieh-99.github.io/bobadex-legal/terms.html)
+
+Personal project. Feedback: leonchsieh@gmail.com

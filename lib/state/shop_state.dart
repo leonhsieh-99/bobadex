@@ -53,7 +53,6 @@ class ShopState extends ChangeNotifier {
     if (isLoading(userId)) return;
 
     _loading[userId] = true;
-    notifyListeners();
     try {
       final rows = await RetryHelper.retry(() => Supabase.instance.client
         .from('shops')
