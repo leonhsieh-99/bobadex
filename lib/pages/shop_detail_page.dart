@@ -187,7 +187,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
         final shopRead = shop;
         final brand    = brandState.getBrand(shopRead.brandSlug);
 
-        final brandRemoved = (brand == null) || (brand.status == BrandStatus.retired);
+        final brandRemoved = (brand == null) || !brand.status.isActive;
 
         final bannerPath = shopMediaState
             .getByShop(_shopId)

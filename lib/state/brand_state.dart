@@ -14,6 +14,8 @@ class BrandState extends ChangeNotifier {
   bool get hasError => _hasError;
 
   static const _cacheBox = 'brand_cache';
+  // v2: aliases live on brand_aliases, not brands.aliases
+  static const _cacheVersion = 'v2';
 
   Brand? getBrand(String? slug) {
     if (slug == null || slug.isEmpty) return null;
@@ -21,8 +23,23 @@ class BrandState extends ChangeNotifier {
   }
 
   String getName(String slug) {
-    if (slug.isEmpty) return "";
-    return nameLookup[slug]!;
+    if (slug.isEmpty) return '';
+    return nameLookup[slug] ?? slug;
+  }
+
+  List<Brand> search(String rawQuery) {
+    final query = rawQuery.toLowerCase().trim();
+    if (query.length < 2) return const [];
+
+    final matches = _brands
+        .where((b) => b.status.isActive && b.matchesQuery(query))
+        .toList();
+    matches.sort((a, b) {
+      final rank = a.matchRank(query).compareTo(b.matchRank(query));
+      if (rank != 0) return rank;
+      return a.display.toLowerCase().compareTo(b.display.toLowerCase());
+    });
+    return matches;
   }
 
   void addBrand(Brand brand) {
@@ -41,9 +58,9 @@ class BrandState extends ChangeNotifier {
 
     // determine current scope
     final isReviewer = (supabase.auth.currentUser?.appMetadata['role'] == 'reviewer');
-    print(supabase.auth.currentUser!.id);
-    print((supabase.auth.currentUser?.appMetadata['role']));
-    final dataKey = isReviewer ? 'brands_demo' : 'brands_public';
+    final dataKey = isReviewer
+        ? 'brands_demo_$_cacheVersion'
+        : 'brands_public_$_cacheVersion';
     final timeKey = '${dataKey}_last_updated';
 
     // 1) Warm from scope-specific cache
@@ -59,7 +76,7 @@ class BrandState extends ChangeNotifier {
           .toList();
       _brands
         ..clear()
-        ..addAll(cachedBrands.where((b) => b.status == BrandStatus.active));
+        ..addAll(cachedBrands.where((b) => b.status.isActive));
       _updateNameLookup();
       notifyListeners();
       debugPrint('Loaded ${_brands.length} brands from cache [$dataKey]');
@@ -92,17 +109,17 @@ class BrandState extends ChangeNotifier {
         return;
       }
 
-      // 3) Fetch fresh list (RLS will return only the allowed scope)
+      // 3) Fetch catalog columns only. Enrichment fields on brands stay server-side.
       final rows = await RetryHelper.retry(() => supabase
           .from('brands')
-          .select('*')
+          .select('slug, display, icon_path, status, brand_aliases(*)')
           .order('slug'));
 
       final freshBrands = (rows as List).map<Brand>((json) => Brand.fromJson(json)).toList();
 
       _brands
         ..clear()
-        ..addAll(freshBrands.where((b) => b.status == BrandStatus.active));
+        ..addAll(freshBrands.where((b) => b.status.isActive));
       _updateNameLookup();
       notifyListeners();
       debugPrint('Loaded ${_brands.length} brands from Supabase [scope=$dataKey]');
