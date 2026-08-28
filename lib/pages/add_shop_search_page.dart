@@ -26,10 +26,6 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
   List<Brand> _filteredBrands = [];
   Timer? _debounce;
 
-  List<Brand> get _brands {
-    return context.read<BrandState>().all;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -40,14 +36,11 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
   void _onSearchChanged() {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () async {
-      String query = _searchController.text.toLowerCase().trim();
-      if (query.length >= 2) {
-        setState(() {
-          _filteredBrands = _brands
-              .where((b) => b.display.toLowerCase().contains(query) && b.status == BrandStatus.active)
-              .toList();
-        });
-      }
+      if (!mounted) return;
+      final query = _searchController.text;
+      setState(() {
+        _filteredBrands = context.read<BrandState>().search(query);
+      });
     });
   }
 
@@ -146,7 +139,9 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final shopState = context.watch<ShopState>();
+    final ownedSlugs = context.select<ShopState, Set<String?>>(
+      (s) => s.shopsForCurrentUser().map((shop) => shop.brandSlug).toSet(),
+    );
     return Scaffold(
       appBar: AppBar(title: Text('Select Shop Brand')),
       body: Column(
@@ -168,10 +163,12 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
                   );
                 }
                 final brand = _filteredBrands[i - 1];
+                final aliasLabel = brand.matchingAliasLabel(_searchController.text);
                 return ListTile(
                   title: Text(brand.display),
+                  subtitle: aliasLabel == null ? null : Text('Also known as $aliasLabel'),
                   trailing: CircleAvatar(
-                    child: shopState.shopsForCurrentUser().map((s) => s.brandSlug).contains(brand.slug)
+                    child: ownedSlugs.contains(brand.slug)
                       ? Icon(Icons.check)
                       : Icon(Icons.add)
                   ),

@@ -26,6 +26,7 @@ class FriendsShopDetailsPage extends StatelessWidget {
     final friendState = context.read<FriendState>();
     final userState = context.read<UserState>();
     final brandState = context.read<BrandState>();
+    final brand = brandState.getBrand(shop.brandSlug);
     final themeColor = Constants.getThemeColor(userState.current.themeSlug);
 
     // Split crown/mostDrinks entry out
@@ -51,12 +52,12 @@ class FriendsShopDetailsPage extends StatelessWidget {
           // This gives you a bright golden/yellow glow
           boxShadow: [
             BoxShadow(
-              color: Colors.amber.withOpacity(0.6),
+              color: Colors.amber.withValues(alpha: 0.6),
               blurRadius: glowRadius,
               spreadRadius: 2,
             ),
             BoxShadow(
-              color: Colors.orange.withOpacity(0.2),
+              color: Colors.orange.withValues(alpha: 0.2),
               blurRadius: glowRadius * 2,
               spreadRadius: 4,
             ),
@@ -214,8 +215,8 @@ class FriendsShopDetailsPage extends StatelessWidget {
           children: [
             Center(
               child: GestureDetector(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brandState.getBrand(shop.brandSlug)!)),
+                onTap: brand == null ? null : () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand)),
                 ),
                 child: Container(
                   width: 150,
@@ -224,7 +225,7 @@ class FriendsShopDetailsPage extends StatelessWidget {
                     color: themeColor.shade200,
                     shape: BoxShape.circle,
                   ),
-                  child: IconPic(path: brandState.getBrand(shop.brandSlug)!.iconPath, size: 150)
+                  child: IconPic(path: brand?.iconPath, size: 150)
                 ),
               ),
             ),

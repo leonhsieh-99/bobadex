@@ -1,7 +1,7 @@
 import 'package:bobadex/models/account_stats.dart';
-import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-class UserStatsCache extends ChangeNotifier {
+
+class UserStatsCache {
   final _cache = <String, AccountStats> {};
 
   Future<Map<String, dynamic>> fetchStatsFromServer(userId) async {

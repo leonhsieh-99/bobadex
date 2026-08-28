@@ -21,14 +21,10 @@ class FriendsPage extends StatefulWidget {
 class _FriendsPageState extends State<FriendsPage> {
   final _searchController = SearchController();
 
-  List<User> get _friends {
-    return context.watch<FriendState>().friends;
-  }
-
-  List<User> get filteredFriends {
+  List<User> filteredFriends(List<User> friends) {
     final searchQuery = _searchController.text.trim();
-    if (searchQuery.isEmpty) return _friends;
-    return _friends.where((f) => f.displayName.toLowerCase().contains(searchQuery.toLowerCase())).toList();
+    if (searchQuery.isEmpty) return friends;
+    return friends.where((f) => f.displayName.toLowerCase().contains(searchQuery.toLowerCase())).toList();
   }
 
   @override
@@ -52,6 +48,7 @@ class _FriendsPageState extends State<FriendsPage> {
   Widget build(BuildContext context) {
     final friendState = context.watch<FriendState>();
     final incomingRequests = friendState.incomingRequests;
+    final friends = filteredFriends(friendState.friends);
 
     return Scaffold(
       appBar: AppBar(
@@ -89,7 +86,7 @@ class _FriendsPageState extends State<FriendsPage> {
             leading: Icon(Icons.add),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AddFriendsPage())),
           ),
-          if (_friends.isEmpty)
+          if (friendState.friends.isEmpty)
             Expanded(
               child: Center(
                 child: Text(
@@ -100,9 +97,9 @@ class _FriendsPageState extends State<FriendsPage> {
             ),
           Expanded(
             child: ListView.builder(
-              itemCount: filteredFriends.length,
+              itemCount: friends.length,
               itemBuilder: (context, index) {
-                final friend = filteredFriends[index];
+                final friend = friends[index];
                 return ListTile(
                   title: Text(friend.displayName),
                   leading: ThumbPic(path: friend.profileImagePath, initials: friend.displayName),

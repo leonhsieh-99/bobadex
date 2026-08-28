@@ -169,14 +169,15 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final shopMediaState = context.watch<ShopMediaState>();
-    final achievementState = context.watch<AchievementsState>();
+    final shopMediaState = context.read<ShopMediaState>();
+    final achievementState = context.read<AchievementsState>();
     final analytics = context.read<AnalyticsService>();
 
     final userGallery = widget.isCurrentUser && widget.shopId != null;
-    final shopMedia = userGallery
-      ? shopMediaState.getByShop(widget.shopId!)
-      : _mediaList;
+    final liveMedia = context.select<ShopMediaState, List<ShopMedia>>(
+      (s) => widget.shopId == null ? const [] : s.getByShop(widget.shopId!),
+    );
+    final shopMedia = userGallery ? liveMedia : _mediaList;
 
     return Stack(
       children: [
@@ -231,7 +232,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
         ),
         if (_isLoading)
           Container(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             child: Center(child: CircularProgressIndicator()),
           ),
       ]

@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:bobadex/analytics_service.dart';
 import 'package:bobadex/models/brand.dart';
+import 'package:bobadex/models/shop.dart';
+import 'package:bobadex/models/shop_media.dart';
+import 'package:bobadex/models/user.dart' as u;
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
@@ -17,7 +20,7 @@ import 'package:bobadex/widgets/rating_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart' as p;
+import 'package:provider/provider.dart';
 import '../models/drink.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/add_edit_shop_dialog.dart';
@@ -57,9 +60,9 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   Widget _removedPill(BuildContext ctx) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
-      color: Colors.red.withOpacity(.12),
+      color: Colors.red.withValues(alpha: .12),
       borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: Colors.red.withOpacity(.5)),
+      border: Border.all(color: Colors.red.withValues(alpha: .5)),
     ),
     child: const Text('Brand removed', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red)),
   );
@@ -146,14 +149,16 @@ class _ShopDetailPage extends State<ShopDetailPage> {
     final brandState = context.read<BrandState>();
     final drinkState = context.read<DrinkState>();
     final achievementState = context.read<AchievementsState>();
-    final userState = context.watch<UserState>();
-    final feedState = context.watch<FeedState>();
-    final shopMediaState = context.watch<ShopMediaState>();
+    final feedState = context.read<FeedState>();
+    final shopMediaState = context.read<ShopMediaState>();
     final analytics = context.read<AnalyticsService>();
 
-    final shop = context.watch<ShopState>().getShop(_shopId);
-    final user = userState.getUser(_uid);
-    final drinks = context.watch<DrinkState>().drinksFor(_shopId);
+    final shop = context.select<ShopState, Shop?>((s) => s.getShop(_shopId));
+    final user = context.select<UserState, u.User?>((s) => s.getUser(_uid));
+    final drinks = context.select<DrinkState, List<Drink>>((s) => s.drinksFor(_shopId));
+    final shopMediaList = context.select<ShopMediaState, List<ShopMedia>>(
+      (s) => s.getByShop(_shopId),
+    );
 
     final hasLocalData = shop != null && drinks.isNotEmpty;
     if (hasLocalData) _hasShownContentOnce = true;
@@ -187,10 +192,9 @@ class _ShopDetailPage extends State<ShopDetailPage> {
         final shopRead = shop;
         final brand    = brandState.getBrand(shopRead.brandSlug);
 
-        final brandRemoved = (brand == null) || (brand.status == BrandStatus.retired);
+        final brandRemoved = (brand == null) || !brand.status.isActive;
 
-        final bannerPath = shopMediaState
-            .getByShop(_shopId)
+        final bannerPath = shopMediaList
             .firstWhereOrNull((m) => m.isBanner);
         final bannerUrl = bannerPath?.imageUrl;
 
@@ -214,7 +218,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => ShopGalleryPage(
-                          shopMediaList: shopMediaState.getByShop(_shopId),
+                          shopMediaList: shopMediaList,
                           onSetBanner: (mediaId) async {
                             try {
                               await shopMediaState.setBanner(shopRead.id!, mediaId);
@@ -283,8 +287,8 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                           end: Alignment.bottomCenter,
                                           colors: [
                                             Colors.transparent,
-                                            Colors.black.withOpacity(0.22),
-                                            Colors.black.withOpacity(0.38),
+                                            Colors.black.withValues(alpha: 0.22),
+                                            Colors.black.withValues(alpha: 0.38),
                                           ],
                                         ),
                                       ),
@@ -303,7 +307,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                               child: Container(
                                 padding: EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.3),
+                                  color: Colors.black.withValues(alpha: 0.3),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text('View all photos', style: TextStyle(fontSize: 14, color: Colors.white)),
@@ -691,7 +695,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                         'lib/assets/icons/heart.svg',
                                         width: 24,
                                         height: 24,
-                                        colorFilter: ColorFilter.mode(Colors.white.withOpacity(.3), BlendMode.srcIn),
+                                        colorFilter: ColorFilter.mode(Colors.white.withValues(alpha: .3), BlendMode.srcIn),
                                       ),
                                     SvgPicture.asset(
                                       shop.isFavorite 
@@ -711,7 +715,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                       width: 20,
                                       height: 8,
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(.3),
+                                        color: Colors.white.withValues(alpha: .3),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                     ),

@@ -22,10 +22,10 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> {
   @override
   Widget build(BuildContext context) {
     final friendState = context.watch<FriendState>();
-    final achievementState = context.watch<AchievementsState>();
+    final achievementState = context.read<AchievementsState>();
     final analytics = context.read<AnalyticsService>();
-    final user = context.watch<UserState>().current;
-    final themeColor = Constants.getThemeColor(user.themeSlug);
+    final themeSlug = context.select<UserState, String>((s) => s.current.themeSlug);
+    final themeColor = Constants.getThemeColor(themeSlug);
     final incomingRequests = friendState.incomingRequests;
 
     return Scaffold(

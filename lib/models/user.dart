@@ -20,8 +20,8 @@ class User {
     this.themeSlug = Constants.defaultTheme,
     this.profileImagePath,
     this.bio,
-    this.gridColumns = 2,
-    this.useIcons = false,
+    this.gridColumns = Constants.defaultGridColumns,
+    this.useIcons = Constants.useIcons,
     this.onboarded = false,
   });
 
@@ -51,8 +51,8 @@ class User {
       profileImagePath: profile['profile_image_path'],
       bio: profile['bio'],
       themeSlug: settings?['theme_slug'] ?? Constants.defaultTheme,
-      gridColumns: settings?['grid_columns'] ?? 2,
-      useIcons: settings?['use_icons'] ?? false,
+      gridColumns: settings?['grid_columns'] ?? Constants.defaultGridColumns,
+      useIcons: settings?['use_icons'] ?? Constants.useIcons,
       onboarded: settings?['onboarded'] ?? false,
     );
   }
@@ -74,8 +74,8 @@ class User {
     themeSlug: Constants.defaultTheme,
     displayName: '',
     bio: '',
-    gridColumns: 2,
-    useIcons: false,
+    gridColumns: Constants.defaultGridColumns,
+    useIcons: Constants.useIcons,
     onboarded: false,
   );
 

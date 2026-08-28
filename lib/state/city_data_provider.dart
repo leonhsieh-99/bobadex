@@ -1,9 +1,8 @@
 import 'package:bobadex/models/city.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 
-class CityDataProvider extends ChangeNotifier {
+class CityDataProvider {
   List<City> _cities = [];
 
   List<City> parseCities(String jsonString) {

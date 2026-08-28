@@ -130,7 +130,7 @@ class AboutPage extends StatelessWidget {
               // Contact
               Card(
                 elevation: 0,
-                color: theme.colorScheme.primary.withOpacity(0.07),
+                color: theme.colorScheme.primary.withValues(alpha: 0.07),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
@@ -176,7 +176,7 @@ class AboutPage extends StatelessWidget {
               // Legal links
               Card(
                 elevation: 0,
-                color: theme.colorScheme.primary.withOpacity(0.07),
+                color: theme.colorScheme.primary.withValues(alpha: 0.07),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),

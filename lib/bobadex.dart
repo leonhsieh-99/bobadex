@@ -23,7 +23,6 @@ class BobadexApp extends StatefulWidget {
   State<BobadexApp> createState() => _BobadexAppState();
 }
 
-@override
 class _BobadexAppState extends State<BobadexApp> {
   late final FirebaseAnalytics _fa;
   late final AnalyticsService _analytics;
@@ -50,15 +49,16 @@ class _BobadexAppState extends State<BobadexApp> {
         ChangeNotifierProvider(create: (_) => ShopState()),
         ChangeNotifierProvider(create: (_) => BrandState()),
         ChangeNotifierProvider(create: (_) => FriendState()),
-        ChangeNotifierProvider(create: (_) => UserStatsCache()),
+        Provider(create: (_) => UserStatsCache()),
         ChangeNotifierProvider(create: (_) => ShopMediaState()),
         ChangeNotifierProvider(create: (_) => AchievementsState()),
         ChangeNotifierProvider(create: (_) => FeedState()),
-        ChangeNotifierProvider(create: (_) => CityDataProvider()),
+        Provider(create: (_) => CityDataProvider()),
       ],
-      child: Consumer<UserState>(
-        builder: (context, userState, _) {
-          final themeColor = Constants.getThemeColor(userState.current.themeSlug);
+      child: Builder(
+        builder: (context) {
+          final themeSlug = context.select<UserState, String>((s) => s.current.themeSlug);
+          final themeColor = Constants.getThemeColor(themeSlug);
           return MaterialApp.router(
             title: 'Bobadex',
             routerConfig: router,
@@ -97,7 +97,7 @@ class _BobadexAppState extends State<BobadexApp> {
                 )
               ),
               popupMenuTheme: PopupMenuThemeData(
-                color: Colors.white.withOpacity(0.95), // soft translucent
+                color: Colors.white.withValues(alpha: 0.95), // soft translucent
                 elevation: 8, // stronger shadow
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),

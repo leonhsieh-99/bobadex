@@ -3,14 +3,16 @@ import 'dart:convert';
 import 'package:bobadex/analytics_service.dart';
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/brand.dart';
+import 'package:bobadex/models/shop.dart';
+import 'package:bobadex/models/brand_profile.dart';
 import 'package:bobadex/models/brand_stats.dart';
-import 'package:bobadex/models/feed_event.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/shop_gallery_page.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
+import 'package:bobadex/widgets/brand_about_section.dart';
 import 'package:bobadex/widgets/icon_pic.dart';
 import 'package:bobadex/widgets/social_widgets/brand_feed_view.dart';
 import 'package:bobadex/widgets/image_widgets/horizontal_photo_preview.dart';
@@ -32,15 +34,16 @@ class BrandDetailsPage extends StatefulWidget {
 class _BrandDetailsPageState extends State<BrandDetailsPage> {
   late Future<BrandStats> _statsFuture;
   late Future<List<ShopMedia>> _globalGalleryFuture;
-  bool isLoading = false;
-  List<FeedEvent> feed = [];
+  late Future<BrandProfile> _profileFuture;
+  int? _photoCount;
+  int? _feedCount;
 
   @override
   void initState() {
     super.initState();
     _statsFuture = fetchStats();
     _globalGalleryFuture = fetchGallery();
-    // fetchFeed();
+    _profileFuture = fetchProfile();
   }
 
   Future<String?> reportBrandClosed() async {
@@ -84,6 +87,37 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
   }
 
 
+  Future<BrandProfile> fetchProfile() async {
+    final client = Supabase.instance.client;
+    Map<String, dynamic>? row;
+    String? website = widget.brand.website;
+
+    try {
+      row = await client
+          .from('brand_profiles')
+          .select('public_summary, profile_facts')
+          .eq('brand_slug', widget.brand.slug)
+          .maybeSingle();
+    } catch (e) {
+      debugPrint('Error fetching brand profile: $e');
+    }
+
+    if (website == null || website.isEmpty) {
+      try {
+        final brandRow = await client
+            .from('brands')
+            .select('website')
+            .eq('slug', widget.brand.slug)
+            .maybeSingle();
+        website = brandRow?['website'] as String?;
+      } catch (e) {
+        debugPrint('Brand website column unavailable: $e');
+      }
+    }
+
+    return BrandProfile.fromJson(row, websiteFallback: website);
+  }
+
   Future<BrandStats> fetchStats() async {
     try {
       final response = await Supabase.instance.client
@@ -113,10 +147,17 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
           'limit_count': limit,
         });
 
-      return (response as List)
+      final medias = (response as List)
         .map((item) => ShopMedia.fromJson(item)).toList();
+      if (offset == 0 && mounted && _photoCount != medias.length) {
+        setState(() => _photoCount = medias.length);
+      }
+      return medias;
     } catch (e) {
       debugPrint('Error fetching gallery: $e');
+      if (offset == 0 && mounted && _photoCount != 0) {
+        setState(() => _photoCount = 0);
+      }
       return [];
     }
   }
@@ -135,12 +176,15 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final shopState = context.watch<ShopState>();
+    final shopState = context.read<ShopState>();
     final achievementState = context.read<AchievementsState>();
-    final userState = context.watch<UserState>();
-    final hasVisit = shopState.shopsForCurrentUser().map((s) => s.brandSlug).contains(widget.brand.slug);
-    final userShop = shopState.getShopByBrand(userState.current.id, widget.brand.slug);
-    final themeColor = Constants.getThemeColor(userState.current.themeSlug);
+    final currentId = context.select<UserState, String>((s) => s.current.id);
+    final themeSlug = context.select<UserState, String>((s) => s.current.themeSlug);
+    final userShop = context.select<ShopState, Shop?>(
+      (s) => s.getShopByBrand(currentId, widget.brand.slug),
+    );
+    final hasVisit = userShop != null;
+    final themeColor = Constants.getThemeColor(themeSlug);
     final analytics = context.read<AnalyticsService>();
 
     Widget buildGlobalGallery(Brand brand, Future<List<ShopMedia>> galleryFuture) {
@@ -148,20 +192,16 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
         future: galleryFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                const SizedBox(height: 8),
-                HorizontalPreviewSkeleton(count: 3, height: 200, width: 150),
-              ],
-            );
+            return const SizedBox.shrink();
           }
           if (snapshot.hasError) {
             return Text('Failed to load gallery', style: TextStyle(color: Colors.red));
           }
           final medias = snapshot.data ?? [];
-          return Column(
+          if (medias.isEmpty) return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -188,11 +228,10 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
               SizedBox(
                 width: MediaQuery.of(context).size.width,
                 height: 200,
-                child: medias.isEmpty
-                  ? const Center(child: Text('No community photos yet', style: Constants.emptyListTextStyle))
-                  : HorizontalPhotoPreview(maxPreview: 3, height: 200, width: 150, shopMediaList: medias, onViewAll: () => viewAllPhotos(medias))
+                child: HorizontalPhotoPreview(maxPreview: 3, height: 200, width: 150, shopMediaList: medias, onViewAll: () => viewAllPhotos(medias))
               ),
             ],
+            ),
           );
         },
       );
@@ -305,17 +344,52 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                 ]
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    FutureBuilder<BrandProfile>(
+                      future: _profileFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const BrandAboutSkeleton();
+                        }
+                        final profile = snapshot.data;
+                        if (profile == null || !profile.hasContent) {
+                          return const SizedBox.shrink();
+                        }
+                        return BrandAboutSection(
+                          profile: profile,
+                          themeColor: themeColor,
+                        );
+                      },
+                    ),
                     buildGlobalGallery(widget.brand, _globalGalleryFuture),
-                    const SizedBox(height: 24),
-                    Text("Recent Activity", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    if (_feedCount != null && _feedCount! > 0) ...[
+                      const SizedBox(height: 24),
+                      const Text("Recent Activity", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    ],
+                    if (_photoCount == 0 && _feedCount == 0)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 16),
+                        child: Text(
+                          'Be the first to log a visit or add a photo.',
+                          style: Constants.emptyListTextStyle,
+                        ),
+                      ),
                   ],
                 ),
               ),
-              BrandFeedView(brandSlug: widget.brand.slug),
+              BrandFeedView(
+                brandSlug: widget.brand.slug,
+                hideWhenEmpty: true,
+                onItemCount: (count) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted || _feedCount == count) return;
+                    setState(() => _feedCount = count);
+                  });
+                },
+              ),
             ]
           ),
         ),
@@ -393,7 +467,7 @@ Widget _buildBrandBanner(
                 CachedNetworkImage(
                   imageUrl: bgUrl,
                   fit: BoxFit.cover,
-                  color: Colors.black.withOpacity(0.35),
+                  color: Colors.black.withValues(alpha: 0.35),
                   colorBlendMode: BlendMode.darken,
                 ),
               Align(

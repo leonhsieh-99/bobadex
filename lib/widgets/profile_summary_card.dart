@@ -32,7 +32,7 @@ class ProfileSummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.6)),
       ),
       child: Stack(
         clipBehavior: Clip.none,
@@ -44,7 +44,7 @@ class ProfileSummaryCard extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               gradient: LinearGradient(
                 begin: Alignment.topLeft, end: Alignment.bottomRight,
-                colors: [cs.primary.withOpacity(0.18), cs.primary.withOpacity(0.06)],
+                colors: [cs.primary.withValues(alpha: 0.18), cs.primary.withValues(alpha: 0.06)],
               ),
             ),
           ),
@@ -65,13 +65,13 @@ class ProfileSummaryCard extends StatelessWidget {
             child: Column(
               children: [
                 Text(displayName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
-                Text('@$username', style: TextStyle(color: cs.onSurface.withOpacity(0.6))),
+                Text('@$username', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6))),
                 const SizedBox(height: 8),
                 Text(
                   (bio == null || bio!.trim().isEmpty) ? 'No bio set' : bio!,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: (bio == null || bio!.trim().isEmpty) ? cs.onSurface.withOpacity(0.4) : null,
+                    color: (bio == null || bio!.trim().isEmpty) ? cs.onSurface.withValues(alpha: 0.4) : null,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -90,7 +90,7 @@ class ProfileSummaryCard extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(14),
                     child: Material(
-                      color: cs.surfaceVariant.withOpacity(0.3),
+                      color: cs.surfaceVariant.withValues(alpha: 0.3),
                       child: SizedBox(height: 64, child: favoriteShopTile),
                     ),
                   ),

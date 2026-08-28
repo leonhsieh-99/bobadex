@@ -10,7 +10,6 @@ class Shop extends SortableEntry {
   String? notes;
   String? pinnedDrinkId;
   final DateTime? _createdAt;
-  final String? placeId; // future use maybe
   final String? brandSlug;
 
   @override
@@ -40,7 +39,6 @@ class Shop extends SortableEntry {
     this.notes,
     this.pinnedDrinkId,
     DateTime? createdAt,
-    this.placeId,
     this.brandSlug,
   }) :  _name = name,
         _rating = rating,
@@ -58,7 +56,6 @@ class Shop extends SortableEntry {
     List<Drink>? drinks,
     String? pinnedDrinkId,
     DateTime? createdAt,
-    String? placeId,
     String? brandSlug,
   }) {
     return Shop(
@@ -70,7 +67,6 @@ class Shop extends SortableEntry {
       notes: notes ?? this.notes,
       pinnedDrinkId: pinnedDrinkId == '' ? null : pinnedDrinkId ?? this.pinnedDrinkId,
       createdAt: createdAt,
-      placeId: placeId ?? this.placeId,
       brandSlug: brandSlug ?? this.brandSlug,
     );
   }
@@ -87,7 +83,6 @@ class Shop extends SortableEntry {
       createdAt: json['created_at'] != null
         ? DateTime.parse(json['created_at'])
         : null,
-      placeId: json['place_id'],
       brandSlug: json['brand_slug'],
     );
   }
@@ -101,7 +96,6 @@ class Shop extends SortableEntry {
       'notes': notes,
       'is_favorite': isFavorite,
       'pinned_drink_id': pinnedDrinkId,
-      'place_id': placeId,
       'brand_slug': brandSlug,
     };
   }

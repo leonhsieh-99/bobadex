@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class NumberRating extends StatelessWidget {
   final String rating;
@@ -14,7 +13,8 @@ class NumberRating extends StatelessWidget {
       children: [
         Text(
           rating,
-          style: GoogleFonts.notoSerif(
+          style: TextStyle(
+            fontFamily: 'NotoSerif',
             fontWeight: FontWeight.w600,
             fontSize: size,
           ),

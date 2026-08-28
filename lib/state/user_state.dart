@@ -42,7 +42,6 @@ class UserState extends ChangeNotifier {
     if (isLoading(userId)) return;
 
     _loading[userId] = true;
-    notifyListeners();
 
     try {
       final supabase = Supabase.instance.client;

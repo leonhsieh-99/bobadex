@@ -1,7 +1,6 @@
 import 'package:bobadex/models/city.dart';
 import 'package:bobadex/state/city_data_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:provider/provider.dart';
 
 class AddNewBrandDialog extends StatefulWidget {
@@ -20,7 +19,6 @@ class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
   final _nameController = TextEditingController();
   City? _selectedCity;
   List<City>? _cities;
-  TextEditingController? _cityFieldController;
   bool _isSubmitting = false;
 
   @override
@@ -29,12 +27,32 @@ class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
     _loadCities();
   }
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadCities() async {
     final cityProvider = context.read<CityDataProvider>();
     final loaded = await cityProvider.getCities();
     if (mounted) { 
       setState(() => _cities = loaded);
     }
+  }
+
+  String _cityLabel(City city) => '${city.name}, ${city.state}';
+
+  Iterable<City> _cityOptions(TextEditingValue value) {
+    final cities = _cities;
+    if (cities == null || cities.isEmpty) return const Iterable<City>.empty();
+    final pattern = value.text.toLowerCase().trim();
+    if (pattern.isEmpty) return cities.take(10);
+    return cities
+      .where((city) =>
+          city.name.toLowerCase().contains(pattern) ||
+          city.state.toLowerCase().contains(pattern))
+      .take(10);
   }
 
   @override
@@ -59,35 +77,52 @@ class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
                   ),
                   validator: (value) => value == null || value.isEmpty ? 'Enter a name' : null,
                 ),
-                TypeAheadField<City>(
-                suggestionsCallback: (pattern) async {
-                  return _cities!
-                    .where((city) =>
-                        city.name.toLowerCase().contains(pattern.toLowerCase()) ||
-                        city.state.toLowerCase().contains(pattern.toLowerCase()))
-                    .take(10)
-                    .toList();
-                  },
-                  itemBuilder: (context, City city) {
-                    return ListTile(
-                      title: Text('${city.name}, ${city.state}'),
-                    );
-                  },
+                Autocomplete<City>(
+                  displayStringForOption: _cityLabel,
+                  optionsBuilder: _cityOptions,
                   onSelected: (City city) {
-                    setState(() {
-                      _selectedCity = city;
-                      _cityFieldController?.text = '${city.name}, ${city.state}';
-                    });
+                    setState(() => _selectedCity = city);
                   },
-                  builder: (context, controller, focusNode) {
-                    _cityFieldController = controller;
-                    return TextField(
+                  fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                    return TextFormField(
                       controller: controller,
                       focusNode: focusNode,
-                      decoration: InputDecoration(labelText: 'City, State'),
+                      decoration: const InputDecoration(labelText: 'City, State'),
+                      validator: (_) => _selectedCity == null ? 'Select a city' : null,
+                      onFieldSubmitted: (_) => onFieldSubmitted(),
+                      onChanged: (value) {
+                        final selected = _selectedCity;
+                        if (selected != null && value != _cityLabel(selected)) {
+                          setState(() => _selectedCity = null);
+                        }
+                      },
                     );
                   },
-                  emptyBuilder: (context) => ListTile(title: Text('No city found')),
+                  optionsViewBuilder: (context, onSelected, options) {
+                    return Align(
+                      alignment: Alignment.topLeft,
+                      child: Material(
+                        elevation: 4,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 240),
+                          child: options.isEmpty
+                            ? const ListTile(title: Text('No city found'))
+                            : ListView.builder(
+                                padding: EdgeInsets.zero,
+                                shrinkWrap: true,
+                                itemCount: options.length,
+                                itemBuilder: (context, index) {
+                                  final city = options.elementAt(index);
+                                  return ListTile(
+                                    title: Text(_cityLabel(city)),
+                                    onTap: () => onSelected(city),
+                                  );
+                                },
+                              ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 SizedBox(height: 24),
                 ElevatedButton(
