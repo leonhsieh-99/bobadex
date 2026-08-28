@@ -82,7 +82,7 @@ class _SplashContent extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.amber.shade100.withOpacity(0.4),
+                  color: Colors.amber.shade100.withValues(alpha: 0.4),
                   blurRadius: 12,
                   offset: Offset(0, 2),
                 ),

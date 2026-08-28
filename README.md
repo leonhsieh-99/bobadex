@@ -78,15 +78,14 @@ cd bobadex
 flutter pub get
 ```
 
-Env files (`.env.dev`, `.env.prod`) are loaded as Flutter assets. `main.dart` defaults to `.env.prod`. For local work:
+Keys come from `.env.dev` / `.env.prod` at compile time (not bundled as assets). Needed: `SUPABASE_URL`, `SUPABASE_ANON_KEY`. Optional: `SENTRY_DSN`.
 
 ```bash
-flutter run --dart-define=ENV_FILE=.env.dev
+flutter run --dart-define-from-file=.env.dev
+flutter build ipa --dart-define-from-file=.env.prod
 ```
 
-Needed keys: `SUPABASE_URL`, `SUPABASE_ANON_KEY`. Optional: `SENTRY_DSN`.
-
-iOS needs CocoaPods (`cd ios && pod install`) after dependency changes. The project uses Swift Package Manager for Flutter plugins.
+iOS uses Swift Package Manager. CocoaPods is not required.
 
 ## Current progress
 

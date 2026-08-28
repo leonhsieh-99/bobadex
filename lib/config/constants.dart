@@ -16,12 +16,13 @@ class Constants {
     'Brown': Colors.brown,
   };
 
-  static const defaultTheme = 'Blue Grey';
+  static const defaultTheme = 'Brown';
+  static const useIcons = true;
+  static const defaultGridColumns = 2;
 
   static MaterialColor getThemeColor(String slug) =>
       themeMap[slug] ?? themeMap[defaultTheme]!;
 
-  static const defaultGridColumns = 2;
   static const heartColor = Color(0xFFE49B9B);
   static const starColor = Color(0xFFF8EE9B);
   static final badgeBgColor = Colors.grey.shade300;

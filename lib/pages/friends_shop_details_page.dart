@@ -52,12 +52,12 @@ class FriendsShopDetailsPage extends StatelessWidget {
           // This gives you a bright golden/yellow glow
           boxShadow: [
             BoxShadow(
-              color: Colors.amber.withOpacity(0.6),
+              color: Colors.amber.withValues(alpha: 0.6),
               blurRadius: glowRadius,
               spreadRadius: 2,
             ),
             BoxShadow(
-              color: Colors.orange.withOpacity(0.2),
+              color: Colors.orange.withValues(alpha: 0.2),
               blurRadius: glowRadius * 2,
               spreadRadius: 4,
             ),

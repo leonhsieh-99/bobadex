@@ -326,7 +326,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
 
                     ListTile(
                       leading: const Text('Change Password', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                      trailing: Icon(Icons.lock, color: Colors.black.withOpacity(0.6)),
+                      trailing: Icon(Icons.lock, color: Colors.black.withValues(alpha: 0.6)),
                       onTap: () => changePasswordDialog(context),
                     ),
 
@@ -372,7 +372,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
         if (_isLoading)
           Positioned.fill(
             child: Container(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               child: const Center(
                 child: CircularProgressIndicator(
                   backgroundColor: Colors.transparent,

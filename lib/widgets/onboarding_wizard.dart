@@ -76,217 +76,275 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
               ),
             ),
             // Step 2: Theme/Settings
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text("Pick your theme color", style: TextStyle(fontWeight: FontWeight.bold)),
-                  SizedBox(
-                    height: 260,
-                    child: GridView.count(
-                      crossAxisCount: 5,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      children: [
-                        ...Constants.themeMap.entries.map((entry) {
-                          final slug = entry.key;
-                          final color = entry.value;
-                          return GestureDetector(
-                            onTap: () => setState(() => userState.setTheme(slug)),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: color.shade100,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: userState.current.themeSlug == slug
-                                      ? Colors.black
-                                      : Colors.transparent,
-                                  width: 2,
+            SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Pick your theme color",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 260,
+                      child: GridView.count(
+                        crossAxisCount: 5,
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 8,
+                        shrinkWrap: true,
+                        physics: const BouncingScrollPhysics(), // changed
+                        children: [
+                          ...Constants.themeMap.entries.map((entry) {
+                            final slug = entry.key;
+                            final color = entry.value;
+                            final selected = userState.current.themeSlug == slug;
+
+                            return GestureDetector(
+                              onTap: () => setState(() => userState.setTheme(slug)),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: color.shade100,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: selected ? Colors.black : Colors.transparent,
+                                    width: 2,
+                                  ),
                                 ),
+                                child: selected
+                                    ? const Icon(Icons.check, color: Colors.black)
+                                    : null,
                               ),
-                              child: userState.current.themeSlug == slug
-                                ? Icon(Icons.check, color: Colors.black)
-                                : null,
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    const Text(
+                      "Pick your page layout",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        GestureDetector(
+                          onTap: () => setState(() => userState.setGridLayout(2)),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: userState.current.gridColumns == 2
+                                    ? Colors.deepPurple
+                                    : Colors.grey[300]!,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white,
+                              boxShadow: [
+                                if (userState.current.gridColumns == 2)
+                                  BoxShadow(
+                                    color: Colors.deepPurple.withValues(alpha: 0.1),
+                                    blurRadius: 4,
+                                  ),
+                              ],
                             ),
-                          );
-                        }),
+                            child: const Column(
+                              children: [
+                                Icon(Icons.view_column, size: 36),
+                                Text(
+                                  "Cozy",
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                ),
+                                Text(
+                                  "2 per row",
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => setState(() => userState.setGridLayout(3)),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: userState.current.gridColumns == 3
+                                    ? Colors.deepPurple
+                                    : Colors.grey[300]!,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white,
+                              boxShadow: [
+                                if (userState.current.gridColumns == 3)
+                                  BoxShadow(
+                                    color: Colors.deepPurple.withValues(alpha: 0.1),
+                                    blurRadius: 4,
+                                  ),
+                              ],
+                            ),
+                            child: const Column(
+                              children: [
+                                Icon(Icons.grid_view, size: 36),
+                                Text(
+                                  "Compact",
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                ),
+                                Text(
+                                  "3 per row",
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                  SizedBox(height: 20),
-                  // ---- Layout select ----
-                  Text("Pick your page layout", style: TextStyle(fontWeight: FontWeight.bold)),
-                  SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // 2-column
-                      GestureDetector(
-                        onTap: () => setState(() => userState.setGridLayout(2)),
-                        child: Container(
-                          margin: EdgeInsets.symmetric(horizontal: 12),
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: userState.current.gridColumns == 2
-                                  ? Colors.deepPurple
-                                  : Colors.grey[300]!,
-                              width: 2,
+
+                    const SizedBox(height: 20),
+
+                    const Text(
+                      "Pick your card layout",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        GestureDetector(
+                          onTap: () => setState(() => userState.toggleUseIcons()),
+                          child: Container(
+                            constraints: BoxConstraints(
+                              maxWidth: MediaQuery.of(context).size.width / 3,
+                              minWidth: MediaQuery.of(context).size.width / 3,
                             ),
-                            borderRadius: BorderRadius.circular(12),
-                            color: Colors.white,
-                            boxShadow: [if (userState.current.gridColumns == 2)
-                              BoxShadow(color: Colors.deepPurple.withOpacity(0.1), blurRadius: 4)]
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(Icons.view_column, size: 36),
-                              Text("Cozy", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                              Text("2 per row", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300), textAlign: TextAlign.center),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // 3-column
-                      GestureDetector(
-                        onTap: () => setState(() => userState.setGridLayout(3)),
-                        child: Container(
-                          margin: EdgeInsets.symmetric(horizontal: 12),
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: userState.current.gridColumns == 3
-                                  ? Colors.deepPurple
-                                  : Colors.grey[300]!,
-                              width: 2,
+                            margin: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: !userState.current.useIcons
+                                    ? Colors.deepPurple
+                                    : Colors.grey[300]!,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white,
+                              boxShadow: [
+                                if (!userState.current.useIcons)
+                                  BoxShadow(
+                                    color: Colors.deepPurple.withValues(alpha: 0.1),
+                                    blurRadius: 4,
+                                  ),
+                              ],
                             ),
-                            borderRadius: BorderRadius.circular(12),
-                            color: Colors.white,
-                            boxShadow: [if (userState.current.gridColumns == 3)
-                              BoxShadow(color: Colors.deepPurple.withOpacity(0.1), blurRadius: 4)]
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(Icons.grid_view, size: 36),
-                              Text("Compact", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                              Text("3 per row", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300), textAlign: TextAlign.center),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 20),
-                  // ------- Card Layout ---------
-                  Text("Pick your card layout", style: TextStyle(fontWeight: FontWeight.bold)),
-                  SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // 2-column
-                      GestureDetector(
-                        onTap: () => setState(() => userState.toggleUseIcons()),
-                        child: Container(
-                          constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width/3,
-                            minWidth: MediaQuery.of(context).size.width/3
-                          ),
-                          margin: EdgeInsets.symmetric(horizontal: 12),
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: !userState.current.useIcons
-                                  ? Colors.deepPurple
-                                  : Colors.grey[300]!,
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            color: Colors.white,
-                            boxShadow: [if (!userState.current.useIcons)
-                              BoxShadow(color: Colors.deepPurple.withOpacity(0.1), blurRadius: 4)]
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(Icons.photo, size: 36),
-                              Text("Use photos", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                              Text("User uploaded photos as background", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300), textAlign: TextAlign.center),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // 3-column
-                      GestureDetector(
-                        onTap: () => setState(() => userState.toggleUseIcons()),
-                        child: Container(
-                          margin: EdgeInsets.symmetric(horizontal: 12),
-                          constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width/3,
-                            minWidth: MediaQuery.of(context).size.width/3
-                          ),
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: userState.current.useIcons
-                                  ? Colors.deepPurple
-                                  : Colors.grey[300]!,
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            color: Colors.white,
-                            boxShadow: [if (userState.current.useIcons)
-                              BoxShadow(color: Colors.deepPurple.withOpacity(0.1), blurRadius: 4)]
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(Icons.apps, size: 36),
-                              Text("Use icons", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                              Text("Uses built-in icons as foreground", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300), textAlign: TextAlign.center,),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  SizedBox(height: 32),
-                  // ---- Buttons ----
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          userState.saveLayout();
-                          userState.saveTheme();
-                        _back();
-                        },
-                        child: Text("Back")
-                      ),
-                      ElevatedButton(
-                        onPressed: () async {
-                          userState.saveLayout();
-                          userState.saveTheme();
-                          try {
-                            await userState.setOnboarded();
-                            if (context.mounted) {
-                              Navigator.of(context).pushReplacement(
-                                MaterialPageRoute(
-                                  builder: (_) => HomePage(userId: userState.current.id),
+                            child: const Column(
+                              children: [
+                                Icon(Icons.photo, size: 36),
+                                Text(
+                                  "Use photos",
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                                 ),
-                              );
+                                Text(
+                                  "User uploaded photos as background",
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => setState(() => userState.toggleUseIcons()),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 12),
+                            constraints: BoxConstraints(
+                              maxWidth: MediaQuery.of(context).size.width / 3,
+                              minWidth: MediaQuery.of(context).size.width / 3,
+                            ),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: userState.current.useIcons
+                                    ? Colors.deepPurple
+                                    : Colors.grey[300]!,
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white,
+                              boxShadow: [
+                                if (userState.current.useIcons)
+                                  BoxShadow(
+                                    color: Colors.deepPurple.withValues(alpha: 0.1),
+                                    blurRadius: 4,
+                                  ),
+                              ],
+                            ),
+                            child: const Column(
+                              children: [
+                                Icon(Icons.apps, size: 36),
+                                Text(
+                                  "Use icons",
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                ),
+                                Text(
+                                  "Uses built-in icons as foreground",
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            userState.saveLayout();
+                            userState.saveTheme();
+                            _back();
+                          },
+                          child: const Text("Back"),
+                        ),
+                        ElevatedButton(
+                          onPressed: () async {
+                            userState.saveLayout();
+                            userState.saveTheme();
+                            try {
+                              await userState.setOnboarded();
+                              if (context.mounted) {
+                                Navigator.of(context).pushReplacement(
+                                  MaterialPageRoute(
+                                    builder: (_) => HomePage(userId: userState.current.id),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                notify('Error saving onboarding. Try again', SnackType.error);
+                              }
                             }
-                          } catch (e) {
-                            if (context.mounted) {
-                              notify('Error saving onboarding. Try again', SnackType.error);
-                            }
-                          }
-                        },
-                        child: Text("Done")),
-                    ],
-                  ),
-                ],
-              )
+                          },
+                          child: const Text("Done"),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

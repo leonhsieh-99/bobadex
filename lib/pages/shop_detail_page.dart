@@ -60,9 +60,9 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   Widget _removedPill(BuildContext ctx) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
-      color: Colors.red.withOpacity(.12),
+      color: Colors.red.withValues(alpha: .12),
       borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: Colors.red.withOpacity(.5)),
+      border: Border.all(color: Colors.red.withValues(alpha: .5)),
     ),
     child: const Text('Brand removed', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red)),
   );
@@ -287,8 +287,8 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                           end: Alignment.bottomCenter,
                                           colors: [
                                             Colors.transparent,
-                                            Colors.black.withOpacity(0.22),
-                                            Colors.black.withOpacity(0.38),
+                                            Colors.black.withValues(alpha: 0.22),
+                                            Colors.black.withValues(alpha: 0.38),
                                           ],
                                         ),
                                       ),
@@ -307,7 +307,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                               child: Container(
                                 padding: EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.3),
+                                  color: Colors.black.withValues(alpha: 0.3),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text('View all photos', style: TextStyle(fontSize: 14, color: Colors.white)),
@@ -695,7 +695,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                         'lib/assets/icons/heart.svg',
                                         width: 24,
                                         height: 24,
-                                        colorFilter: ColorFilter.mode(Colors.white.withOpacity(.3), BlendMode.srcIn),
+                                        colorFilter: ColorFilter.mode(Colors.white.withValues(alpha: .3), BlendMode.srcIn),
                                       ),
                                     SvgPicture.asset(
                                       shop.isFavorite 
@@ -715,7 +715,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                       width: 20,
                                       height: 8,
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(.3),
+                                        color: Colors.white.withValues(alpha: .3),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                     ),

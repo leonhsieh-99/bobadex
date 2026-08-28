@@ -97,7 +97,7 @@ class _BobadexAppState extends State<BobadexApp> {
                 )
               ),
               popupMenuTheme: PopupMenuThemeData(
-                color: Colors.white.withOpacity(0.95), // soft translucent
+                color: Colors.white.withValues(alpha: 0.95), // soft translucent
                 elevation: 8, // stronger shadow
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),

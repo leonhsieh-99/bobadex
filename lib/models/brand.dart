@@ -76,6 +76,7 @@ class Brand {
   final List<BrandAlias> aliases;
   final String? iconPath;
   BrandStatus status;
+  final String? website;
 
   Brand({
     required this.slug,
@@ -83,6 +84,7 @@ class Brand {
     List<BrandAlias>? aliases,
     this.iconPath,
     this.status = BrandStatus.active,
+    this.website,
   }) : aliases = aliases ?? [];
 
   String get imageUrl => iconPath != null && iconPath!.isNotEmpty
@@ -140,6 +142,7 @@ class Brand {
       aliases: _parseAliases(rawAliases),
       iconPath: json['icon_path'],
       status: _brandStatusFromDb(json['status'] as String?),
+      website: json['website'] as String?,
     );
   }
 
@@ -150,6 +153,7 @@ class Brand {
       'aliases': aliases.map((a) => a.toJson()).toList(),
       'icon_path': iconPath,
       'status': status.db,
+      'website': website,
     };
   }
 }

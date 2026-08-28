@@ -68,7 +68,7 @@ class IconPic extends StatelessWidget {
     width: size,
     height: size,
     decoration: BoxDecoration(
-      color: Colors.black.withOpacity(0.05),
+      color: Colors.black.withValues(alpha: 0.05),
       shape: circular ? BoxShape.circle : BoxShape.rectangle,
       borderRadius: circular ? null : BorderRadius.circular(12),
     ),

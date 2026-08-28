@@ -240,7 +240,7 @@ class FeedEventCard extends StatelessWidget {
                 const Spacer(),
                 Text(
                   _timeAgo(event.createdAt),
-                  style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary.withOpacity(0.75)),
+                  style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary.withValues(alpha: 0.75)),
                 ),
               ],
             ),
@@ -264,7 +264,7 @@ class _VerbPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.7),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
@@ -321,7 +321,7 @@ Widget build(BuildContext context) {
     final style = theme.textTheme.labelLarge?.copyWith(
       fontWeight: FontWeight.w700,
       color: onTap == null
-          ? theme.textTheme.bodyMedium?.color?.withOpacity(0.7)
+          ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7)
           : theme.colorScheme.primary,
     );
 
@@ -360,7 +360,7 @@ Widget build(BuildContext context) {
       padding: EdgeInsets.only(left: hp, right: rightPad, top: 6, bottom: 6),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest
-            .withOpacity(onTap == null ? 0.4 : 0.55),
+            .withValues(alpha: onTap == null ? 0.4 : 0.55),
         borderRadius: BorderRadius.circular(999),
       ),
       child: content,

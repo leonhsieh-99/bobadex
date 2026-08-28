@@ -5,8 +5,6 @@ import 'package:bobadex/widgets/report_widget.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
-import 'package:photo_view/photo_view.dart';
-import 'package:photo_view/photo_view_gallery.dart';
 
 // MODE ENUM
 enum FullscreenImageMode { upload, edit, view }
@@ -62,8 +60,7 @@ class FullscreenImageViewer extends StatefulWidget {
 class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
   late int currentIndex;
   int? editingIndex;
-  late PageController _pageController;
-  late ExtendedPageController _extendedPageController;
+  late ExtendedPageController _pageController;
   late List<TextEditingController> _commentControllers;
   late List<String> _visibilityOptions;
 
@@ -71,8 +68,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
   void initState() {
     super.initState();
     currentIndex = widget.initialIndex;
-    _pageController = PageController(initialPage: currentIndex);
-    _extendedPageController = ExtendedPageController(initialPage: currentIndex);
+    _pageController = ExtendedPageController(initialPage: currentIndex);
     _commentControllers = widget.images
         .map((img) => TextEditingController(text: img.comment))
         .toList();
@@ -111,6 +107,26 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
     widget.onUpload?.call(widget.images);
     Navigator.pop(context, widget.images);
   }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    for (final c in _commentControllers) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  GestureConfig _gestureConfig({double maxScale = 1.5}) => GestureConfig(
+        inPageView: true,
+        initialScale: 1.0,
+        minScale: 1.0,
+        maxScale: maxScale,
+        animationMinScale: 1.0,
+        cacheGesture: true,
+        speed: 0.85,
+        inertialSpeed: 70.0,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -202,7 +218,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                   Container(
                     padding: EdgeInsets.symmetric(vertical: 2, horizontal: 6),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.25),
+                      color: Colors.black.withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(img.visibility, style: TextStyle(fontSize: 12)),
@@ -297,31 +313,30 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
               child: Stack(
                 children: [
                   uploadMode
-                  ? PhotoViewGallery.builder(
-                      backgroundDecoration: BoxDecoration(color: bgColor),
+                  ? ExtendedImageGesturePageView.builder(
                       itemCount: widget.images.length,
-                      pageController: _pageController,
+                      controller: _pageController,
                       onPageChanged: (index) {
                         setState(() {
                           currentIndex = index;
                           editingIndex = null;
                         });
                       },
-                      builder: (context, index) {
+                      itemBuilder: (context, index) {
                         final img = widget.images[index];
-                        return PhotoViewGalleryPageOptions.customChild(
-                          minScale: PhotoViewComputedScale.contained,
-                          maxScale: PhotoViewComputedScale.covered * 2,
-                          child: Image.file(img.file!)
+                        return ExtendedImage.file(
+                          img.file!,
+                          fit: BoxFit.contain,
+                          mode: ExtendedImageMode.gesture,
+                          initGestureConfigHandler: (_) => _gestureConfig(maxScale: 2.0),
                         );
                       },
-                      loadingBuilder: (context, _) => Center(child: CircularProgressIndicator()),
                     )
                   : ExtendedImageSlidePage(
                     slideAxis: SlideAxis.vertical,
                     child: ExtendedImageGesturePageView.builder(
                       itemCount: widget.images.length,
-                      controller: _extendedPageController,
+                      controller: _pageController,
                       itemBuilder: (context, index) {
                         final img = widget.images[index];
                         return Hero(
@@ -330,16 +345,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                             img.url!,
                             fit: BoxFit.contain,
                             mode: ExtendedImageMode.gesture,
-                            initGestureConfigHandler: (state) => GestureConfig(
-                              inPageView: true,
-                              initialScale: 1.0,
-                              minScale: 1.0,
-                              maxScale: 1.5,
-                              animationMinScale: 1.0,
-                              cacheGesture: true,
-                              speed: 0.85,
-                              inertialSpeed: 70.0,
-                            ),
+                            initGestureConfigHandler: (_) => _gestureConfig(),
                             loadStateChanged: (state) {
                               if (state.extendedImageLoadState == LoadState.loading) {
                                 return null; // do something later maybe

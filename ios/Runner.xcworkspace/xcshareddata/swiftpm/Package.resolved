@@ -28,15 +28,6 @@
       }
     },
     {
-      "identity" : "flutterfire",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/firebase/flutterfire",
-      "state" : {
-        "revision" : "05731e3fb091093546db363e379bff166f7286a3",
-        "version" : "4.4.0-firebase-core-swift"
-      }
-    },
-    {
       "identity" : "google-ads-on-device-conversion-ios-sdk",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/googleads/google-ads-on-device-conversion-ios-sdk",
@@ -131,8 +122,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/getsentry/sentry-cocoa",
       "state" : {
-        "revision" : "9e193ac0b71760603aa666bad7e9e303dd7031a8",
-        "version" : "8.56.2"
+        "revision" : "f196cbb98e0388381d57908f2f5a9bdc385cde68",
+        "version" : "8.58.4"
       }
     }
   ],

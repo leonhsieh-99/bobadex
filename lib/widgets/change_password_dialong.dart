@@ -101,7 +101,7 @@ Future<void> changePasswordDialog(BuildContext context) async {
           ),
           if (isLoading)
             Container(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               child: const Center(
                 child: CircularProgressIndicator(
                   backgroundColor: Colors.transparent,

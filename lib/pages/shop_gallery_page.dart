@@ -232,7 +232,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
         ),
         if (_isLoading)
           Container(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             child: Center(child: CircularProgressIndicator()),
           ),
       ]

@@ -8,7 +8,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class BrandFeedView extends StatefulWidget {
   final String brandSlug;
   final int pageSize;
-  const BrandFeedView({super.key, required this.brandSlug, this.pageSize = 10});
+  final bool hideWhenEmpty;
+  final ValueChanged<int>? onItemCount;
+  const BrandFeedView({
+    super.key,
+    required this.brandSlug,
+    this.pageSize = 10,
+    this.hideWhenEmpty = false,
+    this.onItemCount,
+  });
 
   @override
   State<BrandFeedView> createState() => _BrandFeedViewState();
@@ -74,6 +82,7 @@ class _BrandFeedViewState extends State<BrandFeedView> {
         _isLoading = false;
         _isLoadingMore = false;
       });
+      widget.onItemCount?.call(_items.length);
     } catch (e) {
       debugPrint('BrandFeedView fetch error: $e');
       if (!mounted) return;
@@ -82,18 +91,21 @@ class _BrandFeedViewState extends State<BrandFeedView> {
         _isLoadingMore = false;
         _hasMore = false;
       });
+      widget.onItemCount?.call(_items.length);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
+      if (widget.hideWhenEmpty) return const SizedBox.shrink();
       return Column(
         children: List.generate(3, (_) => const FeedEventCardSkeleton()),
       );
     }
 
     if (_items.isEmpty) {
+      if (widget.hideWhenEmpty) return const SizedBox.shrink();
       return SizedBox(
         height: MediaQuery.of(context).size.height * 0.2,
         child: Center(

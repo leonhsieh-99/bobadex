@@ -456,7 +456,7 @@ class _BadgesSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,7 +490,7 @@ class _BadgesSection extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Text(
                 isOwner ? 'No badges yet, tap Pin to choose.' : 'No badges yet',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurface.withOpacity(0.6)),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurface.withValues(alpha: 0.6)),
               ),
             )
           else
@@ -532,9 +532,9 @@ class _BadgesSection extends StatelessWidget {
                           Container(
                             padding: EdgeInsets.symmetric(horizontal: labelHPad, vertical: labelVPad),
                             decoration: BoxDecoration(
-                              color: cs.surface.withOpacity(0.8),
+                              color: cs.surface.withValues(alpha: 0.8),
                               borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: cs.outlineVariant.withOpacity(0.4)),
+                              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
                             ),
                             child: Text(
                               a.name,

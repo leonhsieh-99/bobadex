@@ -350,14 +350,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.4.2"
-  flutter_dotenv:
-    dependency: "direct main"
-    description:
-      name: flutter_dotenv
-      sha256: d41da11fb497314fbf89811ec30af02d1d898b47980a129f0a8c0a1720460ba2
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.0.1"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
@@ -408,14 +400,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_typeahead:
-    dependency: "direct main"
-    description:
-      name: flutter_typeahead
-      sha256: "7b3f84e0bff51c544f4d1382c00413c36c1714328a6a89600865e497437d29d2"
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.0.0"
   flutter_web_plugins:
     dependency: transitive
     description: flutter
@@ -437,14 +421,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "18.0.0"
-  google_fonts:
-    dependency: "direct main"
-    description:
-      name: google_fonts
-      sha256: ba03d03bcaa2f6cb7bd920e3b5027181db75ab524f8891c8bc3aa603885b8055
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.3.3"
   gotrue:
     dependency: transitive
     description:
@@ -829,14 +805,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.2"
-  photo_view:
-    dependency: "direct main"
-    description:
-      name: photo_view
-      sha256: "1fc3d970a91295fbd1364296575f854c9863f225505c28c46e0a03e48960c75e"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.15.0"
   platform:
     dependency: transitive
     description:
