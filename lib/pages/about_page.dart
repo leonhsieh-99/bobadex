@@ -1,4 +1,6 @@
 import 'package:bobadex/notification_bus.dart';
+import 'package:bobadex/config/ai_disclosure.dart';
+import 'package:bobadex/pages/setting_pages/settings_ai_data_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -120,9 +122,40 @@ class AboutPage extends StatelessWidget {
                     '• Reporting is manual for now.\n'
                     '• Currently the database only has California locations\n'
                     '• Data may be wiped between updates.\n'
-                    '• Mascots are still experimental.\n'
                     '• Please report bugs or feedback!',
                     style: theme.textTheme.bodySmall?.copyWith(color: Colors.orange[900]),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Card(
+                elevation: 0,
+                color: theme.colorScheme.primary.withValues(alpha: 0.07),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        AiDisclosure.settingsTitle,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        AiDisclosure.shortSummary,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const SettingsAiDataPage()),
+                        ),
+                        child: const Text('Learn more'),
+                      ),
+                    ],
                   ),
                 ),
               ),

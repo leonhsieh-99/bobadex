@@ -5,7 +5,8 @@ import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/drink_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/state/shop_state.dart';
-import 'package:bobadex/widgets/icon_pic.dart';
+import 'package:bobadex/state/user_state.dart';
+import 'package:bobadex/widgets/brand_mark.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -47,15 +48,17 @@ class ShopGridTile extends StatelessWidget {
     const baseTileWidth = 120.0;
     final itemWidth = (screenWidth - (spacing * (columns + 1))) / columns;
     final scaleFactor = itemWidth / baseTileWidth;
-    final imageScale = columns == 2 ? scaleFactor * 1.2 : scaleFactor;
-    final textScale = columns == 2 ? scaleFactor * 1 : scaleFactor;
+    final imageScale = scaleFactor;
+    final textScale = scaleFactor;
 
     final brandIconPath = brand?.iconPath;
     final hasBanner = bannerPath != null && bannerPath.isNotEmpty;
     final hasBrandIcon = brandIconPath != null && brandIconPath.isNotEmpty;
+    final useMascots = context.select<UserState, bool>((s) => s.current.useMascots);
+    final brandLabel = brand?.display ?? shop.name;
     final displayUrl = hasBanner
         ? publicUrl('media-uploads', thumbPath(bannerPath, 512))
-        : (hasBrandIcon
+        : (useMascots && hasBrandIcon
             ? publicUrl('shop-media', thumbPath(brandIconPath, 512))
             : null);
 
@@ -128,9 +131,15 @@ class ShopGridTile extends StatelessWidget {
                       ),
                     ),
                     Positioned(
-                      bottom: 8,
-                      right: 8,
-                      child: IconPic(path: brandIconPath, size: 55 * imageScale),
+                      bottom: 6,
+                      right: 6,
+                      child: BrandMark(
+                        name: brandLabel,
+                        slug: shop.brandSlug,
+                        iconPath: brandIconPath,
+                        size: 46 * imageScale,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                     if (shop.isFavorite)
                       Positioned(
@@ -158,18 +167,18 @@ class ShopGridTile extends StatelessWidget {
                             height: double.infinity,
                             placeholder: (context, url) =>
                                 const Center(child: CircularProgressIndicator()),
-                            errorWidget: (context, url, error) => Image.asset(
-                              'lib/assets/default_icon.png',
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
+                            errorWidget: (context, url, error) => BrandLettering(
+                              name: brandLabel,
+                              seed: shop.brandSlug ?? brandLabel,
+                              expand: true,
+                              circular: false,
                             ),
                           )
-                        : Image.asset(
-                            'lib/assets/default_icon.png',
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
+                        : BrandLettering(
+                            name: brandLabel,
+                            seed: shop.brandSlug ?? brandLabel,
+                            expand: true,
+                            circular: false,
                           ),
                     Align(
                       alignment: Alignment.bottomCenter,

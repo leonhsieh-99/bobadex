@@ -13,7 +13,7 @@ import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/brand_about_section.dart';
-import 'package:bobadex/widgets/icon_pic.dart';
+import 'package:bobadex/widgets/brand_mark.dart';
 import 'package:bobadex/widgets/social_widgets/brand_feed_view.dart';
 import 'package:bobadex/widgets/image_widgets/horizontal_photo_preview.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -200,26 +200,25 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
           final medias = snapshot.data ?? [];
           if (medias.isEmpty) return const SizedBox.shrink();
           return Padding(
-            padding: const EdgeInsets.only(top: 16),
+            padding: const EdgeInsets.only(top: 12),
             child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Text('Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                  Spacer(),
-                  if(medias.isNotEmpty)
+                  const Text('Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  const Spacer(),
+                  if (medias.isNotEmpty)
                     TextButton(
-                      style: ButtonStyle(
-                        backgroundColor: WidgetStatePropertyAll(Colors.transparent),
-                        foregroundColor: WidgetStatePropertyAll(Colors.black),
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.black,
+                        visualDensity: VisualDensity.compact,
                       ),
-                      onPressed: () {
-                        viewAllPhotos(medias);
-                      },
-                      child: Text(
-                        'View All',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      onPressed: () => viewAllPhotos(medias),
+                      child: const Text(
+                        'View all',
+                        style: TextStyle(fontWeight: FontWeight.w600),
                       ),
                     )
                 ],
@@ -227,8 +226,14 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
               const SizedBox(height: 8),
               SizedBox(
                 width: MediaQuery.of(context).size.width,
-                height: 200,
-                child: HorizontalPhotoPreview(maxPreview: 3, height: 200, width: 150, shopMediaList: medias, onViewAll: () => viewAllPhotos(medias))
+                height: 140,
+                child: HorizontalPhotoPreview(
+                  maxPreview: 4,
+                  height: 140,
+                  width: 110,
+                  shopMediaList: medias,
+                  onViewAll: () => viewAllPhotos(medias),
+                ),
               ),
             ],
             ),
@@ -315,36 +320,38 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                     ),
                   ),
                   Positioned(
-                    top: 25,
-                    right: 10,
-                    child: PopupMenuButton(
-                      icon: Icon(Icons.more_horiz, color: Colors.white, size: 24),
-                      onSelected: (value) async {
-                        switch(value) {
-                          case 'report':
-                            final result = await reportBrandClosed();
-                            print(result);
-                            if (result != null && (result == 'incremented' || result == 'created')) {
-                              notify('Report pending review', SnackType.info);
-                            } else if (result != null ) {
-                              debugPrint(result);
-                              notify(result, SnackType.error);
-                            }
-                            break;
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        PopupMenuItem(
-                          value: 'report',
-                          child: Text('Report closed')
-                        )
-                      ]
+                    top: 0,
+                    right: 4,
+                    child: SafeArea(
+                      child: PopupMenuButton(
+                        icon: const Icon(Icons.more_horiz, color: Colors.white, size: 24),
+                        onSelected: (value) async {
+                          switch(value) {
+                            case 'report':
+                              final result = await reportBrandClosed();
+                              print(result);
+                              if (result != null && (result == 'incremented' || result == 'created')) {
+                                notify('Report pending review', SnackType.info);
+                              } else if (result != null ) {
+                                debugPrint(result);
+                                notify(result, SnackType.error);
+                              }
+                              break;
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          PopupMenuItem(
+                            value: 'report',
+                            child: Text('Report closed')
+                          )
+                        ]
+                      ),
                     ),
-                  )
+                  ),
                 ]
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -365,10 +372,6 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                       },
                     ),
                     buildGlobalGallery(widget.brand, _globalGalleryFuture),
-                    if (_feedCount != null && _feedCount! > 0) ...[
-                      const SizedBox(height: 24),
-                      const Text("Recent Activity", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                    ],
                     if (_photoCount == 0 && _feedCount == 0)
                       const Padding(
                         padding: EdgeInsets.only(top: 16),
@@ -448,16 +451,14 @@ Widget _buildBrandBanner(
       final medias = snapshot.data ?? [];
       String? bgUrl;
       if (medias.isNotEmpty) {
-        final images = List<ShopMedia>.of(medias);
-        images.shuffle();
-        bgUrl = images.first.imageUrl;
+        bgUrl = medias.first.imageUrl;
       }
 
       return InkWell(
         onTap: medias.isNotEmpty ? () => onTapWithMedias(medias) : null, // ⬅️ wire here
         child: Container(
-          height: 250,
-          margin: const EdgeInsets.only(bottom: 16),
+          height: 220,
+          margin: const EdgeInsets.only(bottom: 8),
           decoration: const BoxDecoration(color: Colors.grey),
           clipBehavior: Clip.antiAlias,
           child: Stack(
@@ -504,7 +505,7 @@ Widget buildBannerContent(BuildContext context, Brand brand, Future<BrandStats> 
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.end, // bottom align children
       children: [
-        IconPic(path: brand.iconPath),
+        BrandMark(name: brand.display, slug: brand.slug, iconPath: brand.iconPath, fit: BoxFit.contain),
         const SizedBox(width: 8),
         Expanded(
           child: Column(

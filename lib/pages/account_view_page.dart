@@ -16,7 +16,7 @@ import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/user_stats_cache.dart';
 import 'package:bobadex/widgets/badge_picker_dialog.dart';
-import 'package:bobadex/widgets/icon_pic.dart';
+import 'package:bobadex/widgets/brand_mark.dart';
 import 'package:bobadex/widgets/profile_summary_card.dart';
 import 'package:bobadex/widgets/report_widget.dart';
 import 'package:bobadex/widgets/stat_box.dart';
@@ -217,7 +217,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
       ? const ShopTileSkeleton()
       : (brand != null)
           ? ListTile(
-              leading: IconPic(path: brand.iconPath, size: 48),
+              leading: BrandMark(name: brand.display, slug: brand.slug, iconPath: brand.iconPath, size: 48),
               title: Text(brand.display, maxLines: 1, overflow: TextOverflow.ellipsis),
               subtitle: Text(drinkName, maxLines: 1, overflow: TextOverflow.ellipsis),
               onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand))),

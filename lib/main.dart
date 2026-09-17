@@ -5,7 +5,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'bobadex.dart';
+import 'package:bobadex/auth/auth_redaction.dart';
+import 'package:bobadex/bobadex.dart';
 import 'firebase_options.dart';
 import 'helpers/app_prefs.dart';
 
@@ -48,6 +49,13 @@ void main() async {
       (o) {
         o.dsn = dsn;
         o.tracesSampleRate = 0.1;
+        o.beforeBreadcrumb = (breadcrumb, hint) {
+          if (containsAuthSecrets(breadcrumb?.message) ||
+              containsAuthSecrets(breadcrumb?.data?.toString())) {
+            return null;
+          }
+          return breadcrumb;
+        };
       },
       appRunner: _runBootstrapApp,
     );

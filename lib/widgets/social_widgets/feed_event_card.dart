@@ -222,7 +222,7 @@ class FeedEventCard extends StatelessWidget {
 
     // --- card shell -----------------------------------------------------------
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 10),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 2.5,
       clipBehavior: Clip.antiAlias,

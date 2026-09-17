@@ -55,6 +55,7 @@ create table user_settings (
   theme_slug text default 'grey',
   grid_columns int default 2,
   use_icons boolean default false,
+  use_mascots boolean not null default true,
   onboarded boolean default false,
   created_at timestamptz default now()
 );

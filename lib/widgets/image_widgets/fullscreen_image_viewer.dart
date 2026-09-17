@@ -5,14 +5,13 @@ import 'package:bobadex/widgets/report_widget.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-// MODE ENUM
 enum FullscreenImageMode { upload, edit, view }
 
-// --- GALLERY IMAGE MODEL (add user fields) ---
 class GalleryImage {
-  final String? id; // DB id (nullable for new uploads)
-  final String? url; // For network images
+  final String? id;
+  final String? url;
   final File? file;
   String comment;
   String visibility;
@@ -32,7 +31,6 @@ class GalleryImage {
   });
 }
 
-// --- MAIN WIDGET ---
 class FullscreenImageViewer extends StatefulWidget {
   final List<GalleryImage> images;
   final int initialIndex;
@@ -128,6 +126,188 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
         inertialSpeed: 70.0,
       );
 
+  void _onPageChanged(int index) {
+    setState(() {
+      currentIndex = index;
+      editingIndex = null;
+    });
+  }
+
+  Widget _gallery({required bool uploadMode}) {
+    if (uploadMode) {
+      return ExtendedImageGesturePageView.builder(
+        itemCount: widget.images.length,
+        controller: _pageController,
+        onPageChanged: _onPageChanged,
+        itemBuilder: (context, index) {
+          final img = widget.images[index];
+          return ExtendedImage.file(
+            img.file!,
+            fit: BoxFit.contain,
+            mode: ExtendedImageMode.gesture,
+            initGestureConfigHandler: (_) => _gestureConfig(maxScale: 2.0),
+          );
+        },
+      );
+    }
+
+    return ExtendedImageSlidePage(
+      slideAxis: SlideAxis.vertical,
+      slidePageBackgroundHandler: (offset, pageSize) => Colors.black,
+      child: ExtendedImageGesturePageView.builder(
+        itemCount: widget.images.length,
+        controller: _pageController,
+        onPageChanged: _onPageChanged,
+        itemBuilder: (context, index) {
+          final img = widget.images[index];
+          final image = ExtendedImage.network(
+            img.url!,
+            fit: BoxFit.contain,
+            mode: ExtendedImageMode.gesture,
+            initGestureConfigHandler: (_) => _gestureConfig(),
+            enableSlideOutPage: true,
+            loadStateChanged: (state) {
+              if (state.extendedImageLoadState == LoadState.loading) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Colors.white54),
+                );
+              }
+              return null;
+            },
+          );
+          if (img.id == null) return image;
+          return Hero(tag: img.id!, child: image);
+        },
+      ),
+    );
+  }
+
+  Widget _pageDots({Color? color}) {
+    if (widget.images.length < 2) return const SizedBox.shrink();
+    final activeColor = color ?? Colors.white;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(widget.images.length, (i) {
+        final active = i == currentIndex;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          width: active ? 16 : 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color: activeColor.withValues(alpha: active ? 0.95 : 0.35),
+            borderRadius: BorderRadius.circular(99),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _viewCaption(GalleryImage img, {required bool canEdit, required bool editMode}) {
+    final comment = img.comment.trim();
+    final showUser = widget.showUserInfo && !canEdit;
+    final hasCaption = comment.isNotEmpty;
+    if (!showUser && !hasCaption && !canEdit && widget.images.length < 2) {
+      return const SizedBox.shrink();
+    }
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            Colors.black.withValues(alpha: 0.72),
+          ],
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 36, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _pageDots(),
+              if (showUser) ...[
+                if (widget.images.length > 1) const SizedBox(height: 12),
+                Row(
+                  children: [
+                    ThumbPic(
+                      path: img.userImagePath ?? '',
+                      size: 32,
+                      onTap: img.userId == null
+                          ? null
+                          : () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => AccountViewPage(userId: img.userId!),
+                                ),
+                              );
+                            },
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        img.userName ?? '',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (hasCaption) ...[
+                SizedBox(height: showUser ? 8 : (widget.images.length > 1 ? 12 : 0)),
+                Text(
+                  comment,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    height: 1.3,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              if (canEdit && editMode)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          img.visibility,
+                          style: const TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.white),
+                        onPressed: () => _startEdit(currentIndex),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final img = widget.images[currentIndex];
@@ -135,251 +315,110 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
     final uploadMode = widget.mode == FullscreenImageMode.upload;
     final editMode = widget.mode == FullscreenImageMode.edit;
     final canEdit = widget.isCurrentUser && (editMode || uploadMode);
-    final bgColor = Colors.grey[50];
+    final showForm = uploadMode || (editMode && isEditing);
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
-    final infoEditArea = Container(
-      width: double.infinity,
-      color: bgColor,
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 18,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16
-      ),
-      child: SingleChildScrollView(
-        child: Builder(builder: (context) {
-          // --- UPLOAD/EDIT MODES ---
-          if (uploadMode) {
-            return _UploadOrEditFields(
-              commentController: _commentControllers[currentIndex],
-              visibility: _visibilityOptions[currentIndex],
-              onVisibilityChanged: (v) =>
-                  setState(() => _visibilityOptions[currentIndex] = v),
-              onPrev: currentIndex > 0
-                  ? () => _pageController.previousPage(
-                      duration: Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    )
-                  : null,
-              onNext: currentIndex < widget.images.length - 1
-                  ? () => _pageController.nextPage(
-                      duration: Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    )
-                  : null,
-              onUpload: _submitUploads,
-            );
-          }
-          if (editMode && isEditing) {
-            return _UploadOrEditFields(
-              commentController: _commentControllers[currentIndex],
-              visibility: _visibilityOptions[currentIndex],
-              onVisibilityChanged: (v) =>
-                  setState(() => _visibilityOptions[currentIndex] = v),
-              onSave: () => _saveEdit(currentIndex),
-              onCancel: _cancelEdit,
-            );
-          }
-          // --- VIEW MODE ---
-          return canEdit
-            ? Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (!canEdit && widget.showUserInfo)
-                  ThumbPic(
-                    path: img.userImagePath ?? '',
-                    size: 40,
-                    onTap: img.userId == null
-                        ? null // disables tap + ripple in most GestureDetectors
-                        : () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => AccountViewPage(userId: img.userId!),
-                              ),
-                            );
-                          },
-                  ),
-                if (!canEdit && widget.showUserInfo) SizedBox(width: 12),
-                if (!canEdit && widget.showUserInfo)
-                  Text(
-                    img.userName ?? '',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-                  ),
-                if (!canEdit && widget.showUserInfo) SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    img.comment,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 20, color: Colors.grey[800]),
-                  ),
-                ),
-                if (canEdit && widget.mode == FullscreenImageMode.edit)
-                  Container(
-                    padding: EdgeInsets.symmetric(vertical: 2, horizontal: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(img.visibility, style: TextStyle(fontSize: 12)),
-                  ),
-                if (canEdit && widget.mode == FullscreenImageMode.edit)
-                  SizedBox(width: 4),
-                if (canEdit && widget.mode == FullscreenImageMode.edit)
-                  IconButton(
-                    icon: Icon(Icons.edit, color: Colors.grey[800]),
-                    onPressed: () => _startEdit(currentIndex),
-                  ),
-              ],
-            )
-          : Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (widget.showUserInfo)
-                Row(
-                  children: [
-                    ThumbPic(
-                      path: img.userImagePath ?? '',
-                      size: 40,
-                      onTap: img.userId == null
-                        ? null
-                        : () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => AccountViewPage(userId: img.userId!),
-                              ),
-                            );
-                          },
-                    ),
-                    SizedBox(width: 12),
-                    Text(
-                      img.userName ?? '',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 20
-                      ),
-                    ),
-                  ],
-                ),
-              if (widget.showUserInfo) SizedBox(height: 4),
-              Text(
-                img.comment,
-                style: TextStyle(fontSize: 20, color: Colors.grey[800]),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          );
-        }),
-      )
-    );
-
-    return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(40),
-        child: AppBar(
-          actions: [
-            PopupMenuButton(
-              onSelected: (value) {
-                switch(value) {
-                  case 'report':
-                    showDialog(
-                      context: context,
-                      builder: (_) => ReportDialog(
-                        contentType: 'photo',
-                        contentId: img.id ?? '',
-                        reportedUserId: img.userId,
-                      ),
-                    );
-                    break;
-                }
-              },
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                  value: 'report',
-                  child: Text('Report'),
-                ),
-              ]
-            ),
-          ]
-        )
-      ),
-      backgroundColor: bgColor,
-      resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: Column(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        resizeToAvoidBottomInset: true,
+        body: Stack(
           children: [
-            // IMAGE GALLERY
-            Expanded(
-              child: Stack(
-                children: [
-                  uploadMode
-                  ? ExtendedImageGesturePageView.builder(
-                      itemCount: widget.images.length,
-                      controller: _pageController,
-                      onPageChanged: (index) {
-                        setState(() {
-                          currentIndex = index;
-                          editingIndex = null;
-                        });
-                      },
-                      itemBuilder: (context, index) {
-                        final img = widget.images[index];
-                        return ExtendedImage.file(
-                          img.file!,
-                          fit: BoxFit.contain,
-                          mode: ExtendedImageMode.gesture,
-                          initGestureConfigHandler: (_) => _gestureConfig(maxScale: 2.0),
-                        );
-                      },
-                    )
-                  : ExtendedImageSlidePage(
-                    slideAxis: SlideAxis.vertical,
-                    child: ExtendedImageGesturePageView.builder(
-                      itemCount: widget.images.length,
-                      controller: _pageController,
-                      itemBuilder: (context, index) {
-                        final img = widget.images[index];
-                        return Hero(
-                          tag: img.id!,
-                          child: ExtendedImage.network(
-                            img.url!,
-                            fit: BoxFit.contain,
-                            mode: ExtendedImageMode.gesture,
-                            initGestureConfigHandler: (_) => _gestureConfig(),
-                            loadStateChanged: (state) {
-                              if (state.extendedImageLoadState == LoadState.loading) {
-                                return null; // do something later maybe
-                              }
-                              return null;
-                            },
-                            enableSlideOutPage: true,
-                          )
-                        ); 
-                      },
-                      onPageChanged: (int index) {
-                        setState(() => currentIndex = index);
-                        _cancelEdit();
-                      },
-                    )
+            Positioned.fill(child: _gallery(uploadMode: uploadMode)),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Row(
+                    children: [
+                      _ChromeIconButton(
+                        icon: Icons.close,
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const Spacer(),
+                      if (!uploadMode && (img.id?.isNotEmpty ?? false))
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_horiz, color: Colors.white),
+                          onSelected: (value) {
+                            if (value == 'report') {
+                              showDialog(
+                                context: context,
+                                builder: (_) => ReportDialog(
+                                  contentType: 'photo',
+                                  contentId: img.id ?? '',
+                                  reportedUserId: img.userId,
+                                ),
+                              );
+                            }
+                          },
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(
+                              value: 'report',
+                              child: Text('Report'),
+                            ),
+                          ],
+                        ),
+                    ],
                   ),
-                ]
-              )
-            ),
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.25,
-                minHeight: 0,
-              ),
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  top: 18,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
                 ),
-                child: infoEditArea,
               ),
             ),
+            if (showForm)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Material(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(16, 8, 16, 12 + bottomInset),
+                    child: SafeArea(
+                      top: false,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: 8),
+                          _pageDots(color: Colors.black87),
+                          if (widget.images.length > 1) const SizedBox(height: 12),
+                          _UploadOrEditFields(
+                            commentController: _commentControllers[currentIndex],
+                            visibility: _visibilityOptions[currentIndex],
+                            onVisibilityChanged: (v) =>
+                                setState(() => _visibilityOptions[currentIndex] = v),
+                            onPrev: uploadMode && currentIndex > 0
+                                ? () => _pageController.previousPage(
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                    )
+                                : null,
+                            onNext: uploadMode && currentIndex < widget.images.length - 1
+                                ? () => _pageController.nextPage(
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                    )
+                                : null,
+                            onUpload: uploadMode ? _submitUploads : null,
+                            onSave: editMode ? () => _saveEdit(currentIndex) : null,
+                            onCancel: editMode ? _cancelEdit : null,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            else
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _viewCaption(img, canEdit: canEdit, editMode: editMode),
+              ),
           ],
         ),
       ),
@@ -387,7 +426,25 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
   }
 }
 
-// Helper widget for upload/edit fields
+class _ChromeIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _ChromeIconButton({required this.icon, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.35),
+      shape: const CircleBorder(),
+      child: IconButton(
+        icon: Icon(icon, color: Colors.white),
+        onPressed: onPressed,
+      ),
+    );
+  }
+}
+
 class _UploadOrEditFields extends StatelessWidget {
   final TextEditingController commentController;
   final String visibility;
@@ -428,7 +485,7 @@ class _UploadOrEditFields extends StatelessWidget {
             onChanged: onVisibilityChanged!,
           ),
         ),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
         if (onPrev != null || onNext != null || onUpload != null || onSave != null)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -436,30 +493,34 @@ class _UploadOrEditFields extends StatelessWidget {
               if (onPrev != null)
                 TextButton(
                   onPressed: onPrev,
-                  child: Text('Prev'),
-                ),
+                  child: const Text('Prev'),
+                )
+              else
+                const SizedBox(width: 64),
               if (onUpload != null)
                 ElevatedButton.icon(
                   onPressed: onUpload,
-                  icon: Icon(Icons.cloud_upload),
-                  label: Text('Upload All'),
+                  icon: const Icon(Icons.cloud_upload),
+                  label: const Text('Upload All'),
                 ),
               if (onSave != null)
                 ElevatedButton.icon(
                   onPressed: onSave,
-                  icon: Icon(Icons.save),
-                  label: Text('Save'),
+                  icon: const Icon(Icons.save),
+                  label: const Text('Save'),
                 ),
               if (onCancel != null)
                 OutlinedButton(
                   onPressed: onCancel,
-                  child: Text('Cancel'),
+                  child: const Text('Cancel'),
                 ),
               if (onNext != null)
                 TextButton(
                   onPressed: onNext,
-                  child: Text('Next'),
-                ),
+                  child: const Text('Next'),
+                )
+              else if (onPrev != null)
+                const SizedBox(width: 64),
             ],
           ),
       ],
@@ -484,9 +545,9 @@ class VisibilityToggleButton extends StatelessWidget {
       style: TextButton.styleFrom(
         foregroundColor: isPublic ? Colors.green[800] : Colors.grey[700],
         backgroundColor: Colors.transparent,
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
-      icon: Icon(
+      icon: const Icon(
         Icons.sync_alt,
         size: 20,
       ),

@@ -4,7 +4,7 @@ import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/friends_shop_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/user_state.dart';
-import 'package:bobadex/widgets/icon_pic.dart';
+import 'package:bobadex/widgets/brand_mark.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -158,7 +158,12 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
               color: themeColor.shade200,
               shape: BoxShape.circle,
             ),
-            child: IconPic(path: iconPath, size: 64)
+            child: BrandMark(
+              name: displayName,
+              slug: shop.brandSlug,
+              iconPath: iconPath,
+              size: 64,
+            ),
           ),
           const SizedBox(height: 10),
           Text(

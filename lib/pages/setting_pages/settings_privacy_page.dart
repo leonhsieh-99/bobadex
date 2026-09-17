@@ -1,4 +1,6 @@
 import 'package:bobadex/helpers/app_prefs.dart';
+import 'package:bobadex/config/ai_disclosure.dart';
+import 'package:bobadex/pages/setting_pages/settings_ai_data_page.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -61,6 +63,14 @@ class _SettingsPrivacyPageState extends State<SettingsPrivacyPage> {
           //   onChanged: _setCrash,
           // ),
           const SizedBox(height: 12),
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text(AiDisclosure.settingsTitle),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsAiDataPage()),
+            ),
+          ),
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
             title: const Text('Privacy Policy'),

@@ -298,6 +298,19 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                     ),
 
                     ListTile(
+                      leading: const Text('Email', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                      trailing: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 220),
+                        child: Text(
+                          Supabase.instance.client.auth.currentUser?.email ?? '—',
+                          textAlign: TextAlign.right,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w300, fontSize: 18),
+                        ),
+                      ),
+                    ),
+
+                    ListTile(
                       leading: const Text('Bio', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                       trailing: Text(
                         (user.bio != null && user.bio!.isNotEmpty)

@@ -26,7 +26,7 @@ class BrandAboutSection extends StatelessWidget {
     final chipShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(8));
 
     return Padding(
-      padding: const EdgeInsets.only(top: 4, bottom: 8),
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -5,7 +5,7 @@ import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/user_state.dart';
-import 'package:bobadex/widgets/icon_pic.dart';
+import 'package:bobadex/widgets/brand_mark.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -225,7 +225,12 @@ class FriendsShopDetailsPage extends StatelessWidget {
                     color: themeColor.shade200,
                     shape: BoxShape.circle,
                   ),
-                  child: IconPic(path: brand?.iconPath, size: 150)
+                  child: BrandMark(
+                    name: brand?.display ?? shop.name,
+                    slug: shop.brandSlug,
+                    iconPath: brand?.iconPath,
+                    size: 150,
+                  )
                 ),
               ),
             ),

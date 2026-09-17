@@ -7,12 +7,14 @@ class IconPic extends StatelessWidget {
   final String? path;
   final double size;
   final bool circular;
+  final BoxFit fit;
 
   const IconPic({
     super.key,
     required this.path,
     this.size = 70,
     this.circular = true,
+    this.fit = BoxFit.cover,
   });
 
   @override
@@ -32,7 +34,7 @@ class IconPic extends StatelessWidget {
       imageUrl: sizedThumb,
       width: size,
       height: size,
-      fit: BoxFit.cover,
+      fit: fit,
       memCacheWidth: px,
       memCacheHeight: px,
       fadeInDuration: Duration.zero,
@@ -43,7 +45,7 @@ class IconPic extends StatelessWidget {
         imageUrl: smallerThumb,
         width: size,
         height: size,
-        fit: BoxFit.cover,
+        fit: fit,
         memCacheWidth: 256,
         memCacheHeight: 256,
         placeholder: (_, __) => _placeholder(),
@@ -51,7 +53,7 @@ class IconPic extends StatelessWidget {
           imageUrl: original,   // last resort
           width: size,
           height: size,
-          fit: BoxFit.cover,
+          fit: fit,
           placeholder: (_, __) => _placeholder(),
           errorWidget: (_, __, ___) => _fallback(),
         ),
@@ -78,6 +80,6 @@ class IconPic extends StatelessWidget {
     'lib/assets/default_icon.png',
     width: size,
     height: size,
-    fit: BoxFit.cover,
+    fit: fit,
   );
 }

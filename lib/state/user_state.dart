@@ -118,6 +118,14 @@ class UserState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setUseMascots(bool value) {
+    final id = _currentUserId;
+    if (id == null) return;
+    final cur = _byId[id] ?? u.User.empty().copyWith(id: id);
+    _byId[id] = cur.copyWith(useMascots: value);
+    notifyListeners();
+  }
+
   void setProfileImagePath(String path) {
     final id = _currentUserId;
     if (id == null) return;
@@ -157,6 +165,7 @@ class UserState extends ChangeNotifier {
           .update({
             'grid_columns': cur.gridColumns,
             'use_icons': cur.useIcons,
+            'use_mascots': cur.useMascots,
           })
           .eq('user_id', id);
       _lastLoadedAt[id] = DateTime.now();

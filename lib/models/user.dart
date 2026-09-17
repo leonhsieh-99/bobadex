@@ -11,6 +11,7 @@ class User {
   String? bio;
   int gridColumns;
   bool useIcons;
+  bool useMascots;
   bool onboarded;
 
   User ({
@@ -22,6 +23,7 @@ class User {
     this.bio,
     this.gridColumns = Constants.defaultGridColumns,
     this.useIcons = Constants.useIcons,
+    this.useMascots = Constants.useMascots,
     this.onboarded = false,
   });
 
@@ -53,6 +55,7 @@ class User {
       themeSlug: settings?['theme_slug'] ?? Constants.defaultTheme,
       gridColumns: settings?['grid_columns'] ?? Constants.defaultGridColumns,
       useIcons: settings?['use_icons'] ?? Constants.useIcons,
+      useMascots: settings?['use_mascots'] ?? Constants.useMascots,
       onboarded: settings?['onboarded'] ?? false,
     );
   }
@@ -76,6 +79,7 @@ class User {
     bio: '',
     gridColumns: Constants.defaultGridColumns,
     useIcons: Constants.useIcons,
+    useMascots: Constants.useMascots,
     onboarded: false,
   );
 
@@ -89,6 +93,7 @@ class User {
       'bio': bio,
       'gridColumns': gridColumns,
       'useIcons': useIcons,
+      'useMascots': useMascots,
       'onboarded': onboarded
     };
   }
@@ -102,6 +107,7 @@ class User {
     String? themeSlug,
     int? gridColumns,
     bool? useIcons,
+    bool? useMascots,
     bool? onboarded,
   }) {
     return User(
@@ -113,6 +119,7 @@ class User {
       themeSlug: themeSlug ?? this.themeSlug,
       gridColumns: gridColumns ?? this.gridColumns,
       useIcons: useIcons ?? this.useIcons,
+      useMascots: useMascots ?? this.useMascots,
       onboarded: onboarded ?? this.onboarded,
     );
   }

@@ -1,7 +1,9 @@
 import 'package:bobadex/pages/setting_pages/settings_account_page.dart';
+import 'package:bobadex/pages/setting_pages/settings_ai_data_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_layout_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_privacy_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_theme_page.dart';
+import 'package:bobadex/config/ai_disclosure.dart';
 import 'package:flutter/material.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -55,7 +57,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ListTile(
             leading: Icon(Icons.layers),
             title: Text('Layout'),
-            subtitle: Text('Manage your home page grid layout'),
+            subtitle: Text('Grid, photos, and brand visuals'),
             trailing: Icon(Icons.chevron_right),
             onTap: () =>  Navigator.push(
               context,
@@ -70,6 +72,16 @@ class _SettingsPageState extends State<SettingsPage> {
             onTap:() => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => SettingsPrivacyPage())
+            ),
+          ),
+          ListTile(
+            leading: Icon(Icons.info_outline),
+            title: Text(AiDisclosure.settingsTitle),
+            subtitle: Text('How Bobadex uses automated systems'),
+            trailing: Icon(Icons.chevron_right),
+            onTap:() => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsAiDataPage())
             ),
           ),
         ],

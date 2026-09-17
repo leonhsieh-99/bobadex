@@ -18,6 +18,7 @@ class Constants {
 
   static const defaultTheme = 'Brown';
   static const useIcons = true;
+  static const useMascots = true;
   static const defaultGridColumns = 2;
 
   static MaterialColor getThemeColor(String slug) =>
@@ -38,6 +39,8 @@ class Constants {
   static const int defaultFeedLimit = 50;
   static const int defaultGalleryLimit = 20;
   static const int snackBarDuration = 2900; // milliseconds
+  static const int otpResendCooldownSeconds = 60;
+  static const int otpRateLimitCooldownSeconds = 3600;
   // image sizes
   static const thumbSizes = <int>[256, 512];
   static const String imageBucket = 'media-uploads';
