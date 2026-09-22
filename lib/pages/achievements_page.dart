@@ -1,10 +1,10 @@
-import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 
 class AchievementsPage extends StatefulWidget {
   final String userId;
@@ -25,7 +25,7 @@ class _AchievementsPageState extends State<AchievementsPage> {
   }
 
   String _normalize(String s) =>
-    s.toLowerCase().replaceAll('_', '').replaceAll(RegExp(r'\s+'), '');
+      s.toLowerCase().replaceAll('_', '').replaceAll(RegExp(r'\s+'), '');
 
   Future<_UiCounts> _loadCounts() async {
     final ach = context.read<AchievementsState>();
@@ -41,11 +41,18 @@ class _AchievementsPageState extends State<AchievementsPage> {
     final mediaCount = await _mediaUploadCount();
 
     // visited brands
-    final normalizedShopNames = shopState.shopsForCurrentUser().map((s) => _normalize(s.name)).toSet();
+    final normalizedShopNames = shopState
+        .shopsForCurrentUser()
+        .map((s) => _normalize(s.name))
+        .toSet();
 
     // all achievements (unlocked count)
-    final unlockedCount = ach.progressMap.values.where((ua) => ua.unlocked).length;
-    final totalRegular = ach.achievements.where((a) => a.dependsOn['type'] != 'all_achievements').length;
+    final unlockedCount = ach.progressMap.values
+        .where((ua) => ua.unlocked)
+        .length;
+    final totalRegular = ach.achievements
+        .where((a) => a.dependsOn['type'] != 'all_achievements')
+        .length;
 
     return _UiCounts(
       shopCount: shopCount,
@@ -78,15 +85,17 @@ class _AchievementsPageState extends State<AchievementsPage> {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('Failed to load achievements. Pull back and re-open.',
-                  textAlign: TextAlign.center),
+                child: Text(
+                  'Failed to load achievements. Pull back and re-open.',
+                  textAlign: TextAlign.center,
+                ),
               ),
             );
           }
           if (!snap.hasData) {
             return const _AchievementSkeletonList(itemCount: 8);
           }
-          
+
           final counts = snap.data!;
           return ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -166,16 +175,30 @@ class _AchievementsPageState extends State<AchievementsPage> {
                       )
                     : CircleAvatar(
                         radius: avatarRadius,
-                        backgroundImage: (a.iconPath != null && a.iconPath!.isNotEmpty)
+                        backgroundImage:
+                            (a.iconPath != null && a.iconPath!.isNotEmpty)
                             ? AssetImage(a.iconPath!)
-                            : const AssetImage('lib/assets/badges/default_badge.png'),
-                        backgroundColor: have == need ? Colors.amber : Constants.badgeBgColor,
+                            : const AssetImage(
+                                'lib/assets/badges/default_badge.png',
+                              ),
+                        backgroundColor: have == need
+                            ? context.boba.star
+                            : context.boba.surfaceAlt,
                       ),
                 title: Text(locked ? 'Hidden' : a.name),
                 subtitle: Text(locked ? '? ? ?' : a.description),
                 trailing: have == need
-                    ? const Icon(Icons.check_circle, color: Colors.green)
-                    : Text('$have/$need', style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+                    ? Icon(
+                        Icons.check_circle_rounded,
+                        color: context.boba.success,
+                      )
+                    : Text(
+                        '$have/$need',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: context.boba.inkMuted,
+                        ),
+                      ),
               );
             },
           );
@@ -230,7 +253,7 @@ class _AchievementSkeletonList extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: context.boba.outline,
                 shape: BoxShape.circle,
               ),
             ),
@@ -244,7 +267,7 @@ class _AchievementSkeletonList extends StatelessWidget {
                     height: 14,
                     width: 100, // shorter top line
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: context.boba.outline,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -253,7 +276,7 @@ class _AchievementSkeletonList extends StatelessWidget {
                     height: 14,
                     width: double.infinity, // longer bottom line
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: context.boba.outline,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),

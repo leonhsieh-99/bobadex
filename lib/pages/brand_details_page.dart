@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:bobadex/widgets/add_edit_shop_dialog.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 
 class BrandDetailsPage extends StatefulWidget {
   final Brand brand;
@@ -53,7 +54,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
         body: {
           'slug': widget.brand.slug,
           'name': widget.brand.display,
-          'id': Supabase.instance.client.auth.currentUser!.id
+          'id': Supabase.instance.client.auth.currentUser!.id,
         },
       );
 
@@ -61,31 +62,35 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
       final raw = response.data;
 
       final Map<String, dynamic>? data = raw is String
-        ? json.decode(raw) as Map<String, dynamic>
-        : (raw is Map ? (raw).cast<String, dynamic>() : null);
+          ? json.decode(raw) as Map<String, dynamic>
+          : (raw is Map ? (raw).cast<String, dynamic>() : null);
 
       if ((status == 200 || status == 201) && data != null) {
         return data['result'];
       }
       return 'Unknown error occurred. ($status)';
     } on FunctionException catch (e) {
-      debugPrint('report-brand failed: status=${e.status}, details=${e.details}, reason=${e.reasonPhrase}');
+      debugPrint(
+        'report-brand failed: status=${e.status}, details=${e.details}, reason=${e.reasonPhrase}',
+      );
 
       Map<String, dynamic>? details;
       if (e.details is Map<String, dynamic>) {
         details = e.details as Map<String, dynamic>;
       } else if (e.details is String) {
-        try { details = json.decode(e.details as String) as Map<String, dynamic>; } catch (_) {}
+        try {
+          details = json.decode(e.details as String) as Map<String, dynamic>;
+        } catch (_) {}
       }
 
-      final message = details?['message'] as String? ?? e.reasonPhrase ?? 'Request failed';
+      final message =
+          details?['message'] as String? ?? e.reasonPhrase ?? 'Request failed';
       return message;
     } catch (e) {
       debugPrint('report-brand unexpected error: $e');
       return 'Failed to report brand';
     }
   }
-
 
   Future<BrandProfile> fetchProfile() async {
     final client = Supabase.instance.client;
@@ -120,8 +125,10 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
 
   Future<BrandStats> fetchStats() async {
     try {
-      final response = await Supabase.instance.client
-        .rpc('get_brand_stats', params: {'brand_slug': widget.brand.slug});
+      final response = await Supabase.instance.client.rpc(
+        'get_brand_stats',
+        params: {'brand_slug': widget.brand.slug},
+      );
 
       final data = (response as List).firstOrNull;
       final b = widget.brand;
@@ -130,7 +137,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
         display: b.display,
         iconPath: b.iconPath,
         avgRating: (data['avg_rating'] as num).toDouble(),
-        shopCount: data['shop_count']
+        shopCount: data['shop_count'],
       );
     } catch (e) {
       debugPrint('Error fetching stats: $e');
@@ -138,17 +145,23 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
     }
   }
 
-  Future<List<ShopMedia>> fetchGallery({int offset = 0, limit = Constants.defaultGalleryLimit}) async {
+  Future<List<ShopMedia>> fetchGallery({
+    int offset = 0,
+    limit = Constants.defaultGalleryLimit,
+  }) async {
     try {
-      final response = await Supabase.instance.client
-        .rpc('get_brand_gallery', params: {
+      final response = await Supabase.instance.client.rpc(
+        'get_brand_gallery',
+        params: {
           'brand_slug': widget.brand.slug,
           'offset_count': offset,
           'limit_count': limit,
-        });
+        },
+      );
 
       final medias = (response as List)
-        .map((item) => ShopMedia.fromJson(item)).toList();
+          .map((item) => ShopMedia.fromJson(item))
+          .toList();
       if (offset == 0 && mounted && _photoCount != medias.length) {
         setState(() => _photoCount = medias.length);
       }
@@ -164,13 +177,14 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
 
   void viewAllPhotos(List<ShopMedia> medias) {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) =>
-        ShopGalleryPage(
+      MaterialPageRoute(
+        builder: (_) => ShopGalleryPage(
           shopMediaList: medias,
           isCurrentUser: false,
-          onFetchMore: (offset, limit) => fetchGallery(offset: offset, limit: limit),
-        )
-      )
+          onFetchMore: (offset, limit) =>
+              fetchGallery(offset: offset, limit: limit),
+        ),
+      ),
     );
   }
 
@@ -179,15 +193,16 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
     final shopState = context.read<ShopState>();
     final achievementState = context.read<AchievementsState>();
     final currentId = context.select<UserState, String>((s) => s.current.id);
-    final themeSlug = context.select<UserState, String>((s) => s.current.themeSlug);
     final userShop = context.select<ShopState, Shop?>(
       (s) => s.getShopByBrand(currentId, widget.brand.slug),
     );
     final hasVisit = userShop != null;
-    final themeColor = Constants.getThemeColor(themeSlug);
     final analytics = context.read<AnalyticsService>();
 
-    Widget buildGlobalGallery(Brand brand, Future<List<ShopMedia>> galleryFuture) {
+    Widget buildGlobalGallery(
+      Brand brand,
+      Future<List<ShopMedia>> galleryFuture,
+    ) {
       return FutureBuilder<List<ShopMedia>>(
         future: galleryFuture,
         builder: (context, snapshot) {
@@ -195,47 +210,56 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
             return const SizedBox.shrink();
           }
           if (snapshot.hasError) {
-            return Text('Failed to load gallery', style: TextStyle(color: Colors.red));
+            return Text(
+              'Failed to load gallery',
+              style: TextStyle(color: context.boba.danger),
+            );
           }
           final medias = snapshot.data ?? [];
           if (medias.isEmpty) return const SizedBox.shrink();
           return Padding(
             padding: const EdgeInsets.only(top: 12),
             child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Text('Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                  const Spacer(),
-                  if (medias.isNotEmpty)
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: Colors.black,
-                        visualDensity: VisualDensity.compact,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'Photos',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
                       ),
-                      onPressed: () => viewAllPhotos(medias),
-                      child: const Text(
-                        'View all',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const Spacer(),
+                    if (medias.isNotEmpty)
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: context.boba.ink,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        onPressed: () => viewAllPhotos(medias),
+                        child: const Text(
+                          'View all',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
                       ),
-                    )
-                ],
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: MediaQuery.of(context).size.width,
-                height: 140,
-                child: HorizontalPhotoPreview(
-                  maxPreview: 4,
-                  height: 140,
-                  width: 110,
-                  shopMediaList: medias,
-                  onViewAll: () => viewAllPhotos(medias),
+                  ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  height: 140,
+                  child: HorizontalPhotoPreview(
+                    maxPreview: 4,
+                    height: 140,
+                    width: 110,
+                    shopMediaList: medias,
+                    onViewAll: () => viewAllPhotos(medias),
+                  ),
+                ),
+              ],
             ),
           );
         },
@@ -264,7 +288,10 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                     left: 4,
                     child: SafeArea(
                       child: IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        icon: Icon(
+                          Icons.arrow_back_rounded,
+                          color: context.boba.onImage,
+                        ),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                     ),
@@ -275,16 +302,19 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                     right: 20,
                     child: TextButton(
                       style: TextButton.styleFrom(
-                        backgroundColor: themeColor == Colors.grey ? themeColor.shade500 : themeColor,
+                        backgroundColor: context.boba.accent,
                         shape: const StadiumBorder(),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         elevation: 3,
-                        minimumSize: Size(0,0)
+                        minimumSize: Size(0, 0),
                       ),
                       child: Text(
                         hasVisit ? "Edit Visit" : "Add Visit",
                         style: TextStyle(
-                          color: Colors.white,
+                          color: context.boba.onAccent,
                           fontSize: 12,
                         ),
                       ),
@@ -296,20 +326,34 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                             onSubmit: (submittedShop) async {
                               try {
                                 if (hasVisit) {
-                                  final persistedShop = await shopState.update(submittedShop);
+                                  final persistedShop = await shopState.update(
+                                    submittedShop,
+                                  );
                                   notify('Shop updated', SnackType.success);
                                   return persistedShop;
                                 } else {
-                                  final persistedShop = await shopState.add(submittedShop);
-                                  analytics.shopAdded(rating: persistedShop.rating, brandSlug: persistedShop.brandSlug);
-                                  await achievementState.checkAndUnlockShopAchievement(shopState);
-                                  await achievementState.checkAndUnlockBrandAchievement(shopState);
+                                  final persistedShop = await shopState.add(
+                                    submittedShop,
+                                  );
+                                  analytics.shopAdded(
+                                    rating: persistedShop.rating,
+                                    brandSlug: persistedShop.brandSlug,
+                                  );
+                                  await achievementState
+                                      .checkAndUnlockShopAchievement(shopState);
+                                  await achievementState
+                                      .checkAndUnlockBrandAchievement(
+                                        shopState,
+                                      );
                                   return persistedShop;
                                 }
                               } catch (e, st) {
                                 debugPrint('error in onSubmit: $e');
                                 debugPrintStack(stackTrace: st);
-                                notify('Failed to update shop.', SnackType.error);
+                                notify(
+                                  'Failed to update shop.',
+                                  SnackType.error,
+                                );
                                 return Future.error(e);
                               }
                             },
@@ -324,15 +368,21 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                     right: 4,
                     child: SafeArea(
                       child: PopupMenuButton(
-                        icon: const Icon(Icons.more_horiz, color: Colors.white, size: 24),
+                        icon: Icon(
+                          Icons.more_horiz,
+                          color: context.boba.onImage,
+                          size: 24,
+                        ),
                         onSelected: (value) async {
-                          switch(value) {
+                          switch (value) {
                             case 'report':
                               final result = await reportBrandClosed();
                               print(result);
-                              if (result != null && (result == 'incremented' || result == 'created')) {
+                              if (result != null &&
+                                  (result == 'incremented' ||
+                                      result == 'created')) {
                                 notify('Report pending review', SnackType.info);
-                              } else if (result != null ) {
+                              } else if (result != null) {
                                 debugPrint(result);
                                 notify(result, SnackType.error);
                               }
@@ -342,13 +392,13 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                         itemBuilder: (_) => [
                           PopupMenuItem(
                             value: 'report',
-                            child: Text('Report closed')
-                          )
-                        ]
+                            child: Text('Report closed'),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ]
+                ],
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -358,26 +408,24 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                     FutureBuilder<BrandProfile>(
                       future: _profileFuture,
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return const BrandAboutSkeleton();
                         }
                         final profile = snapshot.data;
                         if (profile == null || !profile.hasContent) {
                           return const SizedBox.shrink();
                         }
-                        return BrandAboutSection(
-                          profile: profile,
-                          themeColor: themeColor,
-                        );
+                        return BrandAboutSection(profile: profile);
                       },
                     ),
                     buildGlobalGallery(widget.brand, _globalGalleryFuture),
                     if (_photoCount == 0 && _feedCount == 0)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 16),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
                         child: Text(
                           'Be the first to log a visit or add a photo.',
-                          style: Constants.emptyListTextStyle,
+                          style: context.bobaText.empty,
                         ),
                       ),
                   ],
@@ -393,7 +441,7 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                   });
                 },
               ),
-            ]
+            ],
           ),
         ),
       ),
@@ -410,31 +458,31 @@ Widget _buildGlobalRatings(Brand brand, Future<BrandStats> statsFuture) {
           width: 100,
           height: 18,
           decoration: BoxDecoration(
-            color: Colors.grey.shade300,
+            color: context.boba.outline,
             borderRadius: BorderRadius.circular(6),
           ),
         );
       }
       if (snapshot.hasError) {
-        return Text('Failed to load stats', style: TextStyle(color: Colors.red));
+        return Text(
+          'Failed to load stats',
+          style: TextStyle(color: context.boba.danger),
+        );
       }
       final stats = snapshot.data!;
       return Row(
         children: [
-          const Icon(Icons.star, color: Colors.orangeAccent),
+          Icon(Icons.star_rounded, color: context.boba.star),
           const SizedBox(width: 2),
           Text(
             stats.avgRating == 0
-              ? 'Unrated'
-              : '${stats.avgRating.toStringAsFixed(1)} (${stats.shopCount} ratings)',
-            style: const TextStyle(
-              fontSize: 16,
-              color: Colors.white,
-            )
+                ? 'Unrated'
+                : '${stats.avgRating.toStringAsFixed(1)} (${stats.shopCount} ratings)',
+            style: TextStyle(fontSize: 16, color: context.boba.onImage),
           ),
         ],
       );
-    }
+    },
   );
 }
 
@@ -455,11 +503,13 @@ Widget _buildBrandBanner(
       }
 
       return InkWell(
-        onTap: medias.isNotEmpty ? () => onTapWithMedias(medias) : null, // ⬅️ wire here
+        onTap: medias.isNotEmpty
+            ? () => onTapWithMedias(medias)
+            : null, // ⬅️ wire here
         child: Container(
           height: 220,
           margin: const EdgeInsets.only(bottom: 8),
-          decoration: const BoxDecoration(color: Colors.grey),
+          decoration: BoxDecoration(color: context.boba.surfaceAlt),
           clipBehavior: Clip.antiAlias,
           child: Stack(
             fit: StackFit.expand,
@@ -468,18 +518,21 @@ Widget _buildBrandBanner(
                 CachedNetworkImage(
                   imageUrl: bgUrl,
                   fit: BoxFit.cover,
-                  color: Colors.black.withValues(alpha: 0.35),
+                  color: context.boba.imageScrim.withValues(alpha: 0.35),
                   colorBlendMode: BlendMode.darken,
                 ),
               Align(
                 alignment: Alignment.bottomCenter,
                 child: Container(
                   height: 100,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Colors.transparent, Colors.black54],
+                      colors: [
+                        Colors.transparent,
+                        context.boba.imageScrim.withValues(alpha: 0.54),
+                      ],
                     ),
                   ),
                 ),
@@ -499,13 +552,21 @@ Widget _buildBrandBanner(
   );
 }
 
-
-Widget buildBannerContent(BuildContext context, Brand brand, Future<BrandStats> statsFuture) {
+Widget buildBannerContent(
+  BuildContext context,
+  Brand brand,
+  Future<BrandStats> statsFuture,
+) {
   return IntrinsicHeight(
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.end, // bottom align children
       children: [
-        BrandMark(name: brand.display, slug: brand.slug, iconPath: brand.iconPath, fit: BoxFit.contain),
+        BrandMark(
+          name: brand.display,
+          slug: brand.slug,
+          iconPath: brand.iconPath,
+          fit: BoxFit.contain,
+        ),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
@@ -515,12 +576,16 @@ Widget buildBannerContent(BuildContext context, Brand brand, Future<BrandStats> 
             children: [
               Text(
                 brand.display,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: context.boba.onImage,
                   shadows: [
-                    Shadow(blurRadius: 10, color: Colors.black54, offset: Offset(0, 2)),
+                    Shadow(
+                      blurRadius: 10,
+                      color: context.boba.imageScrim.withValues(alpha: 0.54),
+                      offset: const Offset(0, 2),
+                    ),
                   ],
                 ),
                 maxLines: 1,

@@ -6,9 +6,15 @@ String messageForOtpCode(OtpAuthCode code) {
     OtpAuthCode.success => 'You are signed in.',
     OtpAuthCode.invalidIdentifier => 'Enter a valid email.',
     OtpAuthCode.unknownUser =>
-      'No account uses that email. Sign up, or try password login.',
+      'No account uses that email. Sign up to create one.',
+    OtpAuthCode.emailAlreadyInUse =>
+      'That email is already used by an account.',
+    OtpAuthCode.emailUnchanged => 'That is already your email.',
+    OtpAuthCode.currentEmailMismatch =>
+      'Enter the email currently on this account.',
+    OtpAuthCode.usernameTaken => 'That username is taken.',
     OtpAuthCode.phoneNotLinked =>
-      'This phone is not linked to an account. Sign in with email or password.',
+      'This phone is not linked to an account. Sign in with email.',
     OtpAuthCode.phoneAlreadyInUse =>
       'That phone number is already used by another account.',
     OtpAuthCode.phoneLinkPending =>
@@ -18,13 +24,16 @@ String messageForOtpCode(OtpAuthCode code) {
     OtpAuthCode.invalidOtp => 'That code is incorrect.',
     OtpAuthCode.otpExpired => 'That code has expired. Request a new one.',
     OtpAuthCode.rateLimited =>
-      'Too many codes were sent. Use password login, or wait up to an hour.',
-    OtpAuthCode.authRequired => 'Sign in again before changing your phone number.',
+      'Too many codes were sent. Wait a minute, then try again.',
+    OtpAuthCode.authRequired => 'Sign in again to change your email.',
     OtpAuthCode.configRequired =>
-      'Verification codes cannot be sent right now. Use password login, or try again later.',
+      'Could not send email. Check SMTP settings, then try again.',
     OtpAuthCode.authError => 'Something went wrong. Please try again.',
   };
 }
+
+/// Quiet hint under the code field. Keep this secondary to the "code sent" line.
+const otpInboxHint = 'Can take a few seconds. Check spam if you don\'t see it.';
 
 String maskPhone(String e164) {
   final digits = e164.replaceAll(RegExp(r'\D'), '');
@@ -42,9 +51,9 @@ String formatOtpWaitDuration(int secondsLeft) {
 String otpWaitCopy(int secondsLeft, {bool rateLimited = false}) {
   if (rateLimited) {
     if (secondsLeft > 0) {
-      return 'Too many codes were sent. Use password login, or try again in ${formatOtpWaitDuration(secondsLeft)}.';
+      return 'Too many codes were sent. Try again in ${formatOtpWaitDuration(secondsLeft)}.';
     }
-    return 'Too many codes were sent. Use password login, or wait up to an hour.';
+    return 'Too many codes were sent. Wait a minute, then try again.';
   }
   if (secondsLeft > 0) {
     return 'You can request another code in ${formatOtpWaitDuration(secondsLeft)}.';

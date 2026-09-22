@@ -39,14 +39,12 @@ class _SettingsLayoutPageState extends State<SettingsLayoutPage> {
       onPopInvokedWithResult: (didPop, result) =>
           _layoutChanged(userState) ? userState.saveLayout() : null,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Manage Layout'),
-        ),
+        appBar: AppBar(title: const Text('Manage Layout')),
         body: ListView(
           children: [
             ListTile(
               title: const Text('Compact Layout'),
-              subtitle: const Text('3 shops per column'),
+              subtitle: const Text('3 brands per row'),
               trailing: Switch(
                 value: userState.current.gridColumns == 3,
                 onChanged: (val) {
@@ -56,12 +54,21 @@ class _SettingsLayoutPageState extends State<SettingsLayoutPage> {
             ),
             ListTile(
               title: const Text('Use Banner Photos'),
-              subtitle: const Text('Home page cards use your banner photo instead of brand visuals'),
+              subtitle: const Text(
+                'Dex cards use your banner photo instead of brand visuals',
+              ),
               trailing: Switch(
                 value: !userState.current.useIcons,
                 onChanged: (val) {
                   userState.toggleUseIcons();
                 },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: _LayoutPreview(
+                columns: userState.current.gridColumns,
+                useIcons: userState.current.useIcons,
               ),
             ),
             const Divider(height: 24),
@@ -80,8 +87,8 @@ class _SettingsLayoutPageState extends State<SettingsLayoutPage> {
                         ? 'Illustrated mascots for each brand'
                         : 'Lettering based on each brand name',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).hintColor,
-                        ),
+                      color: Theme.of(context).hintColor,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -102,7 +109,9 @@ class _SettingsLayoutPageState extends State<SettingsLayoutPage> {
                   TextButton(
                     onPressed: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const SettingsAiDataPage()),
+                      MaterialPageRoute(
+                        builder: (_) => const SettingsAiDataPage(),
+                      ),
                     ),
                     child: const Text(AiDisclosure.settingsTitle),
                   ),
@@ -112,6 +121,58 @@ class _SettingsLayoutPageState extends State<SettingsLayoutPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _LayoutPreview extends StatelessWidget {
+  const _LayoutPreview({required this.columns, required this.useIcons});
+
+  final int columns;
+  final bool useIcons;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Preview', style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            for (var i = 0; i < columns; i++) ...[
+              Expanded(
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: useIcons
+                          ? tokens.primaryContainer
+                          : tokens.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: tokens.outlineVariant),
+                    ),
+                    child: useIcons
+                        ? const Icon(Icons.storefront_rounded)
+                        : Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Text(
+                                'Brand',
+                                style: Theme.of(context).textTheme.labelSmall,
+                              ),
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+              if (i != columns - 1) const SizedBox(width: 8),
+            ],
+          ],
+        ),
+      ],
     );
   }
 }

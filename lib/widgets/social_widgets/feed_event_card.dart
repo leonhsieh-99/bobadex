@@ -8,6 +8,7 @@ import 'package:bobadex/widgets/image_widgets/horizontal_photo_preview.dart';
 import 'package:bobadex/widgets/number_rating.dart';
 import 'package:bobadex/widgets/social_widgets/feed_card_options.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -24,19 +25,29 @@ class FeedEventCard extends StatelessWidget {
 
   String _verb(String type, bool hidden) {
     switch (type) {
-      case 'shop_add': return 'added a shop';
-      case 'drink_add': return 'added a drink';
-      case 'achievement': return hidden ? 'unlocked a hidden achievement' : 'unlocked an achievement';
-      default: return type;
+      case 'shop_add':
+        return 'added a shop';
+      case 'drink_add':
+        return 'added a drink';
+      case 'achievement':
+        return hidden
+            ? 'unlocked a hidden achievement'
+            : 'unlocked an achievement';
+      default:
+        return type;
     }
   }
 
   IconData _verbIcon(String type, bool hidden) {
     switch (type) {
-      case 'shop_add': return Icons.storefront_rounded;
-      case 'drink_add': return Icons.local_drink_rounded;
-      case 'achievement': return hidden ? Icons.lock_outline : Icons.emoji_events_outlined;
-      default: return Icons.bolt; // fallback
+      case 'shop_add':
+        return Icons.storefront_rounded;
+      case 'drink_add':
+        return Icons.local_drink_rounded;
+      case 'achievement':
+        return hidden ? Icons.lock_outline : Icons.emoji_events_outlined;
+      default:
+        return Icons.bolt; // fallback
     }
   }
 
@@ -58,9 +69,9 @@ class FeedEventCard extends StatelessWidget {
 
     final isHidden = p['is_hidden'] == true;
     final titleText = switch (event.eventType) {
-      'shop_add'    => (p['shop_name'] ?? 'Unknown') as String,
+      'shop_add' => (p['shop_name'] ?? 'Unknown') as String,
       'achievement' => (p['achievement_name'] ?? 'Achievement') as String,
-      _             => 'Details'
+      _ => 'Details',
     };
     final rating = double.tryParse('${p['rating'] ?? ''}') ?? 0.0;
     final images = (p['images'] as List?) ?? const [];
@@ -75,7 +86,7 @@ class FeedEventCard extends StatelessWidget {
         children: [
           _VerbPill(
             icon: _verbIcon(event.eventType, isHidden),
-            text: _verb(event.eventType, isHidden)
+            text: _verb(event.eventType, isHidden),
           ),
           const SizedBox(width: 8),
           if (event.eventType == 'shop_add' && shopName.isNotEmpty)
@@ -83,14 +94,18 @@ class FeedEventCard extends StatelessWidget {
               fit: FlexFit.loose,
               child: _ShopLink(
                 text: shopName,
-                onTap: (brandSlug.isNotEmpty && brandState.getBrand(brandSlug) != null)
-                  ? () {
-                      final brand = brandState.getBrand(brandSlug)!;
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand)),
-                      );
-                    }
-                  : null,
+                onTap:
+                    (brandSlug.isNotEmpty &&
+                        brandState.getBrand(brandSlug) != null)
+                    ? () {
+                        final brand = brandState.getBrand(brandSlug)!;
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => BrandDetailsPage(brand: brand),
+                          ),
+                        );
+                      }
+                    : null,
               ),
             ),
         ],
@@ -105,13 +120,18 @@ class FeedEventCard extends StatelessWidget {
               child: ThumbPic(
                 path: user.profileImagePath,
                 size: 40,
-                initials: initialFrom( // helper function in lib/helpers
+                initials: initialFrom(
+                  // helper function in lib/helpers
                   firstName: user.firstName,
                   displayName: user.displayName,
                   username: user.username,
                 ),
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => AccountViewPage(userId: user.id, user: user))),
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        AccountViewPage(userId: user.id, user: user),
+                  ),
+                ),
               ),
             ),
           Expanded(
@@ -122,7 +142,9 @@ class FeedEventCard extends StatelessWidget {
                 if (opts.showUsername)
                   Text(
                     user.firstName,
-                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
 
                 if (opts.showVerbInline)
@@ -135,35 +157,51 @@ class FeedEventCard extends StatelessWidget {
                               // Verb
                               TextSpan(
                                 text: _verb(event.eventType, isHidden),
-                                style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.hintColor,
+                                ),
                               ),
 
                               // Space + clickable shop name (shop_add)
-                              if (event.eventType == 'shop_add') const TextSpan(text: ' '),
+                              if (event.eventType == 'shop_add')
+                                const TextSpan(text: ' '),
                               if (event.eventType == 'shop_add')
                                 TextSpan(
                                   text: titleText, // shop name
-                                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                   recognizer: (() {
                                     final slug = (event.brandSlug ?? '').trim();
-                                    final brand = slug.isNotEmpty ? brandState.getBrand(slug) : null;
+                                    final brand = slug.isNotEmpty
+                                        ? brandState.getBrand(slug)
+                                        : null;
                                     if (brand == null) return null;
                                     return TapGestureRecognizer()
                                       ..onTap = () {
                                         Navigator.of(context).push(
-                                          MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand)),
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                BrandDetailsPage(brand: brand),
+                                          ),
                                         );
                                       };
                                   })(),
                                 ),
 
                               // Space + bold achievement name (non-clickable)
-                              if (event.eventType == 'achievement' && !isHidden && titleText.isNotEmpty)
+                              if (event.eventType == 'achievement' &&
+                                  !isHidden &&
+                                  titleText.isNotEmpty)
                                 const TextSpan(text: ' '),
-                              if (event.eventType == 'achievement' && !isHidden && titleText.isNotEmpty)
+                              if (event.eventType == 'achievement' &&
+                                  !isHidden &&
+                                  titleText.isNotEmpty)
                                 TextSpan(
                                   text: titleText,
-                                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                             ],
                           ),
@@ -180,9 +218,10 @@ class FeedEventCard extends StatelessWidget {
           if (event.eventType == 'shop_add')
             Padding(
               padding: const EdgeInsets.only(left: 8),
-              child: NumberRating(rating: rating == 0 ? 'N/A' : rating.toString()),
+              child: NumberRating(
+                rating: rating == 0 ? 'N/A' : rating.toString(),
+              ),
             ),
-
         ],
       );
     }
@@ -190,7 +229,9 @@ class FeedEventCard extends StatelessWidget {
     // --- body (notes + images OR achievement row) -----------------------------
     final body = switch (event.eventType) {
       'achievement' => _AchievementRow(
-        description: isHidden ? '? ? ?' : (p['achievement_desc'] ?? '') as String,
+        description: isHidden
+            ? '? ? ?'
+            : (p['achievement_desc'] ?? '') as String,
         iconAssetPath: (p['achievement_badge_path'] ?? '') as String,
       ),
       'shop_add' => Column(
@@ -199,17 +240,17 @@ class FeedEventCard extends StatelessWidget {
           if ((p['notes'] ?? '').toString().trim().isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4, bottom: 8),
-              child: Text(
-                p['notes'],
-                style: theme.textTheme.bodyMedium,
-              ),
+              child: Text(p['notes'], style: theme.textTheme.bodyMedium),
             ),
           if (images.isNotEmpty)
             HorizontalPhotoPreview(
               shopMediaList: images.map((img) {
                 final path = (img['path'] ?? '').toString();
                 final comment = (img['comment'] ?? '').toString();
-                return ShopMedia.galleryViewMedia(imagePath: path, comment: comment);
+                return ShopMedia.galleryViewMedia(
+                  imagePath: path,
+                  comment: comment,
+                );
               }).toList(),
               height: 110,
               width: 90,
@@ -240,7 +281,9 @@ class FeedEventCard extends StatelessWidget {
                 const Spacer(),
                 Text(
                   _timeAgo(event.createdAt),
-                  style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary.withValues(alpha: 0.75)),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.75),
+                  ),
                 ),
               ],
             ),
@@ -274,7 +317,9 @@ class _VerbPill extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             text,
-            style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -285,7 +330,10 @@ class _VerbPill extends StatelessWidget {
 class _AchievementRow extends StatelessWidget {
   final String description;
   final String iconAssetPath;
-  const _AchievementRow({required this.description, required this.iconAssetPath});
+  const _AchievementRow({
+    required this.description,
+    required this.iconAssetPath,
+  });
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -300,7 +348,9 @@ class _AchievementRow extends StatelessWidget {
         Expanded(
           child: Text(
             description,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w400),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w400),
           ),
         ),
       ],
@@ -313,68 +363,95 @@ class _ShopLink extends StatelessWidget {
   final VoidCallback? onTap;
   const _ShopLink({required this.text, this.onTap});
 
-@override
-Widget build(BuildContext context) {
-  final theme = Theme.of(context);
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
 
-  return LayoutBuilder(builder: (ctx, constraints) {
-    final style = theme.textTheme.labelLarge?.copyWith(
-      fontWeight: FontWeight.w700,
-      color: onTap == null
-          ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7)
-          : theme.colorScheme.primary,
+    return LayoutBuilder(
+      builder: (ctx, constraints) {
+        final style = theme.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: onTap == null
+              ? theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7)
+              : theme.colorScheme.primary,
+        );
+
+        final tp = TextPainter(
+          text: TextSpan(text: text, style: style),
+          maxLines: 1,
+          textDirection: TextDirection.ltr,
+        )..layout();
+
+        const double hp = 10;
+        const double gap = 4;
+        const double chev = 16;
+        final bool hasChevron = onTap != null;
+
+        final pillMinWidth = tp.width + (hasChevron ? gap + chev : 0) + hp + 10;
+        final bool fits = pillMinWidth <= constraints.maxWidth;
+
+        final double? forcedWidth = fits ? null : double.infinity;
+
+        final rightPad = fits ? 10.0 : 4.0;
+
+        final content = Row(
+          mainAxisSize: fits ? MainAxisSize.min : MainAxisSize.max,
+          children: [
+            fits
+                ? Text(
+                    text,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: style,
+                  )
+                : Expanded(
+                    child: Text(
+                      text,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: style,
+                    ),
+                  ),
+            if (hasChevron) ...[
+              const SizedBox(width: gap),
+              Icon(
+                Icons.chevron_right,
+                size: 16,
+                color: theme.colorScheme.primary,
+              ),
+            ],
+          ],
+        );
+
+        final pill = Container(
+          padding: EdgeInsets.only(
+            left: hp,
+            right: rightPad,
+            top: 6,
+            bottom: 6,
+          ),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: onTap == null ? 0.4 : 0.55,
+            ),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: content,
+        );
+
+        final wrapped = SizedBox(width: forcedWidth, child: pill);
+
+        return onTap == null
+            ? wrapped
+            : InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(999),
+                child: wrapped,
+              );
+      },
     );
-
-    final tp = TextPainter(
-      text: TextSpan(text: text, style: style),
-      maxLines: 1,
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    const double hp = 10;
-    const double gap = 4;
-    const double chev = 16;
-    final bool hasChevron = onTap != null;
-
-    final pillMinWidth = tp.width + (hasChevron ? gap + chev : 0) + hp + 10;
-    final bool fits = pillMinWidth <= constraints.maxWidth;
-
-    final double? forcedWidth = fits ? null : double.infinity;
-
-    final rightPad = fits ? 10.0 : 4.0;
-
-    final content = Row(
-      mainAxisSize: fits ? MainAxisSize.min : MainAxisSize.max,
-      children: [
-        fits
-            ? Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: style)
-            : Expanded(child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: style)),
-        if (hasChevron) ...[
-          const SizedBox(width: gap),
-          Icon(Icons.chevron_right, size: 16, color: theme.colorScheme.primary),
-        ],
-      ],
-    );
-
-    final pill = Container(
-      padding: EdgeInsets.only(left: hp, right: rightPad, top: 6, bottom: 6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest
-            .withValues(alpha: onTap == null ? 0.4 : 0.55),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: content,
-    );
-
-    final wrapped = SizedBox(width: forcedWidth, child: pill);
-
-    return onTap == null
-        ? wrapped
-        : InkWell(onTap: onTap, borderRadius: BorderRadius.circular(999), child: wrapped);
-  });
+  }
 }
-}
-
 
 class FeedEventCardSkeleton extends StatelessWidget {
   const FeedEventCardSkeleton({super.key});
@@ -397,7 +474,7 @@ class FeedEventCardSkeleton extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: context.boba.outline,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -409,13 +486,13 @@ class FeedEventCardSkeleton extends StatelessWidget {
                     Container(
                       width: 80,
                       height: 14,
-                      color: Colors.grey.shade300,
+                      color: context.boba.outline,
                       margin: const EdgeInsets.only(bottom: 6),
                     ),
                     Container(
                       width: 60,
                       height: 12,
-                      color: Colors.grey.shade200,
+                      color: context.boba.surfaceAlt,
                     ),
                   ],
                 ),
@@ -424,7 +501,7 @@ class FeedEventCardSkeleton extends StatelessWidget {
                 Container(
                   width: 40,
                   height: 12,
-                  color: Colors.grey.shade200,
+                  color: context.boba.surfaceAlt,
                 ),
               ],
             ),
@@ -434,24 +511,25 @@ class FeedEventCardSkeleton extends StatelessWidget {
             Container(
               width: double.infinity,
               height: 16,
-              color: Colors.grey.shade200,
+              color: context.boba.surfaceAlt,
               margin: const EdgeInsets.symmetric(vertical: 8),
             ),
 
             // Gray rectangles for images
             Row(
-              children: List.generate(3, (i) => 
-                Container(
+              children: List.generate(
+                3,
+                (i) => Container(
                   width: 56,
                   height: 56,
                   margin: EdgeInsets.only(right: 8),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: context.boba.outline,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                )
+                ),
               ),
-            )
+            ),
           ],
         ),
       ),

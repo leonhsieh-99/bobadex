@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 
 Future<bool> showConfirmDialog(
   BuildContext context, {
@@ -6,8 +7,9 @@ Future<bool> showConfirmDialog(
   String title = "Confirm",
   String cancelText = "Cancel",
   String confirmText = "OK",
-  Color confirmColor = Colors.red,
+  Color? confirmColor,
 }) async {
+  final resolvedConfirmColor = confirmColor ?? context.boba.danger;
   final result = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
@@ -21,7 +23,7 @@ Future<bool> showConfirmDialog(
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(true),
           style: ElevatedButton.styleFrom(
-            backgroundColor: confirmColor,
+            backgroundColor: resolvedConfirmColor,
           ),
           child: Text(confirmText),
         ),

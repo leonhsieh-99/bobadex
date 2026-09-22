@@ -1,10 +1,8 @@
-import 'package:bobadex/state/shop_state.dart';
-import 'package:bobadex/state/user_state.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class OnboardingGate extends StatelessWidget {
-  final Widget child;               // your existing body content
+  final Widget child;
   final VoidCallback onAddShop;
   final bool isCurrentUser;
 
@@ -16,39 +14,8 @@ class OnboardingGate extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    if (!isCurrentUser) return child;
-
-    final wizardDone =
-        context.select<UserState, bool>((s) => s.current.onboarded == true);
-    if (!wizardDone) return child;
-
-    final shopsCount =
-        context.select<ShopState, int>((s) => s.shopsForCurrentUser().length);
-
-    final showFirstRun = (shopsCount == 0);
-    if (!showFirstRun) return child;
-
-    return Stack(
-      children: [
-        child,
-        SafeArea(
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 640),
-                child: FirstRunCard(onAddShop: onAddShop),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => child;
 }
-
 
 class FirstRunCard extends StatelessWidget {
   final VoidCallback onAddShop;
@@ -71,9 +38,9 @@ class FirstRunCard extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Start building your collection by adding your first shop.',
-              style: TextStyle(fontSize: 14, color: Colors.black87),
+              style: TextStyle(fontSize: 14, color: context.boba.inkMuted),
             ),
             const SizedBox(height: 16),
             Center(
@@ -82,7 +49,10 @@ class FirstRunCard extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                 ),
                 icon: const Icon(Icons.add),
                 label: const Text('Add your first shop'),
@@ -95,4 +65,3 @@ class FirstRunCard extends StatelessWidget {
     );
   }
 }
-

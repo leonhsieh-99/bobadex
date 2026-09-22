@@ -1,12 +1,15 @@
+import 'dart:async';
+
 import 'package:bobadex/helpers/retry_helper.dart';
+import 'package:bobadex/ui/theme/boba_themes.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user.dart' as u;
 
 class UserState extends ChangeNotifier {
-  final _byId = <String, u.User>{};            // userId -> User model (includes settings)
-  final _loading = <String, bool>{};           // userId -> loading
-  final _lastLoadedAt = <String, DateTime>{};  // userId -> last load time
+  final _byId = <String, u.User>{}; // userId -> User model (includes settings)
+  final _loading = <String, bool>{}; // userId -> loading
+  final _lastLoadedAt = <String, DateTime>{}; // userId -> last load time
 
   Duration cacheTtl = const Duration(minutes: 2);
   bool isLoaded = false;
@@ -17,8 +20,8 @@ class UserState extends ChangeNotifier {
   String? get _currentUserId => Supabase.instance.client.auth.currentUser?.id;
 
   u.User get current => (_currentUserId != null)
-    ? (_byId[_currentUserId!] ?? u.User.empty())
-    : u.User.empty();
+      ? (_byId[_currentUserId!] ?? u.User.empty())
+      : u.User.empty();
 
   bool isLoading(String userId) => _loading[userId] ?? false;
 
@@ -33,7 +36,7 @@ class UserState extends ChangeNotifier {
   Future<void> loadCurrent({bool force = false}) async {
     final id = _currentUserId;
     if (id == null) return;
-      await loadUser(id, force: force);
+    await loadUser(id, force: force);
   }
 
   Future<void> loadUser(String userId, {bool force = false}) async {
@@ -67,14 +70,30 @@ class UserState extends ChangeNotifier {
         }
         return [profile, settings];
       });
-      
+
       final profile = result[0] as Map<String, dynamic>;
       final settings = result[1] as Map<String, dynamic>;
 
       final user = u.User.fromMap(profile, settings);
-      _byId[userId] = user;
+      final normalizedTheme = BobaThemes.normalizeSlug(user.themeSlug);
+      _byId[userId] = user.copyWith(themeSlug: normalizedTheme);
       _lastLoadedAt[userId] = DateTime.now();
       _hasError = false;
+
+      if (userId == _currentUserId &&
+          normalizedTheme != user.themeSlug &&
+          BobaThemes.isLegacySlug(user.themeSlug)) {
+        unawaited(
+          supabase
+              .from('user_settings')
+              .update({'theme_slug': normalizedTheme})
+              .eq('user_id', userId)
+              .then((_) {})
+              .catchError((Object error) {
+                debugPrint('Failed to migrate theme slug: $error');
+              }),
+        );
+      }
     } catch (e) {
       _hasError = true;
       debugPrint('UserState.loadUser($userId) failed: $e');
@@ -100,7 +119,6 @@ class UserState extends ChangeNotifier {
     _byId[id] = cur.copyWith(themeSlug: slug);
     notifyListeners();
   }
-
 
   void setGridLayout(int numColumns) {
     final id = _currentUserId;
@@ -260,8 +278,10 @@ class UserState extends ChangeNotifier {
 
   Future<bool> usernameExists(String username) async {
     try {
-      final res = await Supabase.instance.client
-          .rpc('username_exists', params: {'input_username': username});
+      final res = await Supabase.instance.client.rpc(
+        'username_exists',
+        params: {'input_username': username},
+      );
       return (res == true);
     } catch (e) {
       debugPrint('Error checking username existence: $e');

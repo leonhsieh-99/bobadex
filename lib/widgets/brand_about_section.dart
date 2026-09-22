@@ -1,20 +1,19 @@
 import 'package:bobadex/models/brand_profile.dart';
 import 'package:bobadex/notification_bus.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class BrandAboutSection extends StatelessWidget {
   final BrandProfile profile;
-  final MaterialColor themeColor;
 
-  const BrandAboutSection({
-    super.key,
-    required this.profile,
-    required this.themeColor,
-  });
+  const BrandAboutSection({super.key, required this.profile});
 
   Future<void> _openWebsite(String url) async {
-    final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    final ok = await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    );
     if (!ok) notify('Could not open link', SnackType.error);
   }
 
@@ -22,15 +21,20 @@ class BrandAboutSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!profile.hasContent) return const SizedBox.shrink();
 
-    final chipColor = themeColor.shade100;
-    final chipShape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(8));
+    final chipColor = context.boba.accentSoft;
+    final chipShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    );
 
     return Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('About', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          const Text(
+            'About',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
           if (profile.hasAbout) ...[
             const SizedBox(height: 8),
             Text(
@@ -45,12 +49,19 @@ class BrandAboutSection extends StatelessWidget {
               runSpacing: 8,
               children: [
                 if (profile.foundedYear != null)
-                  _infoChip('Est. ${profile.foundedYear}', chipColor, chipShape),
+                  _infoChip(
+                    'Est. ${profile.foundedYear}',
+                    chipColor,
+                    chipShape,
+                  ),
                 if (profile.locationLabel != null)
                   _infoChip(profile.locationLabel!, chipColor, chipShape),
                 if (profile.website != null)
                   ActionChip(
-                    label: const Text('Website', style: TextStyle(fontSize: 13)),
+                    label: const Text(
+                      'Website',
+                      style: TextStyle(fontSize: 13),
+                    ),
                     visualDensity: VisualDensity.compact,
                     backgroundColor: chipColor,
                     shape: chipShape,
@@ -62,7 +73,10 @@ class BrandAboutSection extends StatelessWidget {
           ],
           if (profile.knownFor.isNotEmpty) ...[
             const SizedBox(height: 12),
-            const Text('Known for', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            const Text(
+              'Known for',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -99,12 +113,15 @@ class BrandAboutSkeleton extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('About', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          const Text(
+            'About',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
           const SizedBox(height: 10),
           Container(
             height: 14,
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
+              color: context.boba.outline,
               borderRadius: BorderRadius.circular(6),
             ),
           ),
@@ -113,7 +130,7 @@ class BrandAboutSkeleton extends StatelessWidget {
             height: 14,
             width: 220,
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
+              color: context.boba.outline,
               borderRadius: BorderRadius.circular(6),
             ),
           ),

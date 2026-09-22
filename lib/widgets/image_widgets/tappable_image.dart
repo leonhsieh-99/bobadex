@@ -3,6 +3,7 @@ import 'package:bobadex/helpers/url_helper.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 
 class TappableImage extends StatelessWidget {
   final ShopMedia media;
@@ -43,7 +44,7 @@ class TappableImage extends StatelessWidget {
       } else {
         final path = media.imagePath;
         final sized = publicUrl(Constants.imageBucket, thumbPath(path, 512));
-        final orig  = publicUrl(Constants.imageBucket, path);
+        final orig = publicUrl(Constants.imageBucket, path);
 
         Widget net = CachedNetworkImage(
           imageUrl: sized,
@@ -52,13 +53,13 @@ class TappableImage extends StatelessWidget {
           fit: BoxFit.cover,
           memCacheWidth: 512,
           memCacheHeight: 512,
-          placeholder: (_, __) => _placeholder(width, height),
+          placeholder: (_, __) => _placeholder(context, width, height),
           errorWidget: (_, __, ___) => CachedNetworkImage(
             imageUrl: orig,
             width: width,
             height: height,
             fit: BoxFit.cover,
-            placeholder: (_, __) => _placeholder(width, height),
+            placeholder: (_, __) => _placeholder(context, width, height),
             errorWidget: (_, __, ___) => const SizedBox.shrink(),
           ),
         );
@@ -74,14 +75,11 @@ class TappableImage extends StatelessWidget {
       onTap: onTap,
       child: Stack(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: image,
-          ),
+          ClipRRect(borderRadius: BorderRadius.circular(10), child: image),
           if (media.isPending && media.localFile != null)
             Positioned.fill(
               child: Container(
-                color: Colors.black26,
+                color: context.boba.imageScrim.withValues(alpha: 0.26),
                 child: const Center(child: CircularProgressIndicator()),
               ),
             ),
@@ -89,11 +87,15 @@ class TappableImage extends StatelessWidget {
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.deepPurple, width: 3),
+                  border: Border.all(color: context.boba.accent, width: 3),
                   borderRadius: BorderRadius.circular(10),
-                  color: Colors.black26,
+                  color: context.boba.imageScrim.withValues(alpha: 0.26),
                 ),
-                child: const Icon(Icons.check_circle, color: Colors.white, size: 36),
+                child: Icon(
+                  Icons.check_circle,
+                  color: context.boba.onImage,
+                  size: 36,
+                ),
               ),
             ),
         ],
@@ -101,10 +103,10 @@ class TappableImage extends StatelessWidget {
     );
   }
 
-  Widget _placeholder(double w, double h) => Container(
+  Widget _placeholder(BuildContext context, double w, double h) => Container(
     width: w,
     height: h,
-    color: Colors.grey[300],
+    color: context.boba.surfaceAlt,
     child: const Center(child: CircularProgressIndicator()),
   );
 }

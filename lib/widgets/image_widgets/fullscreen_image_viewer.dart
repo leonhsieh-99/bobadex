@@ -6,6 +6,7 @@ import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 
 enum FullscreenImageMode { upload, edit, view }
 
@@ -36,7 +37,12 @@ class FullscreenImageViewer extends StatefulWidget {
   final int initialIndex;
   final FullscreenImageMode mode;
   final bool isCurrentUser;
-  final Future<void> Function(GalleryImage img, String comment, String visibility)? onEdit;
+  final Future<void> Function(
+    GalleryImage img,
+    String comment,
+    String visibility,
+  )?
+  onEdit;
   final void Function(List<GalleryImage> images)? onUpload;
   final bool showUserInfo;
 
@@ -70,9 +76,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
     _commentControllers = widget.images
         .map((img) => TextEditingController(text: img.comment))
         .toList();
-    _visibilityOptions = widget.images
-        .map((img) => img.visibility)
-        .toList();
+    _visibilityOptions = widget.images.map((img) => img.visibility).toList();
   }
 
   void _startEdit(int index) {
@@ -116,15 +120,15 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
   }
 
   GestureConfig _gestureConfig({double maxScale = 1.5}) => GestureConfig(
-        inPageView: true,
-        initialScale: 1.0,
-        minScale: 1.0,
-        maxScale: maxScale,
-        animationMinScale: 1.0,
-        cacheGesture: true,
-        speed: 0.85,
-        inertialSpeed: 70.0,
-      );
+    inPageView: true,
+    initialScale: 1.0,
+    minScale: 1.0,
+    maxScale: maxScale,
+    animationMinScale: 1.0,
+    cacheGesture: true,
+    speed: 0.85,
+    inertialSpeed: 70.0,
+  );
 
   void _onPageChanged(int index) {
     setState(() {
@@ -153,7 +157,8 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
 
     return ExtendedImageSlidePage(
       slideAxis: SlideAxis.vertical,
-      slidePageBackgroundHandler: (offset, pageSize) => Colors.black,
+      slidePageBackgroundHandler: (offset, pageSize) =>
+          context.boba.imageScrim,
       child: ExtendedImageGesturePageView.builder(
         itemCount: widget.images.length,
         controller: _pageController,
@@ -168,8 +173,10 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
             enableSlideOutPage: true,
             loadStateChanged: (state) {
               if (state.extendedImageLoadState == LoadState.loading) {
-                return const Center(
-                  child: CircularProgressIndicator(color: Colors.white54),
+                return Center(
+                  child: CircularProgressIndicator(
+                    color: context.boba.onImage.withValues(alpha: 0.54),
+                  ),
                 );
               }
               return null;
@@ -184,7 +191,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
 
   Widget _pageDots({Color? color}) {
     if (widget.images.length < 2) return const SizedBox.shrink();
-    final activeColor = color ?? Colors.white;
+    final activeColor = color ?? context.boba.onImage;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(widget.images.length, (i) {
@@ -203,7 +210,11 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
     );
   }
 
-  Widget _viewCaption(GalleryImage img, {required bool canEdit, required bool editMode}) {
+  Widget _viewCaption(
+    GalleryImage img, {
+    required bool canEdit,
+    required bool editMode,
+  }) {
     final comment = img.comment.trim();
     final showUser = widget.showUserInfo && !canEdit;
     final hasCaption = comment.isNotEmpty;
@@ -218,7 +229,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
           end: Alignment.bottomCenter,
           colors: [
             Colors.transparent,
-            Colors.black.withValues(alpha: 0.72),
+            context.boba.imageScrim.withValues(alpha: 0.72),
           ],
         ),
       ),
@@ -243,7 +254,8 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                           : () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (_) => AccountViewPage(userId: img.userId!),
+                                  builder: (_) =>
+                                      AccountViewPage(userId: img.userId!),
                                 ),
                               );
                             },
@@ -252,8 +264,8 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                     Expanded(
                       child: Text(
                         img.userName ?? '',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: context.boba.onImage,
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
                         ),
@@ -265,11 +277,13 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                 ),
               ],
               if (hasCaption) ...[
-                SizedBox(height: showUser ? 8 : (widget.images.length > 1 ? 12 : 0)),
+                SizedBox(
+                  height: showUser ? 8 : (widget.images.length > 1 ? 12 : 0),
+                ),
                 Text(
                   comment,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: context.boba.onImage,
                     fontSize: 15,
                     height: 1.3,
                   ),
@@ -284,18 +298,28 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 4,
+                          horizontal: 8,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
+                          color:
+                              context.boba.onImage.withValues(alpha: 0.18),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           img.visibility,
-                          style: const TextStyle(fontSize: 12, color: Colors.white),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.boba.onImage,
+                          ),
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.white),
+                        icon: Icon(
+                          Icons.edit_rounded,
+                          color: context.boba.onImage,
+                        ),
                         onPressed: () => _startEdit(currentIndex),
                       ),
                     ],
@@ -321,7 +345,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: context.boba.imageScrim,
         resizeToAvoidBottomInset: true,
         body: Stack(
           children: [
@@ -342,7 +366,10 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                       const Spacer(),
                       if (!uploadMode && (img.id?.isNotEmpty ?? false))
                         PopupMenuButton<String>(
-                          icon: const Icon(Icons.more_horiz, color: Colors.white),
+                          icon: Icon(
+                            Icons.more_horiz,
+                            color: context.boba.onImage,
+                          ),
                           onSelected: (value) {
                             if (value == 'report') {
                               showDialog(
@@ -374,7 +401,9 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                 bottom: 0,
                 child: Material(
                   color: Theme.of(context).colorScheme.surface,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(16, 8, 16, 12 + bottomInset),
                     child: SafeArea(
@@ -383,27 +412,34 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const SizedBox(height: 8),
-                          _pageDots(color: Colors.black87),
-                          if (widget.images.length > 1) const SizedBox(height: 12),
+                          _pageDots(color: context.boba.ink),
+                          if (widget.images.length > 1)
+                            const SizedBox(height: 12),
                           _UploadOrEditFields(
-                            commentController: _commentControllers[currentIndex],
+                            commentController:
+                                _commentControllers[currentIndex],
                             visibility: _visibilityOptions[currentIndex],
-                            onVisibilityChanged: (v) =>
-                                setState(() => _visibilityOptions[currentIndex] = v),
+                            onVisibilityChanged: (v) => setState(
+                              () => _visibilityOptions[currentIndex] = v,
+                            ),
                             onPrev: uploadMode && currentIndex > 0
                                 ? () => _pageController.previousPage(
-                                      duration: const Duration(milliseconds: 300),
-                                      curve: Curves.easeInOut,
-                                    )
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  )
                                 : null,
-                            onNext: uploadMode && currentIndex < widget.images.length - 1
+                            onNext:
+                                uploadMode &&
+                                    currentIndex < widget.images.length - 1
                                 ? () => _pageController.nextPage(
-                                      duration: const Duration(milliseconds: 300),
-                                      curve: Curves.easeInOut,
-                                    )
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  )
                                 : null,
                             onUpload: uploadMode ? _submitUploads : null,
-                            onSave: editMode ? () => _saveEdit(currentIndex) : null,
+                            onSave: editMode
+                                ? () => _saveEdit(currentIndex)
+                                : null,
                             onCancel: editMode ? _cancelEdit : null,
                           ),
                         ],
@@ -435,10 +471,10 @@ class _ChromeIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black.withValues(alpha: 0.35),
+      color: context.boba.imageScrim.withValues(alpha: 0.35),
       shape: const CircleBorder(),
       child: IconButton(
-        icon: Icon(icon, color: Colors.white),
+        icon: Icon(icon, color: context.boba.onImage),
         onPressed: onPressed,
       ),
     );
@@ -486,15 +522,15 @@ class _UploadOrEditFields extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        if (onPrev != null || onNext != null || onUpload != null || onSave != null)
+        if (onPrev != null ||
+            onNext != null ||
+            onUpload != null ||
+            onSave != null)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               if (onPrev != null)
-                TextButton(
-                  onPressed: onPrev,
-                  child: const Text('Prev'),
-                )
+                TextButton(onPressed: onPrev, child: const Text('Prev'))
               else
                 const SizedBox(width: 64),
               if (onUpload != null)
@@ -515,10 +551,7 @@ class _UploadOrEditFields extends StatelessWidget {
                   child: const Text('Cancel'),
                 ),
               if (onNext != null)
-                TextButton(
-                  onPressed: onNext,
-                  child: const Text('Next'),
-                )
+                TextButton(onPressed: onNext, child: const Text('Next'))
               else if (onPrev != null)
                 const SizedBox(width: 64),
             ],
@@ -543,14 +576,12 @@ class VisibilityToggleButton extends StatelessWidget {
     final isPublic = value == 'public';
     return TextButton.icon(
       style: TextButton.styleFrom(
-        foregroundColor: isPublic ? Colors.green[800] : Colors.grey[700],
+        foregroundColor:
+            isPublic ? context.boba.success : context.boba.inkMuted,
         backgroundColor: Colors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
-      icon: const Icon(
-        Icons.sync_alt,
-        size: 20,
-      ),
+      icon: const Icon(Icons.sync_alt, size: 20),
       label: Text(isPublic ? 'Public' : 'Private'),
       onPressed: () => onChanged(isPublic ? 'private' : 'public'),
     );

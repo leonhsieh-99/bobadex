@@ -7,27 +7,27 @@ abstract class SortableEntry {
 
 void sortEntries<T extends SortableEntry>(
   List<T> entries, {
-    required String by,
-    required bool ascending,
+  required String by,
+  required bool ascending,
 }) {
   entries.sort((a, b) {
     switch (by) {
       case 'rating':
         return ascending
-          ? a.rating.compareTo(b.rating)
-          : b.rating.compareTo(a.rating);
+            ? a.rating.compareTo(b.rating)
+            : b.rating.compareTo(a.rating);
       case 'name':
         return ascending
-          ? a.name.toLowerCase().compareTo(b.name.toLowerCase())
-          : b.name.toLowerCase().compareTo(a.name.toLowerCase());
+            ? a.name.toLowerCase().compareTo(b.name.toLowerCase())
+            : b.name.toLowerCase().compareTo(a.name.toLowerCase());
       case 'favorite':
-        int favComp = (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0);
-        if (favComp != 0) return favComp;
+        final favComp = (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0);
+        if (favComp != 0) return ascending ? -favComp : favComp;
         return b.rating.compareTo(a.rating);
       case 'createdAt':
         return ascending
-          ? a.createdAt.compareTo(b.createdAt)
-          : b.createdAt.compareTo(a.createdAt);
+            ? a.createdAt.compareTo(b.createdAt)
+            : b.createdAt.compareTo(a.createdAt);
       default:
         return 0;
     }
@@ -35,10 +35,12 @@ void sortEntries<T extends SortableEntry>(
 }
 
 List<T> filterEntries<T extends SortableEntry>(
-List<T> entries, {
+  List<T> entries, {
   required String searchQuery,
 }) {
-  return entries = entries.where((entry) => 
-    entry.name.toLowerCase().contains(searchQuery.toLowerCase())
-  ).toList();
+  return entries = entries
+      .where(
+        (entry) => entry.name.toLowerCase().contains(searchQuery.toLowerCase()),
+      )
+      .toList();
 }

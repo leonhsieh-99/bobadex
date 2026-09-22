@@ -1,17 +1,16 @@
 import 'dart:async';
-import 'package:bobadex/pages/account_view_page.dart';
-import 'package:bobadex/pages/achievements_page.dart';
-import 'package:bobadex/pages/about_page.dart';
-import 'package:bobadex/pages/settings_page.dart';
+import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/pages/add_shop_search_page.dart';
 import 'package:bobadex/pages/shop_detail_page.dart';
-import 'package:bobadex/pages/social_page.dart';
-import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
-import 'package:bobadex/widgets/confirmation_dialog.dart';
-import 'package:bobadex/widgets/onboarding_gate.dart';
+import 'package:bobadex/ui/components/boba_button.dart';
+import 'package:bobadex/ui/components/boba_nav_bar.dart';
+import 'package:bobadex/ui/components/dex_header.dart';
+import 'package:bobadex/ui/components/empty_state.dart';
+import 'package:bobadex/ui/components/entry_tile.dart';
+import 'package:bobadex/ui/components/skeleton_box.dart';
+import 'package:bobadex/ui/theme/boba_tokens.dart';
 import 'package:bobadex/widgets/onboarding_wizard.dart';
-import 'package:bobadex/widgets/shop_grid_tile.dart';
-import 'package:bobadex/widgets/thumb_pic.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -21,11 +20,6 @@ import '../models/user.dart' as u;
 import '../widgets/filter_sort_bar.dart';
 import '../state/user_state.dart';
 import '../state/shop_state.dart';
-import 'package:bobadex/config/constants.dart';
-import 'add_shop_search_page.dart';
-import '../widgets/command_icon.dart';
-import 'friends_page.dart';
-import 'rankings_page.dart';
 
 class HomePage extends StatefulWidget {
   final String? userId;
@@ -40,13 +34,8 @@ class _HomePageState extends State<HomePage> {
   late final bool _isCurrentUser;
   late Future<void> _ready = Future.value();
   String _searchQuery = '';
-  String _selectedSort = 'favorite-asc';
+  String _selectedSort = 'favorite-desc';
   final _searchController = TextEditingController();
-
-  bool get isCurrentUser {
-    final currentUser = Supabase.instance.client.auth.currentUser;
-    return currentUser != null && widget.userId == currentUser.id;
-  }
 
   @override
   void initState() {
@@ -83,7 +72,6 @@ class _HomePageState extends State<HomePage> {
   void didUpdateWidget(covariant HomePage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.userId != oldWidget.userId && _uid.isNotEmpty) {
-      // Defer the load to avoid setState during build
       WidgetsBinding.instance.addPostFrameCallback((_) {
         context.read<ShopState>().loadForUser(_uid);
       });
@@ -94,28 +82,21 @@ class _HomePageState extends State<HomePage> {
     final seen = context.read<UserState>().current.onboarded;
     if (!seen) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => OnboardingWizard()),
-        );
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => OnboardingWizard()));
         setState(() {});
       });
     }
   }
 
   List<Shop> getVisibleShops(List<Shop> shops) {
-    List<Shop> filtered = shops;
-
+    var filtered = shops;
     if (_searchQuery.isNotEmpty) {
       filtered = filterEntries(filtered, searchQuery: _searchQuery);
     }
-
-    List<String> options = _selectedSort.split('-');
-    sortEntries(
-      filtered,
-      by: options.first,
-      ascending: options[1] == 'asc',
-    );
-
+    final options = _selectedSort.split('-');
+    sortEntries(filtered, by: options.first, ascending: options[1] == 'asc');
     return filtered;
   }
 
@@ -123,25 +104,31 @@ class _HomePageState extends State<HomePage> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ShopDetailPage(
-          shopId: shopId,
-          userId: userId,
-        )
+        builder: (_) => ShopDetailPage(shopId: shopId, userId: userId),
       ),
     );
   }
 
-  void _navigateToPage(Widget page) {
-    Navigator.push(
+  void _openAddShop() {
+    Navigator.of(
       context,
-      MaterialPageRoute(builder: (_) => page),
-    );
+      rootNavigator: true,
+    ).push(MaterialPageRoute(builder: (_) => const AddShopSearchPage()));
   }
 
   @override
   Widget build(BuildContext context) {
     final user = context.select<UserState, u.User?>((s) => s.getUser(_uid));
-    final shops = context.select<ShopState, List<Shop>>((s) => s.shopsFor(_uid));
+    final shops = context.select<ShopState, List<Shop>>(
+      (s) => s.shopsFor(_uid),
+    );
+    final drinkCount = context.select<ShopState, int>((s) {
+      return shops.fold<int>(0, (sum, shop) {
+        final id = shop.id;
+        if (id == null) return sum;
+        return sum + s.countsForShop(id).total;
+      });
+    });
 
     return FutureBuilder(
       future: _ready,
@@ -156,205 +143,153 @@ class _HomePageState extends State<HomePage> {
           return const HomePageSkeleton();
         }
 
-        final themeColor = Constants.getThemeColor(user.themeSlug);
         final visibleShops = getVisibleShops(shops);
-
-        Widget shopGrid() {
-          if (shops.isEmpty) {
-            return const Center(child: Text("No shops added.", style: Constants.emptyListTextStyle));
-          } else if (visibleShops.isEmpty) {
-            return const Center(child: Text('No shops found.', style: Constants.emptyListTextStyle));
-          }
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
-            child: GridView.builder(
-              padding: const EdgeInsets.fromLTRB(4, 0, 4, 120),
-              itemCount: visibleShops.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: user.gridColumns,
-                crossAxisSpacing: 4,
-                mainAxisSpacing: 4,
-                childAspectRatio: 1,
-              ),
-              itemBuilder: (context, index) {
-                final shop = visibleShops[index];
-                return ShopGridTile(
-                  shop: shop,
-                  columns: user.gridColumns,
-                  useIcons: user.useIcons == true,
-                  themeColor: themeColor,
-                  onTap: () async => _navigateToShop(shop.id!, user.id),
-                );
-              },
-            ),
-          );
-        }
+        final bottomInset = _isCurrentUser
+            ? BobaNavBar.clearance(context)
+            : MediaQuery.paddingOf(context).bottom + BobaSpace.x4;
 
         return Scaffold(
-          extendBody: true,
-          appBar: AppBar(
-            title: Text('${user.firstName}\'s Bobadex'),
-          ),
-          drawer: isCurrentUser ? Drawer(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                DrawerHeader(
-                  decoration: BoxDecoration(color: themeColor.shade100),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ThumbPic(path: user.profileImagePath, size: 120,),
-                    ],
+          appBar: _isCurrentUser
+              ? null
+              : AppBar(title: Text('${user.firstName}\'s Bobadex')),
+          body: SafeArea(
+            bottom: false,
+            child: CustomScrollView(
+              slivers: [
+                if (_isCurrentUser)
+                  SliverToBoxAdapter(
+                    child: DexHeader(
+                      title: '${user.firstName}\'s Bobadex',
+                      brandCount: shops.length,
+                      drinkCount: drinkCount,
+                    ),
+                  ),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _FilterBarDelegate(
+                    height: 108,
+                    child: FilterSortBar(
+                      controller: _searchController,
+                      sortOptions: [
+                        SortOption(
+                          'favorite',
+                          Icons.favorite_rounded,
+                          label: 'Fav',
+                        ),
+                        SortOption(
+                          'rating',
+                          Icons.star_rounded,
+                          label: 'Rating',
+                        ),
+                        SortOption(
+                          'name',
+                          Icons.sort_by_alpha_rounded,
+                          label: 'Name',
+                        ),
+                        SortOption(
+                          'createdAt',
+                          Icons.schedule_rounded,
+                          label: 'Added',
+                        ),
+                      ],
+                      onSearchChanged: (query) {
+                        setState(() => _searchQuery = query);
+                      },
+                      onSortSelected: (sortKey) {
+                        setState(() => _selectedSort = sortKey);
+                      },
+                    ),
+                  ),
+                ),
+                if (shops.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: EmptyState(
+                      title: _isCurrentUser
+                          ? 'Your dex is empty'
+                          : 'No brands yet',
+                      body: _isCurrentUser
+                          ? 'Add your first shop to start the collection.'
+                          : 'This collector hasn\'t added any shops.',
+                      action: _isCurrentUser
+                          ? BobaButton(
+                              label: 'Add your first shop',
+                              icon: const Icon(Icons.add_rounded),
+                              onPressed: _openAddShop,
+                            )
+                          : null,
+                    ),
                   )
-                ),
-                ListTile(
-                  leading: const Icon(Icons.settings),
-                  title: const Text('Settings'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SettingsPage())
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.badge),
-                  title: const Text('Achievements'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => AchievementsPage(userId: _uid))
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.info_outline),
-                  title: const Text('About + Contact'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => AboutPage())
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.logout),
-                  title: const Text('Sign out'),
-                  onTap: () async {
-                    final confirmed = await showConfirmDialog(
-                      context,
-                      message: 'Are you sure you want to sign out?',
-                      title: 'Sign Out',
-                      confirmText: 'Sign Out',
-                      confirmColor: themeColor.shade400
-                    );
-                    if (confirmed) {
-                      await Supabase.instance.client.auth.signOut();
-                    }
-                  },
-                ),
+                else if (visibleShops.isEmpty)
+                  const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: EmptyState(
+                      title: 'No brands found',
+                      body: 'Try a different search or sort.',
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(
+                      BobaSpace.x2,
+                      BobaSpace.x2,
+                      BobaSpace.x2,
+                      bottomInset,
+                    ),
+                    sliver: SliverGrid(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: user.gridColumns,
+                        crossAxisSpacing: BobaSpace.x2,
+                        mainAxisSpacing: BobaSpace.x2,
+                        childAspectRatio: 1,
+                      ),
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final shop = visibleShops[index];
+                        return EntryTile(
+                          shop: shop,
+                          columns: user.gridColumns,
+                          useIcons: user.useIcons == true,
+                          onTap: () async => _navigateToShop(shop.id!, user.id),
+                        );
+                      }, childCount: visibleShops.length),
+                    ),
+                  ),
               ],
             ),
-          ) : null,
-          body: OnboardingGate(
-            isCurrentUser: isCurrentUser,
-            onAddShop: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => AddShopSearchPage()),
-            ),
-            child: Stack(
-              children: [
-                Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: FilterSortBar(
-                        controller: _searchController,
-                        sortOptions: [
-                          SortOption('favorite', Icons.favorite),
-                          SortOption('rating', Icons.star),
-                          SortOption('name', Icons.sort_by_alpha),
-                          SortOption('createdAt', Icons.access_time),
-                        ],
-                        onSearchChanged: (query) {
-                          setState(() => _searchQuery = query);
-                        },
-                        onSortSelected: (sortKey) {
-                          setState(() => _selectedSort = sortKey);
-                        }
-                      ),
-                    ),
-                    Expanded(child: shopGrid()),
-                  ],
-                ),
-                if (isCurrentUser && MediaQuery.of(context).viewInsets.bottom == 0)
-                  Positioned(
-                    left: 16,
-                    right: 16,
-                    bottom: 24,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 20),
-                      decoration: BoxDecoration(
-                        color: themeColor.shade50,
-                        borderRadius: BorderRadius.circular(40),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey,
-                            blurRadius: 10,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _FriendsCommandIcon(onTap: () => _navigateToPage(FriendsPage())),
-                          CommandIcon(icon: Icons.people, label: "Social", onTap: () => _navigateToPage(SocialPage())),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              GestureDetector(
-                                onTap: () => _navigateToPage(AddShopSearchPage()),
-                                child: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: themeColor == Colors.grey ? themeColor.shade400 : themeColor.shade300,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(Icons.add, color: Colors.white, size: 24),
-                                ),
-                              ),
-                            ],
-                          ),
-                          CommandIcon(icon: Icons.leaderboard, label: "Rankings", onTap: () => _navigateToPage(RankingsPage())),
-                          CommandIcon(icon: Icons.person, label: "Profile", onTap: () => _navigateToPage(AccountViewPage(userId: user.id, user: user))),
-                        ],
-                      ),
-                    ),
-                  )
-                ]
-              ),
-            )
-          );
-        }
-      );
-    }
+          ),
+        );
+      },
+    );
+  }
 }
 
-class _FriendsCommandIcon extends StatelessWidget {
-  final VoidCallback onTap;
-  const _FriendsCommandIcon({required this.onTap});
+class _FilterBarDelegate extends SliverPersistentHeaderDelegate {
+  _FilterBarDelegate({required this.child, required this.height});
+
+  final Widget child;
+  final double height;
 
   @override
-  Widget build(BuildContext context) {
-    final count = context.select<FriendState, int>((s) => s.incomingRequests.length);
-    return CommandIcon(
-      icon: Icons.group,
-      label: "Friends",
-      notificationCount: count,
-      onTap: onTap,
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: child,
     );
+  }
+
+  @override
+  bool shouldRebuild(covariant _FilterBarDelegate oldDelegate) {
+    return oldDelegate.height != height || oldDelegate.child != child;
   }
 }
 
@@ -366,69 +301,23 @@ class HomePageSkeleton extends StatelessWidget {
     const columns = Constants.defaultGridColumns;
     return Scaffold(
       body: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 12, 8, 12),
+        padding: const EdgeInsets.fromLTRB(
+          BobaSpace.x2,
+          BobaSpace.x6,
+          BobaSpace.x2,
+          BobaSpace.x2,
+        ),
         child: GridView.builder(
           padding: const EdgeInsets.only(bottom: 120),
-          itemCount: 8, // show a bit more skeletons for realism
+          itemCount: 8,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
+            crossAxisSpacing: BobaSpace.x2,
+            mainAxisSpacing: BobaSpace.x2,
             childAspectRatio: 1,
           ),
           itemBuilder: (context, index) {
-            return Container(
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // top image placeholder
-                  Expanded(
-                    flex: 3,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(16),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // bottom text placeholders
-                  Expanded(
-                    flex: 2,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            height: 12,
-                            width: 80,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            height: 10,
-                            width: 50,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
+            return const SkeletonBox(height: 160, radius: BobaRadius.lg);
           },
         ),
       ),

@@ -1,4 +1,4 @@
-import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:flutter/material.dart';
 
 class CommandIcon extends StatelessWidget {
@@ -24,10 +24,10 @@ class CommandIcon extends StatelessWidget {
         children: [
           Badge(
             isLabelVisible: notificationCount != 0,
-            backgroundColor: Colors.red,
+            backgroundColor: context.boba.danger,
             label: Text(
               notificationCount.toString(),
-              style: Constants.badgeLabelStyle,
+              style: context.bobaText.badge,
             ),
             child: Icon(icon, size: 26),
           ),

@@ -1,5 +1,5 @@
-import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/feed_event.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:bobadex/widgets/social_widgets/feed_card_options.dart';
 import 'package:bobadex/widgets/social_widgets/feed_event_card.dart';
 import 'package:flutter/material.dart';
@@ -109,7 +109,11 @@ class _BrandFeedViewState extends State<BrandFeedView> {
       return SizedBox(
         height: MediaQuery.of(context).size.height * 0.2,
         child: Center(
-          child: Text("No activity yet", style: Constants.emptyListTextStyle, textAlign: TextAlign.center),
+          child: Text(
+            "No activity yet",
+            style: context.bobaText.empty,
+            textAlign: TextAlign.center,
+          ),
         ),
       );
     }
@@ -128,10 +132,8 @@ class _BrandFeedViewState extends State<BrandFeedView> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: _items.length,
-          itemBuilder: (context, i) => FeedEventCard(
-            event: _items[i],
-            variant: FeedCardVariant.brand,
-          ),
+          itemBuilder: (context, i) =>
+              FeedEventCard(event: _items[i], variant: FeedCardVariant.brand),
         ),
         if (_hasMore)
           Padding(

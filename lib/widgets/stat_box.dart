@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 
 class StatCard extends StatelessWidget {
   final String label;
@@ -35,12 +36,10 @@ class StatCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: size/4,
-            height: size/4,
+            width: size / 4,
+            height: size / 4,
             alignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
             child: emoji != null
                 ? Text(emoji!, style: const TextStyle(fontSize: 20))
                 : Icon(icon ?? Icons.star_rounded),
@@ -58,7 +57,8 @@ class StatCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 22, fontWeight: FontWeight.w700,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   Text(
@@ -74,7 +74,7 @@ class StatCard extends StatelessWidget {
                 ],
               ),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -86,13 +86,18 @@ class _CountUp extends StatefulWidget {
   final int end;
   final Duration duration;
   final Widget Function(int value) builder;
-  const _CountUp({required this.end, required this.duration, required this.builder});
+  const _CountUp({
+    required this.end,
+    required this.duration,
+    required this.builder,
+  });
 
   @override
   State<_CountUp> createState() => _CountUpState();
 }
 
-class _CountUpState extends State<_CountUp> with SingleTickerProviderStateMixin {
+class _CountUpState extends State<_CountUp>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _c;
   late final Animation<double> _a;
 
@@ -100,12 +105,16 @@ class _CountUpState extends State<_CountUp> with SingleTickerProviderStateMixin 
   void initState() {
     super.initState();
     _c = AnimationController(vsync: this, duration: widget.duration);
-    _a = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic)..addListener(() => setState(() {}));
+    _a = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic)
+      ..addListener(() => setState(() {}));
     _c.forward();
   }
 
   @override
-  void dispose() { _c.dispose(); super.dispose(); }
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +122,6 @@ class _CountUpState extends State<_CountUp> with SingleTickerProviderStateMixin 
     return widget.builder(v);
   }
 }
-
 
 class StatCardSkeleton extends StatelessWidget {
   final double size;
@@ -124,11 +132,11 @@ class StatCardSkeleton extends StatelessWidget {
       width: size,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.grey[300],
+        color: context.boba.surfaceAlt,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: context.boba.shadow,
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),

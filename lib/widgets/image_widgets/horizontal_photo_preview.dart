@@ -2,6 +2,7 @@ import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
 import 'package:bobadex/widgets/image_widgets/tappable_image.dart';
 import 'package:flutter/material.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 
 class HorizontalPhotoPreview extends StatelessWidget {
   final List<ShopMedia> shopMediaList;
@@ -11,7 +12,7 @@ class HorizontalPhotoPreview extends StatelessWidget {
   final double width;
   final bool showUserInfo;
 
-  const HorizontalPhotoPreview ({
+  const HorizontalPhotoPreview({
     super.key,
     required this.shopMediaList,
     this.maxPreview = 5,
@@ -25,16 +26,18 @@ class HorizontalPhotoPreview extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => FullscreenImageViewer(
-          images: mediaList.map((m) =>
-            GalleryImage(
-              url: m.imageUrl,
-              id: m.id,
-              comment: m.comment ?? '',
-              userImagePath: m.profileImagePath,
-              userName: m.userDisplayName,
-              userId: m.userId,
-            )
-          ).toList(),
+          images: mediaList
+              .map(
+                (m) => GalleryImage(
+                  url: m.imageUrl,
+                  id: m.id,
+                  comment: m.comment ?? '',
+                  userImagePath: m.profileImagePath,
+                  userName: m.userDisplayName,
+                  userId: m.userId,
+                ),
+              )
+              .toList(),
           initialIndex: idx,
           isCurrentUser: false,
           showUserInfo: showUserInfo,
@@ -45,9 +48,13 @@ class HorizontalPhotoPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mediaList = shopMediaList.where((sm) => sm.visibility == 'public').toList();
+    final mediaList = shopMediaList
+        .where((sm) => sm.visibility == 'public')
+        .toList();
     final showViewAll = (mediaList.length > maxPreview) && onViewAll != null;
-    final visibleMedia = showViewAll ? mediaList.take(maxPreview).toList() : mediaList;
+    final visibleMedia = showViewAll
+        ? mediaList.take(maxPreview).toList()
+        : mediaList;
 
     return SizedBox(
       height: height,
@@ -63,7 +70,7 @@ class HorizontalPhotoPreview extends StatelessWidget {
                 width: width,
                 height: height,
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.15),
+                  color: context.boba.imageScrim.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
@@ -71,7 +78,7 @@ class HorizontalPhotoPreview extends StatelessWidget {
                     'View all',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.black,
+                      color: context.boba.ink,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -81,9 +88,14 @@ class HorizontalPhotoPreview extends StatelessWidget {
           }
           return GestureDetector(
             onTap: () => _onTap(context, mediaList, index),
-            child: TappableImage(height: height, width: width, media: visibleMedia[index], useHero: false)
+            child: TappableImage(
+              height: height,
+              width: width,
+              media: visibleMedia[index],
+              useHero: false,
+            ),
           );
-        }
+        },
       ),
     );
   }
@@ -93,8 +105,13 @@ class HorizontalPreviewSkeleton extends StatelessWidget {
   final int count;
   final double height;
   final double width;
-  const HorizontalPreviewSkeleton({super.key, this.count = 6, this.height = 100, this.width = 75});
-  
+  const HorizontalPreviewSkeleton({
+    super.key,
+    this.count = 6,
+    this.height = 100,
+    this.width = 75,
+  });
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -108,7 +125,7 @@ class HorizontalPreviewSkeleton extends StatelessWidget {
             width: width,
             height: height,
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
+              color: context.boba.surfaceAlt,
               borderRadius: BorderRadius.circular(10),
             ),
           );
@@ -117,4 +134,3 @@ class HorizontalPreviewSkeleton extends StatelessWidget {
     );
   }
 }
-

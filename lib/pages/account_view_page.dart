@@ -1,15 +1,19 @@
 import 'dart:math';
 
 import 'package:bobadex/analytics_service.dart';
-import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/account_stats.dart';
 import 'package:bobadex/models/achievement.dart';
 import 'package:bobadex/models/friendship.dart';
 import 'package:bobadex/models/user.dart' as u;
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
+import 'package:bobadex/pages/about_page.dart';
+import 'package:bobadex/pages/achievements_page.dart';
 import 'package:bobadex/pages/home_page.dart';
+import 'package:bobadex/pages/rankings_page.dart';
+import 'package:bobadex/pages/settings_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_account_page.dart';
+import 'package:bobadex/ui/components/boba_nav_bar.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
@@ -21,6 +25,7 @@ import 'package:bobadex/widgets/profile_summary_card.dart';
 import 'package:bobadex/widgets/report_widget.dart';
 import 'package:bobadex/widgets/stat_box.dart';
 import 'package:bobadex/widgets/social_widgets/user_feed_view.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -29,24 +34,26 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class AccountViewPage extends StatefulWidget {
   final String userId;
   final u.User? user; // user snapshot for fast ui
+  final bool inShell;
 
-  const AccountViewPage ({
+  const AccountViewPage({
     super.key,
     required this.userId,
     this.user,
+    this.inShell = false,
   });
 
   factory AccountViewPage.fromUser(u.User user) =>
-    AccountViewPage(userId: user.id, user: user);
+      AccountViewPage(userId: user.id, user: user);
 
   @override
-  State<AccountViewPage> createState() => _AccountViewPageState() ;
+  State<AccountViewPage> createState() => _AccountViewPageState();
 }
 
 class _AccountViewPageState extends State<AccountViewPage> {
   bool _isLoading = false;
   AccountStats stats = AccountStats.emptyStats();
-  List<Achievement> readOnlyBadges  = [];
+  List<Achievement> readOnlyBadges = [];
   u.User? _user;
 
   @override
@@ -61,13 +68,15 @@ class _AccountViewPageState extends State<AccountViewPage> {
     final supabase = Supabase.instance.client;
     setState(() => _isLoading = true);
     try {
-      final stats = await context.read<UserStatsCache>().getStats(widget.userId);
+      final stats = await context.read<UserStatsCache>().getStats(
+        widget.userId,
+      );
       if (widget.userId != supabase.auth.currentUser!.id) {
         final response = await supabase
-          .from('user_achievements')
-          .select('achievement:achievement_id(*)')
-          .eq('user_id', widget.userId)
-          .eq('pinned', true);
+            .from('user_achievements')
+            .select('achievement:achievement_id(*)')
+            .eq('user_id', widget.userId)
+            .eq('pinned', true);
 
         readOnlyBadges = (response as List)
             .map((row) => Achievement.fromJson(row['achievement']))
@@ -88,7 +97,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
       // skip if current user is self
       final selfId = context.read<UserState>().current.id;
       if (widget.userId == selfId) return;
-      
+
       final row = await Supabase.instance.client
           .from('users')
           .select('id, username, display_name, profile_image_path, bio')
@@ -102,7 +111,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
     } catch (e) {
       debugPrint('Error loading user: $e');
     }
-}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -116,16 +125,24 @@ class _AccountViewPageState extends State<AccountViewPage> {
 
     final brand = brandState.getBrand(stats.topShopSlug);
     final drinkName = stats.topDrinkName;
-    final friendStatus = friendState.allFriendships.firstWhereOrNull((f) => f.requester.id == widget.userId || f.addressee.id == widget.userId);
+    final friendStatus = friendState.allFriendships.firstWhereOrNull(
+      (f) => f.requester.id == widget.userId || f.addressee.id == widget.userId,
+    );
     final achievementState = context.watch<AchievementsState>();
     final unlockedBadges = achievementState.achievements
         .where((a) => achievementState.progressMap[a.id]?.unlocked == true)
         .toList();
-    final pinnedBadges = isCurrentUser 
-      ? unlockedBadges.where((a) => achievementState.progressMap[a.id]?.pinned == true).toList()
-      : readOnlyBadges;
+    final pinnedBadges = isCurrentUser
+        ? unlockedBadges
+              .where((a) => achievementState.progressMap[a.id]?.pinned == true)
+              .toList()
+        : readOnlyBadges;
 
-    String getFriendButtonText(Friendship? friendStatus, String currentUserId, String targetUserId) {
+    String getFriendButtonText(
+      Friendship? friendStatus,
+      String currentUserId,
+      String targetUserId,
+    ) {
       if (friendStatus == null) {
         return 'Add friend';
       }
@@ -143,118 +160,220 @@ class _AccountViewPageState extends State<AccountViewPage> {
       return '';
     }
 
-    bool isFriendButtonEnabled(Friendship? friendStatus, String currentUserId, String targetUserId) {
+    bool isFriendButtonEnabled(
+      Friendship? friendStatus,
+      String currentUserId,
+      String targetUserId,
+    ) {
       if (_user == null) return false;
       if (friendStatus == null) {
         return true;
       }
       // Only enable accept if current user is the addressee
-      if (friendStatus.status == 'pending' && friendStatus.requester.id == targetUserId) {
+      if (friendStatus.status == 'pending' &&
+          friendStatus.requester.id == targetUserId) {
         return true;
       }
       // Otherwise, button should be disabled
       return false;
     }
 
-    final themeColor = Constants.getThemeColor(currentUser.themeSlug);
-
     final friendBtn = (!isCurrentUser)
-      ? Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: TextButton.icon(
-            icon: const Icon(Icons.person_add_rounded, size: 18, color: Colors.white),
-            label: Text(getFriendButtonText(friendStatus, currentUser.id, widget.userId)),
-            onPressed: isFriendButtonEnabled(friendStatus, currentUser.id, widget.userId)
-              ? () async {
-                  if (friendStatus == null) {
-                    await friendState.addUser(user);
-                  } else if (friendStatus.status == 'pending' && friendStatus.requester.id == widget.userId) {
-                    await friendState.acceptUser(widget.userId);
-                    await analytics.friendRequestAccepted();
-                  }
-                }
-              : null,
-            style: ButtonStyle(
-              backgroundColor:  WidgetStatePropertyAll(friendStatus?.status == 'accepted' ? themeColor.shade100 : themeColor.shade400),
-              padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 14, vertical: 6)),
-              shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))),
+        ? Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: TextButton.icon(
+              icon: Icon(
+                Icons.person_add_rounded,
+                size: 18,
+                color: context.boba.onAccent,
+              ),
+              label: Text(
+                getFriendButtonText(
+                  friendStatus,
+                  currentUser.id,
+                  widget.userId,
+                ),
+              ),
+              onPressed:
+                  isFriendButtonEnabled(
+                    friendStatus,
+                    currentUser.id,
+                    widget.userId,
+                  )
+                  ? () async {
+                      if (friendStatus == null) {
+                        await friendState.addUser(user);
+                      } else if (friendStatus.status == 'pending' &&
+                          friendStatus.requester.id == widget.userId) {
+                        await friendState.acceptUser(widget.userId);
+                        await analytics.friendRequestAccepted();
+                      }
+                    }
+                  : null,
+              style: ButtonStyle(
+                backgroundColor: WidgetStatePropertyAll(
+                  friendStatus?.status == 'accepted'
+                      ? context.boba.accentSoft
+                      : context.boba.accent,
+                ),
+                padding: const WidgetStatePropertyAll(
+                  EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                ),
+                shape: WidgetStatePropertyAll(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
             ),
-          ),
-        )
-      : null;
+          )
+        : null;
 
     final viewBtn = (!isCurrentUser)
-      ? Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: TextButton.icon(
-            icon: const Icon(Icons.menu_book_rounded, size: 18, color: Colors.white),
-            label: const Text('View Bobadex'),
-            onPressed: (_user != null)
-              ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => HomePage(userId: _user!.id)))
-              : null,
-            style: ButtonStyle(
-              backgroundColor: WidgetStatePropertyAll(themeColor.shade400),
-              padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 14, vertical: 6)),
-              shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))),
+        ? Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: TextButton.icon(
+              icon: Icon(
+                Icons.menu_book_rounded,
+                size: 18,
+                color: context.boba.onAccent,
+              ),
+              label: const Text('View Bobadex'),
+              onPressed: (_user != null)
+                  ? () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => HomePage(userId: _user!.id),
+                      ),
+                    )
+                  : null,
+              style: ButtonStyle(
+                backgroundColor: WidgetStatePropertyAll(context.boba.accent),
+                padding: const WidgetStatePropertyAll(
+                  EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                ),
+                shape: WidgetStatePropertyAll(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
             ),
-          ),
-        )
-      : Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: TextButton.icon(
-            icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.white),
-            label: const Text('Edit Profile'),
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => SettingsAccountPage())),
-            style: ButtonStyle(
-              backgroundColor: WidgetStatePropertyAll(themeColor.shade400),
-              padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 14, vertical: 6)),
-              shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))),
+          )
+        : Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: TextButton.icon(
+              icon: Icon(
+                Icons.edit_rounded,
+                size: 18,
+                color: context.boba.onAccent,
+              ),
+              label: const Text('Edit Profile'),
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => SettingsAccountPage())),
+              style: ButtonStyle(
+                backgroundColor: WidgetStatePropertyAll(context.boba.accent),
+                padding: const WidgetStatePropertyAll(
+                  EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                ),
+                shape: WidgetStatePropertyAll(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
             ),
-          ),
-        );
+          );
 
     final favTile = _isLoading
-      ? const ShopTileSkeleton()
-      : (brand != null)
-          ? ListTile(
-              leading: BrandMark(name: brand.display, slug: brand.slug, iconPath: brand.iconPath, size: 48),
-              title: Text(brand.display, maxLines: 1, overflow: TextOverflow.ellipsis),
-              subtitle: Text(drinkName, maxLines: 1, overflow: TextOverflow.ellipsis),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand))),
-            )
-          : Center(child: Text(isCurrentUser ? 'No shops yet, add in home page' : 'User has no shops yet', style: Constants.emptyListTextStyle));
+        ? const ShopTileSkeleton()
+        : (brand != null)
+        ? ListTile(
+            leading: BrandMark(
+              name: brand.display,
+              slug: brand.slug,
+              iconPath: brand.iconPath,
+              size: 48,
+            ),
+            title: Text(
+              brand.display,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              drinkName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand)),
+            ),
+          )
+        : Center(
+            child: Text(
+              isCurrentUser
+                  ? 'No shops yet, add in home page'
+                  : 'User has no shops yet',
+              style: context.bobaText.empty,
+            ),
+          );
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: !widget.inShell,
+        title: widget.inShell ? const Text('You') : null,
         actions: [
+          if (isCurrentUser)
+            IconButton(
+              tooltip: 'Settings',
+              icon: const Icon(Icons.settings_rounded),
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const SettingsPage())),
+            ),
           if (!isCurrentUser)
             PopupMenuButton<String>(
               onSelected: (value) async {
                 switch (value) {
                   case 'remove':
                     try {
-                      await context.read<FriendState>().removeFriend(widget.userId);
+                      await context.read<FriendState>().removeFriend(
+                        widget.userId,
+                      );
                       notify('Removed friend', SnackType.success);
                     } catch (_) {
-                      notify('Could not remove friend. Try again.', SnackType.error);
+                      notify(
+                        'Could not remove friend. Try again.',
+                        SnackType.error,
+                      );
                     }
                     break;
 
                   case 'cancel_request':
                     try {
-                      await context.read<FriendState>().removeFriend(widget.userId);
+                      await context.read<FriendState>().removeFriend(
+                        widget.userId,
+                      );
                       notify('Friend request canceled', SnackType.success);
                     } catch (_) {
-                      notify('Could not cancel request. Try again.', SnackType.error);
+                      notify(
+                        'Could not cancel request. Try again.',
+                        SnackType.error,
+                      );
                     }
                     break;
 
                   case 'reject_request':
                     try {
-                      await context.read<FriendState>().rejectUser(widget.userId);
+                      await context.read<FriendState>().rejectUser(
+                        widget.userId,
+                      );
                       notify('Friend request rejected', SnackType.success);
                     } catch (_) {
-                      notify('Could not reject request. Try again.', SnackType.error);
+                      notify(
+                        'Could not reject request. Try again.',
+                        SnackType.error,
+                      );
                     }
                     break;
 
@@ -274,28 +393,33 @@ class _AccountViewPageState extends State<AccountViewPage> {
                 final items = <PopupMenuEntry<String>>[];
 
                 if (friendStatus?.status == 'accepted') {
-                  items.add(const PopupMenuItem(
-                    value: 'remove',
-                    child: Text('Remove friend'),
-                  ));
+                  items.add(
+                    const PopupMenuItem(
+                      value: 'remove',
+                      child: Text('Remove friend'),
+                    ),
+                  );
                 } else if (friendStatus?.status == 'pending') {
                   if (friendStatus!.requester.id == currentUser.id) {
-                    items.add(const PopupMenuItem(
-                      value: 'cancel_request',
-                      child: Text('Cancel friend request'),
-                    ));
+                    items.add(
+                      const PopupMenuItem(
+                        value: 'cancel_request',
+                        child: Text('Cancel friend request'),
+                      ),
+                    );
                   } else if (friendStatus.addressee.id == currentUser.id) {
-                    items.add(const PopupMenuItem(
-                      value: 'reject_request',
-                      child: Text('Reject friend request'),
-                    ));
+                    items.add(
+                      const PopupMenuItem(
+                        value: 'reject_request',
+                        child: Text('Reject friend request'),
+                      ),
+                    );
                   }
                 }
 
-                items.add(const PopupMenuItem(
-                  value: 'report',
-                  child: Text('Report'),
-                ));
+                items.add(
+                  const PopupMenuItem(value: 'report', child: Text('Report')),
+                );
                 return items;
               },
             ),
@@ -304,6 +428,9 @@ class _AccountViewPageState extends State<AccountViewPage> {
       body: Padding(
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
         child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            bottom: widget.inShell ? BobaNavBar.clearance(context) : 24,
+          ),
           child: Column(
             children: [
               ProfileSummaryCard(
@@ -319,31 +446,39 @@ class _AccountViewPageState extends State<AccountViewPage> {
               _BadgesSection(
                 badges: pinnedBadges,
                 isOwner: isCurrentUser,
-                onTapManage: isCurrentUser ? () { 
-                  showDialog(
-                    context: context,
-                    builder: (context) =>
-                      BadgePickerDialog(
-                        badges: unlockedBadges,
-                        pinnedBadges: pinnedBadges,
-                                                onSave: (selected) async {
-                          try {
-                            for (final a in unlockedBadges) {
-                              final shouldPin = selected.contains(a.id);
-                              if (achievementState.progressMap[a.id]?.pinned != shouldPin) {
-                                await achievementState.setPinned(a.id);
+                onTapManage: isCurrentUser
+                    ? () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => BadgePickerDialog(
+                            badges: unlockedBadges,
+                            pinnedBadges: pinnedBadges,
+                            onSave: (selected) async {
+                              try {
+                                for (final a in unlockedBadges) {
+                                  final shouldPin = selected.contains(a.id);
+                                  if (achievementState
+                                          .progressMap[a.id]
+                                          ?.pinned !=
+                                      shouldPin) {
+                                    await achievementState.setPinned(a.id);
+                                  }
+                                }
+                                if (context.mounted)
+                                  Navigator.of(context).pop();
+                              } catch (e) {
+                                if (context.mounted) {
+                                  notify(
+                                    'Error pinning badges',
+                                    SnackType.error,
+                                  );
+                                }
                               }
-                            }
-                            if(context.mounted) Navigator.of(context).pop();
-                          } catch (e) {
-                            if (context.mounted) { 
-                              notify('Error pinning badges', SnackType.error);
-                            }
-                          }
-                        },
-                      )
-                  );
-                } : null,
+                            },
+                          ),
+                        );
+                      }
+                    : null,
                 isLoading: _isLoading,
               ),
               SizedBox(height: 16),
@@ -353,24 +488,46 @@ class _AccountViewPageState extends State<AccountViewPage> {
                   const gap = 20.0;
                   const totalItems = 3;
                   final maxW = constraints.maxWidth;
-                  final itemW = (maxW - (gap*(totalItems-1)))/totalItems;
+                  final itemW = (maxW - (gap * (totalItems - 1))) / totalItems;
 
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: _isLoading
-                      ? [StatCardSkeleton(size: itemW), StatCardSkeleton(size: itemW), StatCardSkeleton(size: itemW)]
-                      : [
-                          StatCard(label: 'Shops', size: itemW, value: stats.shopCount,  emoji: '⭐'),
-                          StatCard(label: 'Drinks', size: itemW, value: stats.drinkCount, emoji: '🧋'),
-                          StatCard(label: 'Badges', size: itemW, value: stats.badgeCount, emoji: '🏆',)
-                        ],
+                        ? [
+                            StatCardSkeleton(size: itemW),
+                            StatCardSkeleton(size: itemW),
+                            StatCardSkeleton(size: itemW),
+                          ]
+                        : [
+                            StatCard(
+                              label: 'Shops',
+                              size: itemW,
+                              value: stats.shopCount,
+                              emoji: '⭐',
+                            ),
+                            StatCard(
+                              label: 'Drinks',
+                              size: itemW,
+                              value: stats.drinkCount,
+                              emoji: '🧋',
+                            ),
+                            StatCard(
+                              label: 'Badges',
+                              size: itemW,
+                              value: stats.badgeCount,
+                              emoji: '🏆',
+                            ),
+                          ],
                   );
                 },
               ),
               const Divider(height: 32),
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Recent Activity', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Recent Activity',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
               const SizedBox(height: 8),
               UserFeedView(
@@ -378,10 +535,47 @@ class _AccountViewPageState extends State<AccountViewPage> {
                 isOwner: isCurrentUser,
                 pageSize: 10,
               ),
+              if (isCurrentUser) ...[
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(Icons.leaderboard_rounded),
+                  title: const Text('Leaderboard'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const RankingsPage()),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.emoji_events_rounded),
+                  title: const Text('Achievements'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => AchievementsPage(userId: widget.userId),
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.settings_rounded),
+                  title: const Text('Settings'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SettingsPage()),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.info_outline_rounded),
+                  title: const Text('About + Contact'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const AboutPage())),
+                ),
+              ],
             ],
           ),
-        )
-      )
+        ),
+      ),
     );
   }
 }
@@ -395,19 +589,15 @@ class ShopTileSkeleton extends StatelessWidget {
         width: 50,
         height: 50,
         decoration: BoxDecoration(
-          color: Colors.grey[300],
+          color: context.boba.outline,
           shape: BoxShape.circle,
         ),
       ),
-      title: Container(
-        width: 80,
-        height: 12,
-        color: Colors.grey[300],
-      ),
+      title: Container(width: 80, height: 12, color: context.boba.outline),
       subtitle: Container(
         width: 60,
         height: 10,
-        color: Colors.grey[200],
+        color: context.boba.surfaceAlt,
         margin: EdgeInsets.only(top: 4),
       ),
     );
@@ -425,7 +615,7 @@ class BadgeRowSkeleton extends StatelessWidget {
         (i) => Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: CircleAvatar(
-            backgroundColor: Colors.grey[300],
+            backgroundColor: context.boba.outline,
             radius: 22,
           ),
         ),
@@ -466,19 +656,31 @@ class _BadgesSection extends StatelessWidget {
             children: [
               const Icon(Icons.emoji_events_rounded, size: 18),
               const SizedBox(width: 8),
-              Text('Badges', style: TextStyle(fontWeight: FontWeight.w700, color: cs.onSurface)),
+              Text(
+                'Badges',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurface,
+                ),
+              ),
               const Spacer(),
               if (isOwner)
                 TextButton.icon(
-                  icon: const Icon(Icons.push_pin, size: 16, color: Colors.black),
-                  label: const Text('Pin', style: TextStyle(color: Colors.black)),
+                  icon: Icon(Icons.push_pin, size: 16, color: context.boba.ink),
+                  label: Text('Pin', style: TextStyle(color: context.boba.ink)),
                   onPressed: onTapManage,
                   style: ButtonStyle(
-                    padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 10, vertical: 6)),
+                    padding: const WidgetStatePropertyAll(
+                      EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    ),
                     backgroundColor: WidgetStatePropertyAll(Colors.transparent),
-                    shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))),
+                    shape: WidgetStatePropertyAll(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
                   ),
-                )
+                ),
             ],
           ),
 
@@ -490,7 +692,9 @@ class _BadgesSection extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Text(
                 isOwner ? 'No badges yet, tap Pin to choose.' : 'No badges yet',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurface.withValues(alpha: 0.6)),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: cs.onSurface.withValues(alpha: 0.6),
+                ),
               ),
             )
           else
@@ -503,10 +707,13 @@ class _BadgesSection extends StatelessWidget {
                 const gap = 10.0;
                 final totalGaps = gap * (count - 1);
                 final maxW = (constraints.maxWidth - totalGaps) / 3;
-                final slotW = min((constraints.maxWidth - totalGaps) / count, maxW);
+                final slotW = min(
+                  (constraints.maxWidth - totalGaps) / count,
+                  maxW,
+                );
 
-                final avatarR = slotW * 0.38;                     // radius
-                final labelFS = (slotW * 0.1).clamp(8.0, 11.0);  // font size
+                final avatarR = slotW * 0.38; // radius
+                final labelFS = (slotW * 0.1).clamp(8.0, 11.0); // font size
                 final labelHPad = (slotW * 0.14).clamp(6.0, 10.0);
                 final labelVPad = (slotW * 0.07).clamp(3.0, 6.0);
 
@@ -525,23 +732,32 @@ class _BadgesSection extends StatelessWidget {
                         children: [
                           CircleAvatar(
                             radius: avatarR,
-                            backgroundColor: Constants.badgeBgColor,
+                            backgroundColor: context.boba.surfaceAlt,
                             backgroundImage: img,
                           ),
                           const SizedBox(height: 6),
                           Container(
-                            padding: EdgeInsets.symmetric(horizontal: labelHPad, vertical: labelVPad),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: labelHPad,
+                              vertical: labelVPad,
+                            ),
                             decoration: BoxDecoration(
                               color: cs.surface.withValues(alpha: 0.8),
                               borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
+                              border: Border.all(
+                                color: cs.outlineVariant.withValues(alpha: 0.4),
+                              ),
                             ),
                             child: Text(
                               a.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: labelFS, fontWeight: FontWeight.w600, height: 1),
+                              style: TextStyle(
+                                fontSize: labelFS,
+                                fontWeight: FontWeight.w600,
+                                height: 1,
+                              ),
                             ),
                           ),
                         ],
@@ -559,7 +775,7 @@ class _BadgesSection extends StatelessWidget {
                   children: children,
                 );
               },
-            )
+            ),
         ],
       ),
     );
@@ -573,8 +789,12 @@ class _BadgeRowSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Wrap(
-      spacing: 16, runSpacing: 8,
-      children: List.generate(3, (_) => CircleAvatar(radius: 22, backgroundColor: cs.surfaceVariant)),
+      spacing: 16,
+      runSpacing: 8,
+      children: List.generate(
+        3,
+        (_) => CircleAvatar(radius: 22, backgroundColor: cs.surfaceVariant),
+      ),
     );
   }
 }

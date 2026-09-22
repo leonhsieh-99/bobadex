@@ -1,4 +1,5 @@
 import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:flutter/material.dart';
 
 class TopSnackBar extends StatefulWidget {
@@ -21,14 +22,18 @@ class TopSnackBar extends StatefulWidget {
   State<TopSnackBar> createState() => _TopSnackBarState();
 }
 
-class _TopSnackBarState extends State<TopSnackBar> with SingleTickerProviderStateMixin {
+class _TopSnackBarState extends State<TopSnackBar>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _slide;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
     _slide = Tween<Offset>(
       begin: const Offset(0, -1),
       end: Offset.zero,
@@ -51,11 +56,11 @@ class _TopSnackBarState extends State<TopSnackBar> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     final icon = widget.icon != null
-      ? Padding(
-        padding: const EdgeInsets.only(right: 10),
-        child: Icon(widget.icon, color: Colors.white, size: 20),
-        )
-      : SizedBox.shrink();
+        ? Padding(
+            padding: const EdgeInsets.only(right: 10),
+        child: Icon(widget.icon, color: context.boba.onImage, size: 20),
+          )
+        : SizedBox.shrink();
 
     return SafeArea(
       child: Align(
@@ -70,7 +75,13 @@ class _TopSnackBarState extends State<TopSnackBar> with SingleTickerProviderStat
               decoration: BoxDecoration(
                 color: widget.backgroundColor,
                 borderRadius: BorderRadius.circular(8),
-                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 3))]
+                boxShadow: [
+                  BoxShadow(
+                    color: context.boba.shadow,
+                    blurRadius: 6,
+                    offset: Offset(0, 3),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -80,7 +91,7 @@ class _TopSnackBarState extends State<TopSnackBar> with SingleTickerProviderStat
                     child: Text(
                       widget.message,
                       style: TextStyle(
-                        color: Colors.white,
+                    color: context.boba.onImage,
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                       ),

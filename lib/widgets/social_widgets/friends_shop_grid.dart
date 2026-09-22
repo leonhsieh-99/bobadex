@@ -1,9 +1,8 @@
-import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/friends_shop.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/friends_shop_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
-import 'package:bobadex/state/user_state.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:bobadex/widgets/brand_mark.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -30,7 +29,10 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
     final supabase = Supabase.instance.client;
     final currentUserId = supabase.auth.currentUser!.id;
     try {
-      final response = await supabase.rpc('get_friends_shops', params: {'user_id': currentUserId});
+      final response = await supabase.rpc(
+        'get_friends_shops',
+        params: {'user_id': currentUserId},
+      );
       final data = response as List? ?? [];
       shopsData = data.map((json) => FriendsShop.fromJson(json)).toList();
     } catch (e) {
@@ -47,7 +49,7 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
       return CustomScrollView(
         slivers: [
           SliverPadding(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
             sliver: SliverGrid(
               delegate: SliverChildBuilderDelegate(
                 (context, i) => _buildLoadingPearl(),
@@ -67,13 +69,15 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
 
     final items = shopsData ?? const <FriendsShop>[];
     if (items.isEmpty) {
-      return Center(child: Text('No shared shops yet', style: Constants.emptyListTextStyle));
+      return Center(
+        child: Text('No shared shops yet', style: context.bobaText.empty),
+      );
     }
 
     return CustomScrollView(
       slivers: [
         SliverPadding(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
           sliver: SliverGrid(
             delegate: SliverChildBuilderDelegate(
               (context, i) => _buildShopPearl(items[i]),
@@ -91,7 +95,6 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
     );
   }
 
-
   Widget _buildLoadingPearl() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -101,7 +104,7 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
           width: 64,
           height: 64,
           decoration: BoxDecoration(
-            color: Colors.grey.shade300,
+            color: context.boba.outline,
             shape: BoxShape.circle,
           ),
         ),
@@ -111,7 +114,7 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
           height: 16,
           width: 70,
           decoration: BoxDecoration(
-            color: Colors.grey.shade300,
+            color: context.boba.outline,
             borderRadius: BorderRadius.circular(8),
           ),
         ),
@@ -120,7 +123,7 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
           height: 12,
           width: 45,
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
+            color: context.boba.surfaceAlt,
             borderRadius: BorderRadius.circular(6),
           ),
         ),
@@ -131,9 +134,6 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
   Widget _buildShopPearl(FriendsShop shop) {
     final brandState = context.read<BrandState>();
     final brand = brandState.getBrand(shop.brandSlug);
-    final userState = context.read<UserState>();
-    final themeColor = Constants.getThemeColor(userState.current.themeSlug);
-
     final iconPath = brand?.iconPath ?? shop.iconPath;
     final displayName = brand?.display ?? shop.name;
 
@@ -155,7 +155,7 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: themeColor.shade200,
+              color: context.boba.accentSoft,
               shape: BoxShape.circle,
             ),
             child: BrandMark(
@@ -178,12 +178,12 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
           const SizedBox(height: 5),
           Text(
             'Avg: ${shop.avgRating.toStringAsFixed(1)}',
-            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+            style: TextStyle(fontSize: 13, color: context.boba.inkMuted),
           ),
           const SizedBox(height: 5),
           Text(
             'Ratings: ${shop.friendsInfo.length}',
-            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+            style: TextStyle(fontSize: 13, color: context.boba.inkMuted),
           ),
         ],
       ),

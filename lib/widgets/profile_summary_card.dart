@@ -1,4 +1,5 @@
 import 'package:bobadex/widgets/thumb_pic.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:flutter/material.dart';
 
 class ProfileSummaryCard extends StatelessWidget {
@@ -41,37 +42,60 @@ class ProfileSummaryCard extends StatelessWidget {
           Container(
             height: headerH,
             decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
               gradient: LinearGradient(
-                begin: Alignment.topLeft, end: Alignment.bottomRight,
-                colors: [cs.primary.withValues(alpha: 0.18), cs.primary.withValues(alpha: 0.06)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  cs.primary.withValues(alpha: 0.18),
+                  cs.primary.withValues(alpha: 0.06),
+                ],
               ),
             ),
           ),
 
           Positioned(
             top: headerH - avatarR,
-            left: 0, right: 0,
+            left: 0,
+            right: 0,
             child: CircleAvatar(
               radius: avatarR,
-              backgroundColor: Colors.white,
-              child: ThumbPic(path: profileImagePath, size: avatarR * 2 - 10)
+              backgroundColor: context.boba.surface,
+              child: ThumbPic(path: profileImagePath, size: avatarR * 2 - 10),
             ),
           ),
 
           // Content below avatar
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, headerH + avatarR + 12, 16, 16),
+            padding: const EdgeInsets.fromLTRB(
+              16,
+              headerH + avatarR + 12,
+              16,
+              16,
+            ),
             child: Column(
               children: [
-                Text(displayName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
-                Text('@$username', style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6))),
+                Text(
+                  displayName,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  '@$username',
+                  style: TextStyle(color: cs.onSurface.withValues(alpha: 0.6)),
+                ),
                 const SizedBox(height: 8),
                 Text(
                   (bio == null || bio!.trim().isEmpty) ? 'No bio set' : bio!,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: (bio == null || bio!.trim().isEmpty) ? cs.onSurface.withValues(alpha: 0.4) : null,
+                    color: (bio == null || bio!.trim().isEmpty)
+                        ? cs.onSurface.withValues(alpha: 0.4)
+                        : null,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -81,7 +105,8 @@ class ProfileSummaryCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     if (leadingAction != null) leadingAction!,
-                    if (leadingAction != null && trailingAction != null) const SizedBox(width: 10),
+                    if (leadingAction != null && trailingAction != null)
+                      const SizedBox(width: 10),
                     if (trailingAction != null) trailingAction!,
                   ],
                 ),

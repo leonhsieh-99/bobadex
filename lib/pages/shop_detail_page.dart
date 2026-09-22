@@ -26,18 +26,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/add_edit_shop_dialog.dart';
 import '../widgets/filter_sort_bar.dart';
 import '../state/drink_state.dart';
-import 'package:bobadex/config/constants.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 
-class ShopDetailPage extends StatefulWidget{
+class ShopDetailPage extends StatefulWidget {
   final String shopId;
   final String userId;
 
-  const ShopDetailPage({
-    super.key,
-    required this.shopId,
-    required this.userId,
-  });
+  const ShopDetailPage({super.key, required this.shopId, required this.userId});
 
   @override
   State<ShopDetailPage> createState() => _ShopDetailPage();
@@ -60,14 +56,21 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   Widget _removedPill(BuildContext ctx) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
-      color: Colors.red.withValues(alpha: .12),
+      color: ctx.boba.danger.withValues(alpha: .12),
       borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: Colors.red.withValues(alpha: .5)),
+      border: Border.all(color: ctx.boba.danger.withValues(alpha: .5)),
     ),
-    child: const Text('Brand removed', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red)),
+    child: Text(
+      'Brand removed',
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: ctx.boba.danger,
+      ),
+    ),
   );
 
-  String  getPinnedDrink(List<Drink> drinks, String id) {
+  String getPinnedDrink(List<Drink> drinks, String id) {
     final pinned = drinks.where((d) => d.id == id).firstOrNull;
     return pinned?.name ?? '';
   }
@@ -76,17 +79,15 @@ class _ShopDetailPage extends State<ShopDetailPage> {
     List<Drink> filtered = [...drinks];
 
     if (_searchQuery.isNotEmpty) {
-      filtered = filtered.where((d) =>
-        d.name.toLowerCase().contains(_searchQuery.toLowerCase())
-      ).toList();
+      filtered = filtered
+          .where(
+            (d) => d.name.toLowerCase().contains(_searchQuery.toLowerCase()),
+          )
+          .toList();
     }
 
     List options = _selectedSort.split('-');
-    sortEntries(
-      filtered,
-      by: options[0],
-      ascending: options[1] == 'asc',
-    );
+    sortEntries(filtered, by: options[0], ascending: options[1] == 'asc');
 
     return filtered;
   }
@@ -155,7 +156,9 @@ class _ShopDetailPage extends State<ShopDetailPage> {
 
     final shop = context.select<ShopState, Shop?>((s) => s.getShop(_shopId));
     final user = context.select<UserState, u.User?>((s) => s.getUser(_uid));
-    final drinks = context.select<DrinkState, List<Drink>>((s) => s.drinksFor(_shopId));
+    final drinks = context.select<DrinkState, List<Drink>>(
+      (s) => s.drinksFor(_shopId),
+    );
     final shopMediaList = context.select<ShopMediaState, List<ShopMedia>>(
       (s) => s.getByShop(_shopId),
     );
@@ -190,15 +193,15 @@ class _ShopDetailPage extends State<ShopDetailPage> {
         final refreshing = waiting && _hasShownContentOnce;
 
         final shopRead = shop;
-        final brand    = brandState.getBrand(shopRead.brandSlug);
+        final brand = brandState.getBrand(shopRead.brandSlug);
 
         final brandRemoved = (brand == null) || !brand.status.isActive;
 
-        final bannerPath = shopMediaList
-            .firstWhereOrNull((m) => m.isBanner);
+        final bannerPath = shopMediaList.firstWhereOrNull((m) => m.isBanner);
         final bannerUrl = bannerPath?.imageUrl;
 
-        final pinnedDrink = (shopRead.pinnedDrinkId == null || shopRead.pinnedDrinkId!.isEmpty)
+        final pinnedDrink =
+            (shopRead.pinnedDrinkId == null || shopRead.pinnedDrinkId!.isEmpty)
             ? ''
             : getPinnedDrink(drinks, shopRead.pinnedDrinkId!);
         final visibleDrinks = getVisibleDrinks(drinks);
@@ -212,7 +215,8 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                   final screenWidth = constraints.maxWidth;
                   final bannerRatio = 0.3;
                   final bannerHeight = screenHeight * bannerRatio;
-                  final initialSheetSize = (1.0 - bannerRatio) + 0.03; // slightly overlap image
+                  final initialSheetSize =
+                      (1.0 - bannerRatio) + 0.03; // slightly overlap image
 
                   void openGalleryPage(BuildContext context) {
                     Navigator.of(context).push(
@@ -221,7 +225,10 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                           shopMediaList: shopMediaList,
                           onSetBanner: (mediaId) async {
                             try {
-                              await shopMediaState.setBanner(shopRead.id!, mediaId);
+                              await shopMediaState.setBanner(
+                                shopRead.id!,
+                                mediaId,
+                              );
                               notify('New banner set', SnackType.success);
                             } catch (e) {
                               notify('Banner update failed', SnackType.error);
@@ -232,7 +239,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                             try {
                               await shopMediaState.removeMedia(mediaId);
                             } catch (e) {
-                              if(context.mounted) {
+                              if (context.mounted) {
                                 debugPrint('Delete failed: $e');
                               }
                             }
@@ -245,7 +252,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                       ),
                     );
                   }
-                  
+
                   return Stack(
                     children: [
                       // tappable banner
@@ -262,19 +269,31 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                   // Banner image
                                   (bannerUrl == null || bannerUrl.isEmpty)
                                       ? Container(
-                                          color: Color(0xFFF5F5F5),
-                                          child: const Center(
-                                            child: Icon(Icons.store, size: 64, color: Colors.white70)
+                                          color: context.boba.surfaceAlt,
+                                          child: Center(
+                                            child: Icon(
+                                              Icons.store,
+                                              size: 64,
+                                              color: context.boba.onImage
+                                                  .withValues(alpha: 0.7),
+                                            ),
                                           ),
                                         )
                                       : CachedNetworkImage(
                                           imageUrl: bannerUrl,
-                                          fadeInDuration: Duration(milliseconds: 300),
-                                          fit: BoxFit.cover,
-                                          errorWidget: (context, url, error) => Container(
-                                            color: Color(0xFFF5F5F5),
-                                            child: const Center(child: Icon(Icons.broken_image)),
+                                          fadeInDuration: Duration(
+                                            milliseconds: 300,
                                           ),
+                                          fit: BoxFit.cover,
+                                          errorWidget: (context, url, error) =>
+                                              Container(
+                                                color: context.boba.surfaceAlt,
+                                                child: const Center(
+                                                  child: Icon(
+                                                    Icons.broken_image,
+                                                  ),
+                                                ),
+                                              ),
                                         ),
                                   // Gradient overlay at the bottom
                                   Align(
@@ -287,8 +306,12 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                           end: Alignment.bottomCenter,
                                           colors: [
                                             Colors.transparent,
-                                            Colors.black.withValues(alpha: 0.22),
-                                            Colors.black.withValues(alpha: 0.38),
+                                            context.boba.imageScrim.withValues(
+                                              alpha: 0.22,
+                                            ),
+                                            context.boba.imageScrim.withValues(
+                                              alpha: 0.38,
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -307,12 +330,20 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                               child: Container(
                                 padding: EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.3),
+                                  color: context.boba.imageScrim.withValues(
+                                    alpha: 0.3,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Text('View all photos', style: TextStyle(fontSize: 14, color: Colors.white)),
-                              )
-                            )
+                                child: Text(
+                                  'View all photos',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: context.boba.onImage,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                           Positioned(
                             bottom: bannerHeight * 0.15,
@@ -325,20 +356,28 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                               ),
                             ),
                           ),
-                        ]
+                        ],
                       ),
                       DraggableScrollableSheet(
-                        initialChildSize: initialSheetSize.clamp(0.5, 0.90), // prevent it from being too short/tall
+                        initialChildSize: initialSheetSize.clamp(
+                          0.5,
+                          0.90,
+                        ), // prevent it from being too short/tall
                         minChildSize: initialSheetSize.clamp(0.5, 0.90),
                         maxChildSize: 0.90,
                         builder: (context, scrollController) {
                           return Container(
                             clipBehavior: Clip.antiAlias,
                             decoration: BoxDecoration(
-                              color: Constants.getThemeColor(user.themeSlug).shade50,
-                              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                              color: context.boba.surface,
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(20),
+                              ),
                             ),
-                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.start,
                               children: [
@@ -348,11 +387,16 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                       child: LayoutBuilder(
                                         builder: (context, constraints) {
                                           return ConstrainedBox(
-                                            constraints: BoxConstraints(maxWidth: constraints.maxWidth * 95 / 100),
+                                            constraints: BoxConstraints(
+                                              maxWidth:
+                                                  constraints.maxWidth *
+                                                  95 /
+                                                  100,
+                                            ),
                                             child: Text(
                                               shop.name,
                                               style: const TextStyle(
-                                                fontSize: 28, 
+                                                fontSize: 28,
                                                 fontWeight: FontWeight.bold,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
@@ -371,24 +415,54 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                           '+ Drink',
                                           style: TextStyle(fontSize: 13),
                                         ),
-                                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 2,
+                                          vertical: 2,
+                                        ),
                                         visualDensity: VisualDensity.compact,
-                                        backgroundColor: Constants.getThemeColor(user.themeSlug).shade100,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        backgroundColor:
+                                            context.boba.accentSoft,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
                                         onPressed: () async {
                                           await showDialog(
                                             context: context,
                                             builder: (_) => AddOrEditDrinkDialog(
                                               onSubmit: (drink) async {
                                                 try {
-                                                  await drinkState.add(drink.toDrink(shopId: shopRead.id), shopRead.id!);
-                                                  await analytics.drinkAdded(rating: drink.rating, name: drink.name);
-                                                  await achievementState.checkAndUnlockDrinkAchievement(drinkState);
-                                                  await achievementState.checkAndUnlockNotesAchievement(drinkState);
-                                                  notify('Drink added.', SnackType.success);
+                                                  await drinkState.add(
+                                                    drink.toDrink(
+                                                      shopId: shopRead.id,
+                                                    ),
+                                                    shopRead.id!,
+                                                  );
+                                                  await analytics.drinkAdded(
+                                                    rating: drink.rating,
+                                                    name: drink.name,
+                                                  );
+                                                  await achievementState
+                                                      .checkAndUnlockDrinkAchievement(
+                                                        drinkState,
+                                                      );
+                                                  await achievementState
+                                                      .checkAndUnlockNotesAchievement(
+                                                        drinkState,
+                                                      );
+                                                  notify(
+                                                    'Drink added.',
+                                                    SnackType.success,
+                                                  );
                                                 } catch (e) {
-                                                  debugPrint('Error adding drink: $e');
-                                                  notify('Error adding drink.', SnackType.error);
+                                                  debugPrint(
+                                                    'Error adding drink: $e',
+                                                  );
+                                                  notify(
+                                                    'Error adding drink.',
+                                                    SnackType.error,
+                                                  );
                                                 }
                                               },
                                             ),
@@ -401,22 +475,42 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                           'Visit Brand',
                                           style: TextStyle(fontSize: 13),
                                         ),
-                                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 2,
+                                          vertical: 2,
+                                        ),
                                         visualDensity: VisualDensity.compact,
-                                        backgroundColor: Constants.getThemeColor(user.themeSlug).shade100,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand))),
-                                      )
+                                        backgroundColor:
+                                            context.boba.accentSoft,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        onPressed: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                BrandDetailsPage(brand: brand),
+                                          ),
+                                        ),
+                                      ),
                                   ],
                                 ),
                                 Row(
                                   children: [
-                                    Icon(Icons.bookmark, color: Constants.heartColor, size: 24),
+                                    Icon(
+                                      Icons.bookmark_rounded,
+                                      color: context.boba.heart,
+                                      size: 24,
+                                    ),
                                     const SizedBox(width: 8),
                                     Flexible(
                                       flex: 8,
                                       child: Text(
-                                        pinnedDrink != '' ? pinnedDrink : 'No pinned drink',
+                                        pinnedDrink != ''
+                                            ? pinnedDrink
+                                            : 'No pinned drink',
                                         style: const TextStyle(fontSize: 20),
                                         overflow: TextOverflow.ellipsis,
                                         maxLines: 1,
@@ -429,235 +523,457 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                   alignment: Alignment.centerLeft,
                                   child: Text(
                                     shop.notes != null && shop.notes!.isNotEmpty
-                                    ? shop.notes!
-                                    : 'No notes yet',
-                                    style: const TextStyle(
-                                      fontSize: 14, color: Colors.black,
+                                        ? shop.notes!
+                                        : 'No notes yet',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: context.boba.ink,
                                       fontWeight: FontWeight.w300,
-                                      overflow: TextOverflow.ellipsis
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
                                   child: FilterSortBar(
                                     controller: _searchController,
                                     sortOptions: [
                                       SortOption('favorite', Icons.favorite),
                                       SortOption('rating', Icons.star),
                                       SortOption('name', Icons.sort_by_alpha),
-                                      SortOption('createdAt', Icons.access_time),
+                                      SortOption(
+                                        'createdAt',
+                                        Icons.access_time,
+                                      ),
                                     ],
                                     onSearchChanged: (query) {
                                       setState(() => _searchQuery = query);
                                     },
                                     onSortSelected: (sortKey) {
                                       setState(() => _selectedSort = sortKey);
-                                    }
+                                    },
                                   ),
                                 ),
-                                
+
                                 Expanded(
                                   child: (drinks.isEmpty)
-                                    ? Center(child: Text('No drinks yet', style: Constants.emptyListTextStyle))
-                                    : ListView.builder(
-                                      padding: const EdgeInsets.only(bottom: 24),
-                                      itemCount: visibleDrinks.length,
-                                      itemBuilder: (context, index) {
-                                        final drink = visibleDrinks[index];
-                                        return Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 4),
-                                          child: Stack(
-                                            children: [
-                                              Container(
-                                                decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-                                                child: Card(
-                                                  margin: EdgeInsets.symmetric(horizontal: 0, vertical: 2),
-                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                                  child: Theme(
-                                                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                                                    child: ExpansionTile(
-                                                      initiallyExpanded: drink.notes != null && drink.notes!.isNotEmpty,
-                                                      onExpansionChanged: (isExpanded) { 
-                                                        setState(() {
-                                                          if (isExpanded) {
-                                                            _expandedDrinkIds.add(drink.id ?? '');
-                                                          } else {
-                                                            _expandedDrinkIds.remove(drink.id);
-                                                          }
-                                                        });
-                                                      },
-                                                      tilePadding: EdgeInsets.fromLTRB(6, 0, 0, 0),
-                                                      trailing: Row(
-                                                        mainAxisSize: MainAxisSize.min,
-                                                        children: [
-                                                          GestureDetector(
-                                                            onTap: _isCurrentUser
-                                                              ? () async {
-                                                                  final updated = drink.copyWith(isFavorite: !drink.isFavorite);
-                                                                  try {
-                                                                    await drinkState.update(updated);
-                                                                    notify(updated.isFavorite ? 'Drink favorited.' : 'Drink unfavorited', SnackType.success);
-                                                                  } catch (_) {
-                                                                    notify('Error updating favorite status.', SnackType.error);
-                                                                  }
-                                                                }
-                                                              : null,
-                                                            child: SvgPicture.asset(
-                                                              drink.isFavorite 
-                                                                ? 'lib/assets/icons/heart.svg'
-                                                                : 'lib/assets/icons/heart_outlined.svg',
-                                                              width: 16,
-                                                              height: 16,
-                                                            ),
+                                      ? Center(
+                                          child: Text(
+                                            'No drinks yet',
+                                            style: context.bobaText.empty,
+                                          ),
+                                        )
+                                      : ListView.builder(
+                                          padding: const EdgeInsets.only(
+                                            bottom: 24,
+                                          ),
+                                          itemCount: visibleDrinks.length,
+                                          itemBuilder: (context, index) {
+                                            final drink = visibleDrinks[index];
+                                            return Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 4,
+                                                  ),
+                                              child: Stack(
+                                                children: [
+                                                  Container(
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            12,
                                                           ),
-                                                          if (_isCurrentUser)
-                                                            PopupMenuButton<String>(
-                                                              icon: const Icon(Icons.more_horiz, size: 16),
-                                                              onSelected: (value) async {
-                                                                final shop = shopState.getShop(widget.shopId);
-                                                                switch(value) {
-                                                                  case 'pin':
-                                                                    final isPinned = shop?.pinnedDrinkId == drink.id;
-                                                                    try {
-                                                                      await shopState.update(shop!.copyWith(pinnedDrinkId: isPinned ? null : drink.id));
-                                                                      notify('Pinned drink updated', SnackType.success);
-                                                                    } catch (_) {
-                                                                      notify('Error pinning drink', SnackType.error);
-                                                                    }
-                                                                    break;
-                                                                  case 'edit':
-                                                                    await showDialog(
-                                                                      context: context,
-                                                                      builder: (_) => AddOrEditDrinkDialog(
-                                                                        initialData: DrinkFormData(
-                                                                          name: drink.name,
-                                                                          rating: drink.rating,
-                                                                          notes: drink.notes,
-                                                                          isFavorite: drink.isFavorite,
-                                                                        ),
-                                                                        onSubmit: (updatedDrink) async {
-                                                                          try {
-                                                                            await drinkState.update(updatedDrink.toDrink(id: drink.id, shopId: drink.shopId));
-                                                                            await achievementState.checkAndUnlockDrinkAchievement(drinkState);
-                                                                            await achievementState.checkAndUnlockNotesAchievement(drinkState);
-                                                                            notify('Drink updated.', SnackType.success);
-                                                                          } catch (_) {
-                                                                            notify('Error updating drink.', SnackType.error);
-                                                                          }
-                                                                        },
-                                                                      ),
+                                                    ),
+                                                    child: Card(
+                                                      margin:
+                                                          EdgeInsets.symmetric(
+                                                            horizontal: 0,
+                                                            vertical: 2,
+                                                          ),
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              12,
+                                                            ),
+                                                      ),
+                                                      child: Theme(
+                                                        data: Theme.of(context)
+                                                            .copyWith(
+                                                              dividerColor: Colors
+                                                                  .transparent,
+                                                            ),
+                                                        child: ExpansionTile(
+                                                          initiallyExpanded:
+                                                              drink.notes !=
+                                                                  null &&
+                                                              drink
+                                                                  .notes!
+                                                                  .isNotEmpty,
+                                                          onExpansionChanged: (isExpanded) {
+                                                            setState(() {
+                                                              if (isExpanded) {
+                                                                _expandedDrinkIds
+                                                                    .add(
+                                                                      drink.id ??
+                                                                          '',
                                                                     );
-                                                                    break;
-                                                                  case 'remove':
-                                                                    final confirm = await showDialog<bool>(
-                                                                      context: context,
-                                                                      builder: (context) => AlertDialog(
-                                                                        title: const Text('Delete Drink'),
-                                                                        content: const Text('Are you sure you want to delete this drink ?'),
-                                                                        actions: [
-                                                                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                                                                          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
-                                                                        ],
-                                                                      )
+                                                              } else {
+                                                                _expandedDrinkIds
+                                                                    .remove(
+                                                                      drink.id,
                                                                     );
-                                                                    if (confirm == true) {
-                                                                      try {
-                                                                        await drinkState.remove(drink.id!);
-                                                                        shopState.nullifyPinnedForDrink(drink.id!);
-                                                                        notify('Drink deleted', SnackType.success);
-                                                                      } catch (_) {
-                                                                        notify('Error deleting drink', SnackType.error);
+                                                              }
+                                                            });
+                                                          },
+                                                          tilePadding:
+                                                              EdgeInsets.fromLTRB(
+                                                                6,
+                                                                0,
+                                                                0,
+                                                                0,
+                                                              ),
+                                                          trailing: Row(
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .min,
+                                                            children: [
+                                                              GestureDetector(
+                                                                onTap:
+                                                                    _isCurrentUser
+                                                                    ? () async {
+                                                                        final updated = drink.copyWith(
+                                                                          isFavorite:
+                                                                              !drink.isFavorite,
+                                                                        );
+                                                                        try {
+                                                                          await drinkState.update(
+                                                                            updated,
+                                                                          );
+                                                                          notify(
+                                                                            updated.isFavorite
+                                                                                ? 'Drink favorited.'
+                                                                                : 'Drink unfavorited',
+                                                                            SnackType.success,
+                                                                          );
+                                                                        } catch (
+                                                                          _
+                                                                        ) {
+                                                                          notify(
+                                                                            'Error updating favorite status.',
+                                                                            SnackType.error,
+                                                                          );
+                                                                        }
                                                                       }
+                                                                    : null,
+                                                                child: SvgPicture.asset(
+                                                                  drink.isFavorite
+                                                                      ? 'lib/assets/icons/heart.svg'
+                                                                      : 'lib/assets/icons/heart_outlined.svg',
+                                                                  width: 16,
+                                                                  height: 16,
+                                                                ),
+                                                              ),
+                                                              if (_isCurrentUser)
+                                                                PopupMenuButton<
+                                                                  String
+                                                                >(
+                                                                  icon: const Icon(
+                                                                    Icons
+                                                                        .more_horiz,
+                                                                    size: 16,
+                                                                  ),
+                                                                  onSelected: (value) async {
+                                                                    final shop =
+                                                                        shopState.getShop(
+                                                                          widget
+                                                                              .shopId,
+                                                                        );
+                                                                    switch (value) {
+                                                                      case 'pin':
+                                                                        final isPinned =
+                                                                            shop?.pinnedDrinkId ==
+                                                                            drink.id;
+                                                                        try {
+                                                                          await shopState.update(
+                                                                            shop!.copyWith(
+                                                                              pinnedDrinkId: isPinned
+                                                                                  ? null
+                                                                                  : drink.id,
+                                                                            ),
+                                                                          );
+                                                                          notify(
+                                                                            'Pinned drink updated',
+                                                                            SnackType.success,
+                                                                          );
+                                                                        } catch (
+                                                                          _
+                                                                        ) {
+                                                                          notify(
+                                                                            'Error pinning drink',
+                                                                            SnackType.error,
+                                                                          );
+                                                                        }
+                                                                        break;
+                                                                      case 'edit':
+                                                                        await showDialog(
+                                                                          context:
+                                                                              context,
+                                                                          builder: (_) => AddOrEditDrinkDialog(
+                                                                            initialData: DrinkFormData(
+                                                                              name: drink.name,
+                                                                              rating: drink.rating,
+                                                                              notes: drink.notes,
+                                                                              isFavorite: drink.isFavorite,
+                                                                            ),
+                                                                            onSubmit:
+                                                                                (
+                                                                                  updatedDrink,
+                                                                                ) async {
+                                                                                  try {
+                                                                                    await drinkState.update(
+                                                                                      updatedDrink.toDrink(
+                                                                                        id: drink.id,
+                                                                                        shopId: drink.shopId,
+                                                                                      ),
+                                                                                    );
+                                                                                    await achievementState.checkAndUnlockDrinkAchievement(
+                                                                                      drinkState,
+                                                                                    );
+                                                                                    await achievementState.checkAndUnlockNotesAchievement(
+                                                                                      drinkState,
+                                                                                    );
+                                                                                    notify(
+                                                                                      'Drink updated.',
+                                                                                      SnackType.success,
+                                                                                    );
+                                                                                  } catch (
+                                                                                    _
+                                                                                  ) {
+                                                                                    notify(
+                                                                                      'Error updating drink.',
+                                                                                      SnackType.error,
+                                                                                    );
+                                                                                  }
+                                                                                },
+                                                                          ),
+                                                                        );
+                                                                        break;
+                                                                      case 'remove':
+                                                                        final confirm = await showDialog<bool>(
+                                                                          context:
+                                                                              context,
+                                                                          builder:
+                                                                              (
+                                                                                context,
+                                                                              ) => AlertDialog(
+                                                                                title: const Text(
+                                                                                  'Delete Drink',
+                                                                                ),
+                                                                                content: const Text(
+                                                                                  'Are you sure you want to delete this drink ?',
+                                                                                ),
+                                                                                actions: [
+                                                                                  TextButton(
+                                                                                    onPressed: () => Navigator.pop(
+                                                                                      context,
+                                                                                      false,
+                                                                                    ),
+                                                                                    child: const Text(
+                                                                                      'Cancel',
+                                                                                    ),
+                                                                                  ),
+                                                                                  TextButton(
+                                                                                    onPressed: () => Navigator.pop(
+                                                                                      context,
+                                                                                      true,
+                                                                                    ),
+                                                                                    child: const Text(
+                                                                                      'Delete',
+                                                                                    ),
+                                                                                  ),
+                                                                                ],
+                                                                              ),
+                                                                        );
+                                                                        if (confirm ==
+                                                                            true) {
+                                                                          try {
+                                                                            await drinkState.remove(
+                                                                              drink.id!,
+                                                                            );
+                                                                            shopState.nullifyPinnedForDrink(
+                                                                              drink.id!,
+                                                                            );
+                                                                            notify(
+                                                                              'Drink deleted',
+                                                                              SnackType.success,
+                                                                            );
+                                                                          } catch (
+                                                                            _
+                                                                          ) {
+                                                                            notify(
+                                                                              'Error deleting drink',
+                                                                              SnackType.error,
+                                                                            );
+                                                                          }
+                                                                        }
+                                                                        break;
                                                                     }
-                                                                    break;
-                                                                }
-                                                              },
-                                                              itemBuilder: (_) => [
-                                                                PopupMenuItem(
-                                                                  value: 'pin',
-                                                                  child: Text(drink.id != shopRead.pinnedDrinkId
-                                                                    ? 'Pin'
-                                                                    : 'Unpin'
-                                                                  )
+                                                                  },
+                                                                  itemBuilder: (_) => [
+                                                                    PopupMenuItem(
+                                                                      value:
+                                                                          'pin',
+                                                                      child: Text(
+                                                                        drink.id !=
+                                                                                shopRead.pinnedDrinkId
+                                                                            ? 'Pin'
+                                                                            : 'Unpin',
+                                                                      ),
+                                                                    ),
+                                                                    PopupMenuItem(
+                                                                      value:
+                                                                          'edit',
+                                                                      child: Text(
+                                                                        'Edit',
+                                                                      ),
+                                                                    ),
+                                                                    PopupMenuItem(
+                                                                      value:
+                                                                          'remove',
+                                                                      child: Text(
+                                                                        'Remove',
+                                                                      ),
+                                                                    ),
+                                                                  ],
                                                                 ),
-                                                                PopupMenuItem(
-                                                                  value: 'edit',
-                                                                  child: Text('Edit'),
+                                                              if (!_isCurrentUser)
+                                                                SizedBox(
+                                                                  width: 16,
                                                                 ),
-                                                                PopupMenuItem(
-                                                                  value: 'remove',
-                                                                  child: Text('Remove'),
+                                                            ],
+                                                          ),
+                                                          title: Row(
+                                                            children: [
+                                                              AnimatedRotation(
+                                                                turns:
+                                                                    _expandedDrinkIds
+                                                                        .contains(
+                                                                          drink
+                                                                              .id,
+                                                                        )
+                                                                    ? 0.25
+                                                                    : 0.00,
+                                                                duration:
+                                                                    const Duration(
+                                                                      milliseconds:
+                                                                          200,
+                                                                    ),
+                                                                child: const Icon(
+                                                                  Icons
+                                                                      .chevron_right,
+                                                                  size: 20,
                                                                 ),
-                                                              ]
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 4,
+                                                              ),
+                                                              Expanded(
+                                                                flex: 5,
+                                                                child: Text(
+                                                                  drink.name,
+                                                                  style: const TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w400,
+                                                                  ),
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                  maxLines: 1,
+                                                                ),
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 6,
+                                                              ),
+                                                              Expanded(
+                                                                flex: 2,
+                                                                child: Row(
+                                                                  children: [
+                                                                    SvgPicture.asset(
+                                                                      'lib/assets/icons/star.svg',
+                                                                      width: 14,
+                                                                      height:
+                                                                          14,
+                                                                    ),
+                                                                    SizedBox(
+                                                                      width: 6,
+                                                                    ),
+                                                                    Text(
+                                                                      drink
+                                                                          .rating
+                                                                          .toStringAsFixed(
+                                                                            1,
+                                                                          ),
+                                                                      style: const TextStyle(
+                                                                        fontSize:
+                                                                            14,
+                                                                        fontWeight:
+                                                                            FontWeight.w300,
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          children: [
+                                                            Padding(
+                                                              padding:
+                                                                  EdgeInsets.fromLTRB(
+                                                                    16,
+                                                                    0,
+                                                                    16,
+                                                                    16,
+                                                                  ),
+                                                              child: Align(
+                                                                alignment: Alignment
+                                                                    .centerLeft,
+                                                                child: Text(
+                                                                  (drink.notes ==
+                                                                              null ||
+                                                                          drink
+                                                                              .notes!
+                                                                              .isEmpty)
+                                                                      ? 'No notes yet...'
+                                                                      : drink
+                                                                            .notes!,
+                                                                  style: const TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w300,
+                                                                  ),
+                                                                ),
+                                                              ),
                                                             ),
-                                                          if (!_isCurrentUser)
-                                                            SizedBox(width: 16,)
-                                                        ],
-                                                      ),
-                                                      title: Row(
-                                                        children: [
-                                                          AnimatedRotation(
-                                                            turns: _expandedDrinkIds.contains(drink.id) ? 0.25 : 0.00,
-                                                            duration: const Duration(milliseconds: 200),
-                                                            child: const Icon(Icons.chevron_right, size: 20),
-                                                          ),
-                                                          const SizedBox(width: 4),
-                                                          Expanded(
-                                                            flex: 5,
-                                                            child: Text(
-                                                              drink.name,
-                                                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
-                                                              overflow: TextOverflow.ellipsis,
-                                                              maxLines: 1,
-                                                            ),
-                                                          ),
-                                                          const SizedBox(width: 6),
-                                                          Expanded(
-                                                            flex: 2,
-                                                            child:
-                                                            Row(children: [
-                                                          SvgPicture.asset(
-                                                            'lib/assets/icons/star.svg',
-                                                            width: 14,
-                                                            height: 14,
-                                                          ),
-                                                          SizedBox(width: 6),
-                                                          Text(
-                                                            drink.rating.toStringAsFixed(1),
-                                                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w300),
-                                                          ),
-                                                        ]
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      children: [
-                                                        Padding(
-                                                          padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-                                                          child: Align(
-                                                            alignment: Alignment.centerLeft,
-                                                            child: Text(
-                                                              (drink.notes == null || drink.notes!.isEmpty)
-                                                              ? 'No notes yet...'
-                                                              : drink.notes!,
-                                                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w300),
-                                                            ),
-                                                          )
+                                                          ],
                                                         ),
-                                                      ],
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
+                                                ],
                                               ),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                    ),
+                                            );
+                                          },
+                                        ),
                                 ),
                               ],
-                            )
+                            ),
                           );
                         },
                       ),
@@ -666,7 +982,10 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                         left: 4,
                         child: SafeArea(
                           child: IconButton(
-                            icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                            icon: Icon(
+                              Icons.arrow_back,
+                              color: context.boba.ink,
+                            ),
                             onPressed: () => Navigator.of(context).pop(),
                           ),
                         ),
@@ -676,15 +995,25 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                           top: 40,
                           right: 4,
                           child: Row(
-                            children: [ 
+                            children: [
                               GestureDetector(
                                 onTap: () async {
-                                  final updated = shopRead.copyWith(isFavorite: !shopRead.isFavorite);
+                                  final updated = shopRead.copyWith(
+                                    isFavorite: !shopRead.isFavorite,
+                                  );
                                   try {
                                     await shopState.update(updated);
-                                    notify(updated.isFavorite ? 'Shop favorited.' : 'Shop unfavorited.', SnackType.success);
+                                    notify(
+                                      updated.isFavorite
+                                          ? 'Shop favorited.'
+                                          : 'Shop unfavorited.',
+                                      SnackType.success,
+                                    );
                                   } catch (_) {
-                                    notify('Error updating shop favorite status.', SnackType.error);
+                                    notify(
+                                      'Error updating shop favorite status.',
+                                      SnackType.error,
+                                    );
                                   }
                                 },
                                 child: Stack(
@@ -695,17 +1024,22 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                         'lib/assets/icons/heart.svg',
                                         width: 24,
                                         height: 24,
-                                        colorFilter: ColorFilter.mode(Colors.white.withValues(alpha: .3), BlendMode.srcIn),
+                                        colorFilter: ColorFilter.mode(
+                                          context.boba.onImage.withValues(
+                                            alpha: .3,
+                                          ),
+                                          BlendMode.srcIn,
+                                        ),
                                       ),
                                     SvgPicture.asset(
-                                      shop.isFavorite 
-                                        ? 'lib/assets/icons/heart.svg'
-                                        : 'lib/assets/icons/heart_outlined.svg',
+                                      shop.isFavorite
+                                          ? 'lib/assets/icons/heart.svg'
+                                          : 'lib/assets/icons/heart_outlined.svg',
                                       width: 24,
                                       height: 24,
                                     ),
                                   ],
-                                )
+                                ),
                               ),
                               PopupMenuButton<String>(
                                 icon: Stack(
@@ -715,18 +1049,30 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                       width: 20,
                                       height: 8,
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withValues(alpha: .3),
+                                        color: context.boba.onImage.withValues(
+                                          alpha: .3,
+                                        ),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                     ),
-                                    const Icon(Icons.more_horiz, size: 18, color: Colors.black),
-                                  ]
+                                    Icon(
+                                      Icons.more_horiz,
+                                      size: 18,
+                                      color: context.boba.ink,
+                                    ),
+                                  ],
                                 ),
                                 onSelected: (value) async {
-                                  switch(value) {
+                                  switch (value) {
                                     case 'view':
                                       if (!brandRemoved) {
-                                        Navigator.push(context, MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand)));
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                BrandDetailsPage(brand: brand),
+                                          ),
+                                        );
                                       }
                                       break;
                                     case 'edit':
@@ -737,11 +1083,20 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                           brand: brand,
                                           onSubmit: (submittedShop) async {
                                             try {
-                                              final persistedShop = await shopState.update(submittedShop);
-                                              notify('Shop updated.', SnackType.success);
+                                              final persistedShop =
+                                                  await shopState.update(
+                                                    submittedShop,
+                                                  );
+                                              notify(
+                                                'Shop updated.',
+                                                SnackType.success,
+                                              );
                                               return persistedShop;
                                             } catch (e) {
-                                              notify('Error updating shop.', SnackType.error);
+                                              notify(
+                                                'Error updating shop.',
+                                                SnackType.error,
+                                              );
                                               rethrow;
                                             }
                                           },
@@ -753,35 +1108,60 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                         context: context,
                                         builder: (context) => AlertDialog(
                                           title: const Text('Delete shop'),
-                                          content: const Text('Are you sure you want to delete this shop ?'),
+                                          content: const Text(
+                                            'Are you sure you want to delete this shop ?',
+                                          ),
                                           actions: [
-                                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                                            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context, false),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context, true),
+                                              child: const Text('Delete'),
+                                            ),
                                           ],
-                                        )
+                                        ),
                                       );
-                                      
+
                                       if (confirm == true && context.mounted) {
                                         try {
                                           // delete images first
-                                          await shopMediaState.removeAllMediaForShop(widget.shopId);
+                                          await shopMediaState
+                                              .removeAllMediaForShop(
+                                                widget.shopId,
+                                              );
                                           // delete shop
                                           await shopState.remove(widget.shopId);
-                                          await feedState.removeFeedEvent(widget.shopId);
-                                          notify('Shop deleted', SnackType.success);
+                                          await feedState.removeFeedEvent(
+                                            widget.shopId,
+                                          );
+                                          notify(
+                                            'Shop deleted',
+                                            SnackType.success,
+                                          );
                                           if (context.mounted) {
                                             Navigator.pop(context);
                                           }
                                         } catch (e) {
                                           debugPrint("Error deleting shop");
-                                          notify('Error deleting shop', SnackType.error);
+                                          notify(
+                                            'Error deleting shop',
+                                            SnackType.error,
+                                          );
                                         }
                                       }
                                       break;
                                   }
                                 },
                                 itemBuilder: (_) => [
-                                  if (!brandRemoved) const PopupMenuItem(value: 'view', child: Text('View page')),
+                                  if (!brandRemoved)
+                                    const PopupMenuItem(
+                                      value: 'view',
+                                      child: Text('View page'),
+                                    ),
                                   PopupMenuItem(
                                     value: 'edit',
                                     child: Text('Edit'),
@@ -790,24 +1170,26 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                     value: 'delete',
                                     child: Text('Delete'),
                                   ),
-                                ]
+                                ],
                               ),
                             ],
                           ),
                         ),
-                      ]
+                    ],
                   );
-                }
+                },
               ),
             ),
             if (refreshing)
               const Positioned(
-                top: 0, left: 0, right: 0,
+                top: 0,
+                left: 0,
+                right: 0,
                 child: LinearProgressIndicator(minHeight: 2),
               ),
-          ]
+          ],
         );
-      }
+      },
     );
   }
 }
@@ -825,7 +1207,7 @@ class ShopDetailSkeleton extends StatelessWidget {
           // Banner / header skeleton
           Container(
             height: 250,
-            color: Colors.grey[300],
+            color: context.boba.surfaceAlt,
             child: Align(
               alignment: Alignment.bottomLeft,
               child: Padding(
@@ -833,7 +1215,7 @@ class ShopDetailSkeleton extends StatelessWidget {
                 child: Container(
                   width: 120,
                   height: 20,
-                  color: Colors.grey[400],
+                  color: context.boba.outline,
                 ),
               ),
             ),
@@ -845,27 +1227,30 @@ class ShopDetailSkeleton extends StatelessWidget {
           Expanded(
             child: ListView.separated(
               itemCount: 6,
-              separatorBuilder: (_, __) => const Divider(height: 1, color: Colors.grey),
+              separatorBuilder: (_, __) => Divider(
+                height: 1,
+                color: context.boba.outline,
+              ),
               itemBuilder: (context, index) {
                 return ListTile(
                   leading: Container(
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
+                      color: context.boba.outline,
                       shape: BoxShape.circle,
                     ),
                   ),
                   title: Container(
                     height: 14,
                     width: double.infinity,
-                    color: Colors.grey[300],
+                    color: context.boba.outline,
                   ),
                   subtitle: Container(
                     margin: const EdgeInsets.only(top: 6),
                     height: 12,
                     width: 100,
-                    color: Colors.grey[200],
+                    color: context.boba.surfaceAlt,
                   ),
                 );
               },

@@ -1,7 +1,9 @@
-import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/notification_bus.dart';
-import 'package:bobadex/pages/home_page.dart';
 import 'package:bobadex/state/user_state.dart';
+import 'package:bobadex/ui/components/theme_preview_card.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
+import 'package:bobadex/ui/theme/boba_themes.dart';
+import 'package:bobadex/ui/theme/boba_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -20,7 +22,6 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
     super.initState();
     _pageController = PageController(initialPage: _page);
   }
-
 
   void _next() {
     setState(() => _page++);
@@ -61,7 +62,10 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("Welcome to Bobadex!", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  Text(
+                    "Welcome to Bobadex!",
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
                   SizedBox(height: 24),
                   Text(
                     'Bobadex is a passion project I started to make it fun and easy to log all my milk tea adventures. '
@@ -88,37 +92,27 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
-                      height: 260,
-                      child: GridView.count(
-                        crossAxisCount: 5,
-                        mainAxisSpacing: 8,
-                        crossAxisSpacing: 8,
+                      height: 360,
+                      child: GridView.builder(
+                        itemCount: BobaThemes.all.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisSpacing: BobaSpace.x2,
+                              crossAxisSpacing: BobaSpace.x2,
+                              childAspectRatio: 1.35,
+                            ),
                         shrinkWrap: true,
-                        physics: const BouncingScrollPhysics(), // changed
-                        children: [
-                          ...Constants.themeMap.entries.map((entry) {
-                            final slug = entry.key;
-                            final color = entry.value;
-                            final selected = userState.current.themeSlug == slug;
-
-                            return GestureDetector(
-                              onTap: () => setState(() => userState.setTheme(slug)),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: color.shade100,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: selected ? Colors.black : Colors.transparent,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: selected
-                                    ? const Icon(Icons.check, color: Colors.black)
-                                    : null,
-                              ),
-                            );
-                          }),
-                        ],
+                        physics: const BouncingScrollPhysics(),
+                        itemBuilder: (context, index) {
+                          final theme = BobaThemes.all[index];
+                          return ThemePreviewCard(
+                            definition: theme,
+                            selected: userState.current.themeSlug == theme.slug,
+                            onTap: () =>
+                                setState(() => userState.setTheme(theme.slug)),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -132,23 +126,26 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         GestureDetector(
-                          onTap: () => setState(() => userState.setGridLayout(2)),
+                          onTap: () =>
+                              setState(() => userState.setGridLayout(2)),
                           child: Container(
                             margin: const EdgeInsets.symmetric(horizontal: 12),
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               border: Border.all(
                                 color: userState.current.gridColumns == 2
-                                    ? Colors.deepPurple
-                                    : Colors.grey[300]!,
+                                    ? context.boba.accent
+                                    : context.boba.outline,
                                 width: 2,
                               ),
                               borderRadius: BorderRadius.circular(12),
-                              color: Colors.white,
+                              color: context.boba.surface,
                               boxShadow: [
                                 if (userState.current.gridColumns == 2)
                                   BoxShadow(
-                                    color: Colors.deepPurple.withValues(alpha: 0.1),
+                                    color: context.boba.accent.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     blurRadius: 4,
                                   ),
                               ],
@@ -158,11 +155,17 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                                 Icon(Icons.view_column, size: 36),
                                 Text(
                                   "Cozy",
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                                 Text(
                                   "2 per row",
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w300,
+                                  ),
                                   textAlign: TextAlign.center,
                                 ),
                               ],
@@ -170,23 +173,26 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => setState(() => userState.setGridLayout(3)),
+                          onTap: () =>
+                              setState(() => userState.setGridLayout(3)),
                           child: Container(
                             margin: const EdgeInsets.symmetric(horizontal: 12),
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               border: Border.all(
                                 color: userState.current.gridColumns == 3
-                                    ? Colors.deepPurple
-                                    : Colors.grey[300]!,
+                                    ? context.boba.accent
+                                    : context.boba.outline,
                                 width: 2,
                               ),
                               borderRadius: BorderRadius.circular(12),
-                              color: Colors.white,
+                              color: context.boba.surface,
                               boxShadow: [
                                 if (userState.current.gridColumns == 3)
                                   BoxShadow(
-                                    color: Colors.deepPurple.withValues(alpha: 0.1),
+                                    color: context.boba.accent.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     blurRadius: 4,
                                   ),
                               ],
@@ -196,11 +202,17 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                                 Icon(Icons.grid_view, size: 36),
                                 Text(
                                   "Compact",
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                                 Text(
                                   "3 per row",
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w300,
+                                  ),
                                   textAlign: TextAlign.center,
                                 ),
                               ],
@@ -221,7 +233,8 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         GestureDetector(
-                          onTap: () => setState(() => userState.toggleUseIcons()),
+                          onTap: () =>
+                              setState(() => userState.toggleUseIcons()),
                           child: Container(
                             constraints: BoxConstraints(
                               maxWidth: MediaQuery.of(context).size.width / 3,
@@ -232,16 +245,18 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                             decoration: BoxDecoration(
                               border: Border.all(
                                 color: !userState.current.useIcons
-                                    ? Colors.deepPurple
-                                    : Colors.grey[300]!,
+                                    ? context.boba.accent
+                                    : context.boba.outline,
                                 width: 2,
                               ),
                               borderRadius: BorderRadius.circular(12),
-                              color: Colors.white,
+                              color: context.boba.surface,
                               boxShadow: [
                                 if (!userState.current.useIcons)
                                   BoxShadow(
-                                    color: Colors.deepPurple.withValues(alpha: 0.1),
+                                    color: context.boba.accent.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     blurRadius: 4,
                                   ),
                               ],
@@ -251,11 +266,17 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                                 Icon(Icons.photo, size: 36),
                                 Text(
                                   "Use photos",
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                                 Text(
                                   "User uploaded photos as background",
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w300,
+                                  ),
                                   textAlign: TextAlign.center,
                                 ),
                               ],
@@ -263,7 +284,8 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () => setState(() => userState.toggleUseIcons()),
+                          onTap: () =>
+                              setState(() => userState.toggleUseIcons()),
                           child: Container(
                             margin: const EdgeInsets.symmetric(horizontal: 12),
                             constraints: BoxConstraints(
@@ -274,16 +296,18 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                             decoration: BoxDecoration(
                               border: Border.all(
                                 color: userState.current.useIcons
-                                    ? Colors.deepPurple
-                                    : Colors.grey[300]!,
+                                    ? context.boba.accent
+                                    : context.boba.outline,
                                 width: 2,
                               ),
                               borderRadius: BorderRadius.circular(12),
-                              color: Colors.white,
+                              color: context.boba.surface,
                               boxShadow: [
                                 if (userState.current.useIcons)
                                   BoxShadow(
-                                    color: Colors.deepPurple.withValues(alpha: 0.1),
+                                    color: context.boba.accent.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     blurRadius: 4,
                                   ),
                               ],
@@ -293,11 +317,17 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                                 Icon(Icons.apps, size: 36),
                                 Text(
                                   "Use icons",
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                                 Text(
                                   "Uses built-in icons as foreground",
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w300),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w300,
+                                  ),
                                   textAlign: TextAlign.center,
                                 ),
                               ],
@@ -325,16 +355,13 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
                             userState.saveTheme();
                             try {
                               await userState.setOnboarded();
-                              if (context.mounted) {
-                                Navigator.of(context).pushReplacement(
-                                  MaterialPageRoute(
-                                    builder: (_) => HomePage(userId: userState.current.id),
-                                  ),
-                                );
-                              }
+                              if (context.mounted) Navigator.of(context).pop();
                             } catch (e) {
                               if (context.mounted) {
-                                notify('Error saving onboarding. Try again', SnackType.error);
+                                notify(
+                                  'Error saving onboarding. Try again',
+                                  SnackType.error,
+                                );
                               }
                             }
                           },
@@ -348,7 +375,7 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
             ),
           ],
         ),
-      )
+      ),
     );
   }
 }

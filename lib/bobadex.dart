@@ -11,11 +11,12 @@ import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/user_stats_cache.dart';
 import 'package:bobadex/widgets/notification_consumer.dart';
+import 'package:bobadex/ui/theme/boba_theme_builder.dart';
+import 'package:bobadex/ui/theme/boba_themes.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'app_initializer.dart';
 import 'package:provider/provider.dart';
-import 'package:bobadex/config/constants.dart';
 
 class BobadexApp extends StatefulWidget {
   const BobadexApp({super.key});
@@ -27,7 +28,6 @@ class _BobadexAppState extends State<BobadexApp> {
   late final FirebaseAnalytics _fa;
   late final AnalyticsService _analytics;
   late final FirebaseAnalyticsObserver _observer;
-
 
   @override
   void initState() {
@@ -57,58 +57,16 @@ class _BobadexAppState extends State<BobadexApp> {
       ],
       child: Builder(
         builder: (context) {
-          final themeSlug = context.select<UserState, String>((s) => s.current.themeSlug);
-          final themeColor = Constants.getThemeColor(themeSlug);
+          final themeSlug = context.select<UserState, String>(
+            (s) => s.current.themeSlug,
+          );
+          final theme = BobaThemes.resolve(themeSlug);
           return MaterialApp.router(
             title: 'Bobadex',
             routerConfig: router,
             debugShowCheckedModeBanner: false,
             locale: Locale('en'),
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(seedColor: themeColor),
-              useMaterial3: true,
-              scaffoldBackgroundColor: themeColor.shade50,
-              dialogTheme: DialogThemeData(
-                backgroundColor: themeColor.shade50,
-              ),
-              appBarTheme: AppBarTheme(
-                backgroundColor: themeColor.shade50,
-                foregroundColor: Colors.black,
-                elevation: 0,
-                scrolledUnderElevation: 0,
-              ),
-              elevatedButtonTheme: ElevatedButtonThemeData(
-                style: ButtonStyle(
-                  backgroundColor: WidgetStatePropertyAll<Color>(themeColor.shade400),
-                  foregroundColor: WidgetStatePropertyAll<Color>(Colors.white),
-                  textStyle: WidgetStatePropertyAll<TextStyle>(
-                    const TextStyle(fontWeight: FontWeight.w500)
-                  )
-                )
-              ),
-              cardTheme: CardThemeData(color: themeColor.shade100),
-              textButtonTheme: TextButtonThemeData(
-                style: ButtonStyle(
-                  backgroundColor: WidgetStatePropertyAll<Color>(themeColor.shade400),
-                  foregroundColor: WidgetStatePropertyAll<Color>(Colors.white),
-                  textStyle: WidgetStatePropertyAll<TextStyle>(
-                    const TextStyle(fontWeight: FontWeight.w500)
-                  )
-                )
-              ),
-              popupMenuTheme: PopupMenuThemeData(
-                color: Colors.white.withValues(alpha: 0.95), // soft translucent
-                elevation: 8, // stronger shadow
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                textStyle: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
+            theme: BobaThemeBuilder.build(theme),
             builder: (context, child) => GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () => FocusScope.of(context).unfocus(),

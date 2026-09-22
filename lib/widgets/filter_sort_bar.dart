@@ -1,27 +1,32 @@
-import 'package:bobadex/widgets/compact_text_row.dart';
+import 'package:bobadex/ui/components/boba_chip.dart';
+import 'package:bobadex/ui/components/boba_search_field.dart';
+import 'package:bobadex/ui/theme/boba_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:bobadex/config/constants.dart';
-import '../state/user_state.dart';
 
 class SortOption {
   final String key;
   final IconData icon;
+  final String label;
 
-  SortOption (this.key, this.icon);
+  SortOption(this.key, this.icon, {String? label}) : label = label ?? key;
 }
+
 class FilterSortBar extends StatefulWidget {
   final TextEditingController controller;
   final ValueChanged<String> onSearchChanged;
   final List<SortOption> sortOptions;
   final ValueChanged<String> onSortSelected;
-  
-  const FilterSortBar ({
+  final String initialSortKey;
+  final bool initialAscending;
+
+  const FilterSortBar({
     super.key,
     required this.controller,
     required this.onSearchChanged,
     required this.sortOptions,
     required this.onSortSelected,
+    this.initialSortKey = 'favorite',
+    this.initialAscending = false,
   });
 
   @override
@@ -29,82 +34,74 @@ class FilterSortBar extends StatefulWidget {
 }
 
 class _FilterSortBarState extends State<FilterSortBar> {
-  String _selectedSortKey = '';
-  bool _isAscending = false;
+  late String _selectedSortKey;
+  late bool _isAscending;
 
   @override
   void initState() {
     super.initState();
-    if (widget.sortOptions.isNotEmpty) {
-      _selectedSortKey = widget.sortOptions.first.key;
-    }
+    _selectedSortKey = widget.initialSortKey;
+    _isAscending = widget.initialAscending;
+  }
+
+  void _emit() {
+    widget.onSortSelected('$_selectedSortKey-${_isAscending ? 'asc' : 'desc'}');
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = context.read<UserState>().current;
-    return CompactTextRow(
-      maxLength: 24,
-      leftFlexStart: 2,
-      leftFlexEnd: 9,
-      rightFlex: 3,
-      hintText: 'Search',
-      textController: widget.controller,
-      onSearchChanged: widget.onSearchChanged,
-      child: Row(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        BobaSpace.x4,
+        BobaSpace.x2,
+        BobaSpace.x4,
+        BobaSpace.x2,
+      ),
+      child: Column(
         children: [
-          // Asc/desc icon
-          GestureDetector(
-            onTap: () {
-              setState(() => _isAscending = !_isAscending);
-              widget.onSortSelected(_selectedSortKey + (_isAscending ? '-asc' : '-desc'));
-            },
-            child: Padding(
-              padding: const EdgeInsets.only(right: 10), // very tight spacing
-              child: Icon(
-                _isAscending ? Icons.arrow_upward : Icons.arrow_downward,
-                color: Constants.getThemeColor(user.themeSlug),
-                size: 20,
+          BobaSearchField(
+            controller: widget.controller,
+            hint: 'Search brands',
+            onChanged: widget.onSearchChanged,
+          ),
+          const SizedBox(height: BobaSpace.x2),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final opt in widget.sortOptions) ...[
+                    BobaChip(
+                      label: opt.label,
+                      icon: Icon(opt.icon),
+                      selected: _selectedSortKey == opt.key,
+                      trailing: _selectedSortKey == opt.key
+                          ? Icon(
+                              _isAscending
+                                  ? Icons.arrow_upward_rounded
+                                  : Icons.arrow_downward_rounded,
+                            )
+                          : null,
+                      onTap: () {
+                        setState(() {
+                          if (_selectedSortKey == opt.key) {
+                            _isAscending = !_isAscending;
+                          } else {
+                            _selectedSortKey = opt.key;
+                          }
+                        });
+                        _emit();
+                      },
+                    ),
+                    const SizedBox(width: BobaSpace.x2),
+                  ],
+                ],
               ),
             ),
           ),
-
-          // Vertical divider
-          const SizedBox(height: 40, child: VerticalDivider(width: 1)),
-
-          // Sort option chips
-          const SizedBox(width: 8),
-          Flexible(
-            flex: 4,
-            child: Stack(
-              children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Row(
-                    children: widget.sortOptions.map((opt) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: ChoiceChip(
-                          label: Icon(opt.icon, size: 16),
-                          selected: _selectedSortKey == opt.key,
-                          backgroundColor: Constants.getThemeColor(user.themeSlug).shade50,
-                          selectedColor: Constants.getThemeColor(user.themeSlug).shade100,
-                          showCheckmark: false,
-                          onSelected: (_) {
-                            setState(() => _selectedSortKey = opt.key);
-                            widget.onSortSelected(opt.key + (_isAscending ? '-asc' : '-desc'));
-                          },
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
-      )
+      ),
     );
   }
 }

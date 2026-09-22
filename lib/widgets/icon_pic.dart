@@ -1,5 +1,6 @@
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/helpers/url_helper.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
@@ -24,10 +25,13 @@ class IconPic extends StatelessWidget {
     }
 
     final dpr = MediaQuery.of(context).devicePixelRatio.clamp(1.0, 3.0);
-    final px  = pickSquareSize(size, dpr, Constants.thumbSizes);
+    final px = pickSquareSize(size, dpr, Constants.thumbSizes);
 
     final sizedThumb = publicUrl(Constants.iconBucket, thumbPath(path!, px));
-    final smallerThumb = publicUrl(Constants.iconBucket, thumbPath(path!, 256)); // common default
+    final smallerThumb = publicUrl(
+      Constants.iconBucket,
+      thumbPath(path!, 256),
+    ); // common default
     final original = publicUrl(Constants.iconBucket, path!);
 
     final img = CachedNetworkImage(
@@ -40,7 +44,7 @@ class IconPic extends StatelessWidget {
       fadeInDuration: Duration.zero,
       fadeOutDuration: Duration.zero,
       placeholderFadeInDuration: Duration.zero,
-      placeholder: (_, __) => _placeholder(),
+      placeholder: (_, __) => _placeholder(context),
       errorWidget: (_, __, ___) => CachedNetworkImage(
         imageUrl: smallerThumb,
         width: size,
@@ -48,13 +52,13 @@ class IconPic extends StatelessWidget {
         fit: fit,
         memCacheWidth: 256,
         memCacheHeight: 256,
-        placeholder: (_, __) => _placeholder(),
+        placeholder: (_, __) => _placeholder(context),
         errorWidget: (_, __, ___) => CachedNetworkImage(
-          imageUrl: original,   // last resort
+          imageUrl: original, // last resort
           width: size,
           height: size,
           fit: fit,
-          placeholder: (_, __) => _placeholder(),
+          placeholder: (_, __) => _placeholder(context),
           errorWidget: (_, __, ___) => _fallback(),
         ),
       ),
@@ -63,14 +67,15 @@ class IconPic extends StatelessWidget {
     return _wrap(img);
   }
 
-  Widget _wrap(Widget child) =>
-      circular ? ClipOval(child: child) : ClipRRect(borderRadius: BorderRadius.circular(12), child: child);
+  Widget _wrap(Widget child) => circular
+      ? ClipOval(child: child)
+      : ClipRRect(borderRadius: BorderRadius.circular(12), child: child);
 
-  Widget _placeholder() => Container(
+  Widget _placeholder(BuildContext context) => Container(
     width: size,
     height: size,
     decoration: BoxDecoration(
-      color: Colors.black.withValues(alpha: 0.05),
+      color: context.boba.surfaceAlt,
       shape: circular ? BoxShape.circle : BoxShape.rectangle,
       borderRadius: circular ? null : BorderRadius.circular(12),
     ),

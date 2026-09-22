@@ -1,3 +1,4 @@
+import 'package:bobadex/auth/otp_auth_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -7,6 +8,7 @@ class OtpCodeField extends StatefulWidget {
   final bool enabled;
   final ValueChanged<String>? onSubmitted;
   final String? errorText;
+  final String? helperText;
 
   const OtpCodeField({
     super.key,
@@ -15,6 +17,7 @@ class OtpCodeField extends StatefulWidget {
     this.enabled = true,
     this.onSubmitted,
     this.errorText,
+    this.helperText = otpInboxHint,
   });
 
   @override
@@ -38,6 +41,8 @@ class _OtpCodeFieldState extends State<OtpCodeField> {
       ],
       decoration: InputDecoration(
         labelText: 'Verification code',
+        helperText: widget.helperText,
+        helperMaxLines: 2,
         errorText: widget.errorText,
       ),
       onFieldSubmitted: widget.onSubmitted,

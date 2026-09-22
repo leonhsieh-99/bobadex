@@ -15,8 +15,8 @@ class OutlinedStar extends StatelessWidget {
     required this.size,
     this.filled = false,
     this.half = false,
-    this.fillColor = Colors.amber,
-    this.borderColor = Colors.black,
+    required this.fillColor,
+    required this.borderColor,
     this.cornerRadius = 0,
     this.innerRadiusFactor = 0.4,
   });
@@ -59,7 +59,11 @@ class _StarPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final Path starPath = _roundedStarPath(size, cornerRadius, innerRadiusFactor);
+    final Path starPath = _roundedStarPath(
+      size,
+      cornerRadius,
+      innerRadiusFactor,
+    );
 
     // Half-filled star: clip to star, then clip to left half, then fill
     if (half) {
@@ -68,7 +72,9 @@ class _StarPainter extends CustomPainter {
       canvas.clipRect(Rect.fromLTWH(0, 0, size.width / 2, size.height));
       canvas.drawRect(
         Offset.zero & size,
-        Paint()..color = fillColor..style = PaintingStyle.fill,
+        Paint()
+          ..color = fillColor
+          ..style = PaintingStyle.fill,
       );
       canvas.restore();
 
@@ -103,7 +109,8 @@ class _StarPainter extends CustomPainter {
         ..color = borderColor
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1
-        ..strokeJoin = StrokeJoin.round // smooth joins
+        ..strokeJoin = StrokeJoin
+            .round // smooth joins
         ..isAntiAlias = true,
     );
   }
@@ -121,10 +128,12 @@ class _StarPainter extends CustomPainter {
       final double radius = isOuter ? outerR : innerR;
       // Start at -90° (top) and step 36° each point (360/10)
       final double angle = -math.pi / 2 + i * (2 * math.pi / 10);
-      pts.add(Offset(
-        c.dx + radius * math.cos(angle),
-        c.dy + radius * math.sin(angle),
-      ));
+      pts.add(
+        Offset(
+          c.dx + radius * math.cos(angle),
+          c.dy + radius * math.sin(angle),
+        ),
+      );
     }
 
     Path path = Path();

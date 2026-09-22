@@ -1,4 +1,3 @@
-import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/friends_shop.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
@@ -7,6 +6,7 @@ import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/brand_mark.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -27,7 +27,6 @@ class FriendsShopDetailsPage extends StatelessWidget {
     final userState = context.read<UserState>();
     final brandState = context.read<BrandState>();
     final brand = brandState.getBrand(shop.brandSlug);
-    final themeColor = Constants.getThemeColor(userState.current.themeSlug);
 
     // Split crown/mostDrinks entry out
     final entries = shop.friendsInfo.entries.toList();
@@ -43,7 +42,11 @@ class FriendsShopDetailsPage extends StatelessWidget {
       rest = entries;
     }
 
-    Widget glowCard({required Widget child, double borderRadius = 12, double glowRadius = 10}) {
+    Widget glowCard({
+      required Widget child,
+      double borderRadius = 12,
+      double glowRadius = 10,
+    }) {
       return Container(
         clipBehavior: Clip.none,
         margin: const EdgeInsets.symmetric(vertical: 12),
@@ -52,12 +55,12 @@ class FriendsShopDetailsPage extends StatelessWidget {
           // This gives you a bright golden/yellow glow
           boxShadow: [
             BoxShadow(
-              color: Colors.amber.withValues(alpha: 0.6),
+              color: context.boba.star.withValues(alpha: 0.35),
               blurRadius: glowRadius,
               spreadRadius: 2,
             ),
             BoxShadow(
-              color: Colors.orange.withValues(alpha: 0.2),
+              color: context.boba.star.withValues(alpha: 0.12),
               blurRadius: glowRadius * 2,
               spreadRadius: 4,
             ),
@@ -68,7 +71,10 @@ class FriendsShopDetailsPage extends StatelessWidget {
     }
 
     // Builder for each tile
-    Widget buildFriendTile(MapEntry<String, dynamic> e, {bool isCrown = false}) {
+    Widget buildFriendTile(
+      MapEntry<String, dynamic> e, {
+      bool isCrown = false,
+    }) {
       final userId = e.key;
       final info = e.value;
       final rating = info.rating;
@@ -91,7 +97,7 @@ class FriendsShopDetailsPage extends StatelessWidget {
         elevation: 1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: Colors.grey.shade200, width: 1),
+          side: BorderSide(color: context.boba.outline, width: 1),
         ),
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -102,24 +108,35 @@ class FriendsShopDetailsPage extends StatelessWidget {
               children: [
                 GestureDetector(
                   onTap: userId == Supabase.instance.client.auth.currentUser!.id
-                    ? null
-                    : () =>  Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => AccountViewPage(userId: userId, user: friendState.getFriend(userId)))
-                    ),
-                  child: ThumbPic(path: imagePath, size: 45)
+                      ? null
+                      : () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => AccountViewPage(
+                              userId: userId,
+                              user: friendState.getFriend(userId),
+                            ),
+                          ),
+                        ),
+                  child: ThumbPic(path: imagePath, size: 45),
                 ),
                 if (isCrown)
                   Positioned(
                     right: 0,
                     bottom: 0,
-                    child: Icon(Icons.emoji_events, color: Colors.amber, size: 22), // crown
+                    child: Icon(
+                      Icons.emoji_events,
+                      color: context.boba.star,
+                      size: 22,
+                    ), // crown
                   ),
               ],
             ),
             title: Row(
               children: [
                 ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.7,
+                  ),
                   child: Text(
                     displayName,
                     style: const TextStyle(fontWeight: FontWeight.w600),
@@ -128,17 +145,28 @@ class FriendsShopDetailsPage extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 if (isFavorite == true)
-                  Icon(Icons.star, color: Colors.orange, size: 18),
+                  Icon(
+                    Icons.favorite_rounded,
+                    color: context.boba.heart,
+                    size: 18,
+                  ),
               ],
             ),
             subtitle: Row(
               children: [
-                Text(rating.toStringAsFixed(1), style: const TextStyle(fontSize: 16)),
+                Text(
+                  rating.toStringAsFixed(1),
+                  style: const TextStyle(fontSize: 16),
+                ),
                 const SizedBox(width: 8),
                 if (drinkCount > 0)
                   Row(
                     children: [
-                      Icon(Icons.local_drink, size: 16, color: Colors.blueGrey),
+                      Icon(
+                        Icons.local_drink_rounded,
+                        size: 16,
+                        color: context.boba.accent,
+                      ),
                       const SizedBox(width: 2),
                       Text('$drinkCount drinks'),
                     ],
@@ -151,42 +179,61 @@ class FriendsShopDetailsPage extends StatelessWidget {
                 children: [
                   if ((note ?? '').isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                      child: Text(note, style: TextStyle(fontWeight: FontWeight.w400)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      child: Text(
+                        note,
+                        style: TextStyle(fontWeight: FontWeight.w400),
+                      ),
                     ),
                   if (top3Drinks.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Top Drinks', style: TextStyle(fontWeight: FontWeight.w500)),
-                          ...top3Drinks.map((drink) => Row(
-                            children: [
-                              ConstrainedBox(
-                                constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
-                                child: Text(
-                                  drink.name,
-                                  overflow: TextOverflow.ellipsis,
+                          const Text(
+                            'Top Drinks',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          ...top3Drinks.map(
+                            (drink) => Row(
+                              children: [
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth:
+                                        MediaQuery.of(context).size.width * 0.7,
+                                  ),
+                                  child: Text(
+                                    drink.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(Icons.star, size: 15, color: Colors.orange),
-                              Text(drink.rating.toStringAsFixed(1)),
-                            ],
-                          )),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.star,
+                                  size: 15,
+                                  color: context.boba.star,
+                                ),
+                                Text(drink.rating.toStringAsFixed(1)),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
                 ],
               ),
-            ]
+            ],
           ),
         ),
       );
-      return isCrown
-        ? glowCard(child: baseCard())
-        : baseCard();
+      return isCrown ? glowCard(child: baseCard()) : baseCard();
     }
 
     // Build the list
@@ -202,10 +249,14 @@ class FriendsShopDetailsPage extends StatelessWidget {
         friendTiles.add(const Divider(thickness: 1, height: 24));
       }
     }
-    friendTiles.addAll(rest.map((entry) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12.0),
-      child: buildFriendTile(entry),
-    )));
+    friendTiles.addAll(
+      rest.map(
+        (entry) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12.0),
+          child: buildFriendTile(entry),
+        ),
+      ),
+    );
 
     return Scaffold(
       appBar: AppBar(),
@@ -215,14 +266,18 @@ class FriendsShopDetailsPage extends StatelessWidget {
           children: [
             Center(
               child: GestureDetector(
-                onTap: brand == null ? null : () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand)),
-                ),
+                onTap: brand == null
+                    ? null
+                    : () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => BrandDetailsPage(brand: brand),
+                        ),
+                      ),
                 child: Container(
                   width: 150,
                   height: 150,
                   decoration: BoxDecoration(
-                    color: themeColor.shade200,
+                    color: context.boba.accentSoft,
                     shape: BoxShape.circle,
                   ),
                   child: BrandMark(
@@ -230,7 +285,7 @@ class FriendsShopDetailsPage extends StatelessWidget {
                     slug: shop.brandSlug,
                     iconPath: brand?.iconPath,
                     size: 150,
-                  )
+                  ),
                 ),
               ),
             ),
@@ -247,7 +302,10 @@ class FriendsShopDetailsPage extends StatelessWidget {
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 24),
-            const Text('Friends Ratings', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Friends Ratings',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 4),
             ...friendTiles,
             if (shop.friendsInfo.isEmpty)

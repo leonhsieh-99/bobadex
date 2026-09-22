@@ -1,12 +1,48 @@
 import 'package:bobadex/auth/auth_redaction.dart';
+import 'package:bobadex/auth/email_account_auth.dart';
 import 'package:bobadex/auth/otp_auth_client.dart';
 import 'package:bobadex/auth/otp_auth_codes.dart';
 import 'package:bobadex/auth/otp_auth_messages.dart';
 import 'package:bobadex/auth/phone_e164.dart';
 import 'package:bobadex/pages/auth_page.dart';
+import 'package:bobadex/pages/setting_pages/email_change_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:phone_numbers_parser/phone_numbers_parser.dart';
+
+class FakeEmailAccountAuth extends EmailAccountAuth {
+  final calls = <String>[];
+  OtpAuthCode requestResult = OtpAuthCode.otpSent;
+
+  @override
+  Future<OtpAuthCode> requestSignup({
+    required String email,
+    required String username,
+    required String displayName,
+  }) async {
+    calls.add('signup:$email:$username:$displayName');
+    if (requestResult != OtpAuthCode.otpSent && requestResult != OtpAuthCode.success) {
+      throw OtpAuthException(requestResult);
+    }
+    return requestResult;
+  }
+
+  @override
+  Future<void> verifySignup({required String email, required String code}) async {
+    calls.add('verify:$email:$code');
+  }
+
+  @override
+  Future<OtpAuthCode> requestEmailChange(String email) async {
+    calls.add('change:$email');
+    return OtpAuthCode.otpSent;
+  }
+
+  @override
+  Future<void> verifyEmailChange({required String email, required String code}) async {
+    calls.add('change-verify:$email:$code');
+  }
+}
 
 OtpFunctionInvoker scriptedInvoker(List<OtpFunctionResponse> responses) {
   var i = 0;
@@ -265,6 +301,7 @@ void main() {
       await tester.tap(find.text('Send code'));
       await tester.pumpAndSettle();
       expect(find.textContaining('Enter the code sent to user@example.com'), findsOneWidget);
+      expect(find.textContaining('Check spam'), findsOneWidget);
 
       await tester.enterText(find.byType(TextFormField), '123456');
       await tester.tap(find.text('Verify code'));
@@ -287,8 +324,9 @@ void main() {
       expect(applied, isNull);
       await tester.tap(find.text('Create an account'));
       await tester.pumpAndSettle();
-      expect(find.text('Create Account'), findsOneWidget);
-      expect(find.text('Send code'), findsNothing);
+      expect(find.text('Username'), findsOneWidget);
+      expect(find.text('Send code'), findsOneWidget);
+      expect(find.text('Password'), findsNothing);
     });
 
     testWidgets('invalid code and expired code stay on the verify step', (tester) async {
@@ -398,31 +436,97 @@ void main() {
       expect(find.textContaining('try again'), findsWidgets);
     });
 
-    testWidgets('password login remains available and signup stays separate', (tester) async {
+    testWidgets('signup stays separate from login and requests an email code', (tester) async {
+      final emailAuth = FakeEmailAccountAuth();
       client = clientWith([]);
-      await tester.pumpWidget(MaterialApp(home: AuthPage(otpClient: client)));
+      await tester.pumpWidget(MaterialApp(home: AuthPage(otpClient: client, emailAuth: emailAuth)));
       expect(find.text('Send code'), findsOneWidget);
-      await tester.tap(find.text('Use password instead'));
-      await tester.pumpAndSettle();
-      expect(find.text('Password'), findsOneWidget);
-      expect(find.widgetWithText(ElevatedButton, 'Log In'), findsOneWidget);
-      expect(find.text('Forgot password?'), findsOneWidget);
+      expect(find.text('Use password instead'), findsNothing);
       await tester.tap(find.text("Don't have an account? Sign up"));
       await tester.pumpAndSettle();
-      expect(find.text('Create Account'), findsOneWidget);
       expect(find.text('Username'), findsOneWidget);
-      expect(find.text('Send code'), findsNothing);
+      expect(find.text('Password'), findsNothing);
+      await tester.enterText(find.widgetWithText(TextFormField, 'Name'), 'Ada');
+      await tester.enterText(find.widgetWithText(TextFormField, 'Username'), 'ada');
+      await tester.enterText(find.widgetWithText(TextFormField, 'Email'), 'ada@example.com');
+      await tester.tap(find.text('Send code'));
+      await tester.pumpAndSettle();
+      expect(emailAuth.calls.first, 'signup:ada@example.com:ada:Ada');
+      expect(find.text('Verify code'), findsOneWidget);
+      await tester.enterText(find.byType(TextFormField), '123456');
+      await tester.tap(find.text('Verify code'));
+      await tester.pumpAndSettle();
+      expect(emailAuth.calls.last, 'verify:ada@example.com:123456');
     });
   });
 
   test('wait copy includes remaining seconds', () {
     expect(otpWaitCopy(47), contains('47s'));
-    expect(otpWaitCopy(3600, rateLimited: true), contains('password login'));
+    expect(otpWaitCopy(3600, rateLimited: true), contains('up to 1 hour'));
   });
 
   test('user-facing messages cover every backend code', () {
     for (final code in OtpAuthCode.values) {
       expect(messageForOtpCode(code), isNotEmpty);
     }
+  });
+
+  testWidgets('email change confirms current inbox before the new one', (tester) async {
+    final emailAuth = FakeEmailAccountAuth();
+    final otp = OtpAuthClient(
+      applySession: (_) async {},
+      invoke: scriptedInvoker([
+        const OtpFunctionResponse(status: 200, body: {'code': 'OTP_SENT'}),
+        OtpFunctionResponse(status: 200, body: loginSuccess(userId: 'user-1')),
+      ]),
+    );
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(
+        builder: (context) => TextButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => EmailChangePage(
+                  otpClient: otp,
+                  emailAuth: emailAuth,
+                  accountEmail: () => 'old@example.com',
+                ),
+              ),
+            );
+          },
+          child: const Text('open'),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'Current email'), 'other@example.com');
+    await tester.tap(find.text('Send code'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('currently on this account'), findsWidgets);
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'Current email'), 'old@example.com');
+    await tester.tap(find.text('Send code'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('code sent to old@example.com'), findsOneWidget);
+    expect(emailAuth.calls, isEmpty);
+
+    await tester.enterText(find.byType(TextFormField), '111111');
+    await tester.tap(find.text('Verify code'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextFormField, 'New email'), findsOneWidget);
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'New email'), 'new@example.com');
+    await tester.tap(find.text('Send code'));
+    await tester.pumpAndSettle();
+    expect(emailAuth.calls, contains('change:new@example.com'));
+    expect(find.textContaining('code sent to new@example.com'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextFormField), '222222');
+    await tester.tap(find.text('Verify code'));
+    await tester.pumpAndSettle();
+    expect(emailAuth.calls, contains('change-verify:new@example.com:222222'));
   });
 }

@@ -1,5 +1,5 @@
 import 'package:bobadex/analytics_service.dart';
-import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:bobadex/helpers/image_uploader_helper.dart';
 import 'package:bobadex/models/shop_media.dart';
 import 'package:bobadex/notification_bus.dart';
@@ -93,7 +93,11 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
     }
   }
 
-  void _addPhotos(ShopMediaState shopMediaState, AchievementsState achievementState, AnalyticsService analytics) async {
+  void _addPhotos(
+    ShopMediaState shopMediaState,
+    AchievementsState achievementState,
+    AnalyticsService analytics,
+  ) async {
     final images = await showDialog<List<GalleryImage>>(
       context: context,
       builder: (context) => MultiselectImagePicker(),
@@ -110,7 +114,9 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
       tempIds.add(tempId);
 
       // check for any existing pending images
-      if (shopMediaState.getByShop(widget.shopId!).any((m) => m.localFile == img.file && m.isPending)) {
+      if (shopMediaState
+          .getByShop(widget.shopId!)
+          .any((m) => m.localFile == img.file && m.isPending)) {
         debugPrint('Duplicate pending upload detected, skipping');
         continue;
       }
@@ -162,7 +168,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
         }
       }),
     );
-    
+
     setState(() => _isLoading = false);
     notify('Images uploaded', SnackType.success);
   }
@@ -188,19 +194,22 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
               if (widget.isCurrentUser && !_selecting)
                 IconButton(
                   icon: Icon(Icons.add),
-                  onPressed: () => _addPhotos(shopMediaState, achievementState, analytics),
+                  onPressed: () =>
+                      _addPhotos(shopMediaState, achievementState, analytics),
                 ),
               if (widget.isCurrentUser && !_selecting)
                 IconButton(
                   icon: Icon(Icons.select_all),
                   onPressed: () => setState(() {
                     _selecting = true;
-                  })
+                  }),
                 ),
               if (widget.isCurrentUser && _selecting)
                 IconButton(
                   icon: Icon(Icons.delete),
-                  onPressed: _selected.isEmpty ? null : () => _deleteSelected(shopMediaState),
+                  onPressed: _selected.isEmpty
+                      ? null
+                      : () => _deleteSelected(shopMediaState),
                 ),
               if (_selecting)
                 IconButton(
@@ -209,33 +218,35 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
                     _selecting = false;
                     _selected.clear();
                   }),
-                )
+                ),
             ],
           ),
           body: Padding(
             padding: const EdgeInsets.all(16),
             child: shopMedia.isEmpty
-              ? Center(child: const Text('No photos yet', style: Constants.emptyListTextStyle))
-              : GalleryGrid(
-                  mediaList: shopMedia,
-                  selectable: _selecting,
-                  selected: _selected,
-                  isEditable: widget.isCurrentUser,
-                  isCurrentUser: widget.isCurrentUser,
-                  onSelectionChanged: _onSelectionChanged,
-                  onSetBanner: widget.onSetBanner,
-                  onEndReached: widget.onFetchMore != null ? _loadMore : null,
-                  isLoadingMore: _isLoadingMore,
-                  showUserInfo: false,
-                ),
+                ? Center(
+                    child: Text('No photos yet', style: context.bobaText.empty),
+                  )
+                : GalleryGrid(
+                    mediaList: shopMedia,
+                    selectable: _selecting,
+                    selected: _selected,
+                    isEditable: widget.isCurrentUser,
+                    isCurrentUser: widget.isCurrentUser,
+                    onSelectionChanged: _onSelectionChanged,
+                    onSetBanner: widget.onSetBanner,
+                    onEndReached: widget.onFetchMore != null ? _loadMore : null,
+                    isLoadingMore: _isLoadingMore,
+                    showUserInfo: false,
+                  ),
           ),
         ),
         if (_isLoading)
           Container(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: context.boba.imageScrim.withValues(alpha: 0.3),
             child: Center(child: CircularProgressIndicator()),
           ),
-      ]
+      ],
     );
   }
 }

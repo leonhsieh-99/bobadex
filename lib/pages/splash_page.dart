@@ -1,4 +1,6 @@
 import 'dart:math';
+import 'package:bobadex/ui/components/boba_card.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -41,13 +43,8 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: const SafeArea(
-        child: Center(
-          child: _SplashContent(),
-        ),
-      ),
+    return const Scaffold(
+      body: SafeArea(child: Center(child: _SplashContent())),
     );
   }
 }
@@ -76,30 +73,22 @@ class _SplashContent extends StatelessWidget {
         SizedBox(height: 32),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 24),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.amber.shade50,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.amber.shade100.withValues(alpha: 0.4),
-                  blurRadius: 12,
-                  offset: Offset(0, 2),
+          child: BobaCard(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.lightbulb_outline_rounded,
+                  color: context.boba.accent,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    fact,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
                 ),
               ],
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(18),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.lightbulb, color: Colors.orangeAccent),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(fact, style: TextStyle(fontSize: 16)),
-                  ),
-                ],
-              ),
             ),
           ),
         ),

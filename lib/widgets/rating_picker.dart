@@ -1,4 +1,4 @@
-import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:bobadex/widgets/outlined_star.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,16 +8,11 @@ class RatingPicker extends StatelessWidget {
   final void Function(double)? onChanged;
   final double? size;
 
-  const RatingPicker({
-    super.key,
-    this.rating = 3.0,
-    this.onChanged,
-    this.size,
-  });
+  const RatingPicker({super.key, this.rating = 3.0, this.onChanged, this.size});
 
   @override
   Widget build(BuildContext context) {
-    final color = Constants.starColor;
+    final color = context.boba.star;
     final starCount = 5;
     final spacing = 12.0;
 
@@ -25,8 +20,13 @@ class RatingPicker extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final totalSpacing = spacing * (starCount - 1);
-        final starSize = ((width - totalSpacing) / starCount).clamp(0, double.infinity);
-        final clampedStarSize = size == null ? starSize : starSize.clamp(0, size!);
+        final starSize = ((width - totalSpacing) / starCount).clamp(
+          0,
+          double.infinity,
+        );
+        final clampedStarSize = size == null
+            ? starSize
+            : starSize.clamp(0, size!);
         final trackWidth = clampedStarSize * starCount + totalSpacing;
 
         double _valueFromDx(double dx) {
@@ -74,7 +74,9 @@ class RatingPicker extends StatelessWidget {
                 final filled = rating >= current;
                 final half = rating >= current - 0.5 && rating < current;
                 return Padding(
-                  padding: EdgeInsets.only(right: index == starCount - 1 ? 0 : spacing),
+                  padding: EdgeInsets.only(
+                    right: index == starCount - 1 ? 0 : spacing,
+                  ),
                   child: SizedBox(
                     width: clampedStarSize.toDouble(),
                     height: clampedStarSize.toDouble(),
@@ -83,7 +85,7 @@ class RatingPicker extends StatelessWidget {
                       filled: filled,
                       half: half,
                       fillColor: color,
-                      borderColor: Colors.black,
+                      borderColor: context.boba.starOutline,
                     ),
                   ),
                 );
@@ -91,7 +93,7 @@ class RatingPicker extends StatelessWidget {
             ),
           ),
         );
-      }
+      },
     );
   }
 }

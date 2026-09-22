@@ -4,6 +4,10 @@ enum OtpAuthCode {
   success,
   invalidIdentifier,
   unknownUser,
+  emailAlreadyInUse,
+  emailUnchanged,
+  currentEmailMismatch,
+  usernameTaken,
   phoneNotLinked,
   phoneAlreadyInUse,
   phoneLinkPending,
@@ -20,6 +24,10 @@ enum OtpAuthCode {
     'SUCCESS': OtpAuthCode.success,
     'INVALID_IDENTIFIER': OtpAuthCode.invalidIdentifier,
     'UNKNOWN_USER': OtpAuthCode.unknownUser,
+    'EMAIL_ALREADY_IN_USE': OtpAuthCode.emailAlreadyInUse,
+    'EMAIL_UNCHANGED': OtpAuthCode.emailUnchanged,
+    'CURRENT_EMAIL_MISMATCH': OtpAuthCode.currentEmailMismatch,
+    'USERNAME_TAKEN': OtpAuthCode.usernameTaken,
     'PHONE_NOT_LINKED': OtpAuthCode.phoneNotLinked,
     'PHONE_ALREADY_IN_USE': OtpAuthCode.phoneAlreadyInUse,
     'PHONE_LINK_PENDING': OtpAuthCode.phoneLinkPending,
@@ -36,21 +44,25 @@ enum OtpAuthCode {
       _byName[raw] ?? OtpAuthCode.authError;
 
   String get wire => switch (this) {
-        OtpAuthCode.otpSent => 'OTP_SENT',
-        OtpAuthCode.success => 'SUCCESS',
-        OtpAuthCode.invalidIdentifier => 'INVALID_IDENTIFIER',
-        OtpAuthCode.unknownUser => 'UNKNOWN_USER',
-        OtpAuthCode.phoneNotLinked => 'PHONE_NOT_LINKED',
-        OtpAuthCode.phoneAlreadyInUse => 'PHONE_ALREADY_IN_USE',
-        OtpAuthCode.phoneLinkPending => 'PHONE_LINK_PENDING',
-        OtpAuthCode.phoneLinkConflict => 'PHONE_LINK_CONFLICT',
-        OtpAuthCode.invalidOtp => 'INVALID_OTP',
-        OtpAuthCode.otpExpired => 'OTP_EXPIRED',
-        OtpAuthCode.rateLimited => 'RATE_LIMITED',
-        OtpAuthCode.authRequired => 'AUTH_REQUIRED',
-        OtpAuthCode.configRequired => 'CONFIG_REQUIRED',
-        OtpAuthCode.authError => 'AUTH_ERROR',
-      };
+    OtpAuthCode.otpSent => 'OTP_SENT',
+    OtpAuthCode.success => 'SUCCESS',
+    OtpAuthCode.invalidIdentifier => 'INVALID_IDENTIFIER',
+    OtpAuthCode.unknownUser => 'UNKNOWN_USER',
+    OtpAuthCode.emailAlreadyInUse => 'EMAIL_ALREADY_IN_USE',
+    OtpAuthCode.emailUnchanged => 'EMAIL_UNCHANGED',
+    OtpAuthCode.currentEmailMismatch => 'CURRENT_EMAIL_MISMATCH',
+    OtpAuthCode.usernameTaken => 'USERNAME_TAKEN',
+    OtpAuthCode.phoneNotLinked => 'PHONE_NOT_LINKED',
+    OtpAuthCode.phoneAlreadyInUse => 'PHONE_ALREADY_IN_USE',
+    OtpAuthCode.phoneLinkPending => 'PHONE_LINK_PENDING',
+    OtpAuthCode.phoneLinkConflict => 'PHONE_LINK_CONFLICT',
+    OtpAuthCode.invalidOtp => 'INVALID_OTP',
+    OtpAuthCode.otpExpired => 'OTP_EXPIRED',
+    OtpAuthCode.rateLimited => 'RATE_LIMITED',
+    OtpAuthCode.authRequired => 'AUTH_REQUIRED',
+    OtpAuthCode.configRequired => 'CONFIG_REQUIRED',
+    OtpAuthCode.authError => 'AUTH_ERROR',
+  };
 }
 
 class OtpAuthException implements Exception {
@@ -96,10 +108,17 @@ OtpLoginTokens parseOtpLoginSuccess(Map<String, dynamic> payload) {
   final sessionMap = Map<String, dynamic>.from(session);
   final access = sessionMap['access_token'];
   final refresh = sessionMap['refresh_token'];
-  if (access is! String || access.isEmpty || refresh is! String || refresh.isEmpty) {
+  if (access is! String ||
+      access.isEmpty ||
+      refresh is! String ||
+      refresh.isEmpty) {
     throw const OtpAuthException(OtpAuthCode.authError);
   }
-  return OtpLoginTokens(userId: userId, accessToken: access, refreshToken: refresh);
+  return OtpLoginTokens(
+    userId: userId,
+    accessToken: access,
+    refreshToken: refresh,
+  );
 }
 
 OtpPhoneLinkResult parseOtpPhoneLinkSuccess(Map<String, dynamic> payload) {
@@ -108,7 +127,10 @@ OtpPhoneLinkResult parseOtpPhoneLinkSuccess(Map<String, dynamic> payload) {
   }
   final userId = payload['user_id'];
   final phone = payload['phone'];
-  if (userId is! String || userId.isEmpty || phone is! String || phone.isEmpty) {
+  if (userId is! String ||
+      userId.isEmpty ||
+      phone is! String ||
+      phone.isEmpty) {
     throw const OtpAuthException(OtpAuthCode.authError);
   }
   return OtpPhoneLinkResult(userId: userId, phone: phone);

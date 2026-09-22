@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 
-Future<String?> textFieldEditDialog ({
+Future<String?> textFieldEditDialog({
   required BuildContext context,
   required String title,
   required String initalValue,
@@ -35,24 +36,25 @@ Future<String?> textFieldEditDialog ({
                       borderRadius: BorderRadius.circular(8),
                     ),
                     enabledBorder: maxLines > 1
-                      ? OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(color: Colors.grey),
-                      )
-                      : UnderlineInputBorder()
+                        ? OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide:
+                                BorderSide(color: context.boba.outline),
+                          )
+                        : UnderlineInputBorder(),
                   ),
                   maxLength: maxLength,
                   maxLines: maxLines,
                   validator: validator,
-                )
+                ),
               ],
-            )
+            ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel')
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -76,9 +78,9 @@ Future<String?> textFieldEditDialog ({
               if (context.mounted) Navigator.pop(context, trimmedInput);
             },
             child: Text('Save'),
-          )
+          ),
         ],
-      )
-    ), 
+      ),
+    ),
   );
 }

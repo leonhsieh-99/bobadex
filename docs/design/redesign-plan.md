@@ -1,6 +1,6 @@
 # Bobadex visual system + UX redesign plan
 
-Status: proposal (no frontend code changed yet).
+Status: Phase 0 and Phase 1 implemented; Phases 2–4 remain proposals.
 Scope: Flutter app in `lib/`. Backend asks are listed separately in §11 and are not blocking for Phases 0–3.
 
 This document is written so another model can execute it with minimal ambiguity. Where a value is given (hex, dp, ms) treat it as the spec. Where a choice is left open it is marked **[decision]**.
@@ -17,7 +17,7 @@ This document is written so another model can execute it with minimal ambiguity.
 | ThemeData | `bobadex.dart` seeds `ColorScheme.fromSeed`, then overrides scaffold/appBar to `shade50`, cards to `shade100`, **both** `ElevatedButton` and `TextButton` to filled `shade400` + white text. | TextButton looking like a filled button forces `AppButtonStyles.textButton` overrides scattered around. Whole background is tinted by the accent, so brand marks and photos compete with the chrome. |
 | Color access | `Constants.getThemeColor(user.themeSlug).shadeNNN` in 15 files; plus hardcoded `Colors.black`, `Colors.grey.shade300`, `Colors.white`, `Colors.amber`, `Colors.orange`, `Colors.red`, `Colors.deepPurple` (onboarding selection!), `Colors.blueGrey` (drink icon), `Color(0xFFF5F5F5)`. | Two sources of truth. Dark themes are impossible. Skeletons are 6 hand-rolled copies with `grey.shade300`. |
 | Typography | Default Material text theme. One custom font (`NotoSerif` SemiBold) used only by `NumberRating`. | No hierarchy system; the serif numeral is a good instinct that isn't carried through. |
-| Icon art | Material icons + SVGs: `star`, `half_star`, `outlined_star`, `heart`, `heart_outlined`, `boba1` (cup), `tapioca_pearls/pearl_{outline,half,full}`. | Pearl SVGs exist but are unused. Star fill `#F8EE9B` reads washed-out. |
+| Icon art | Material icons + SVGs: `star`, `half_star`, `outlined_star`, `heart`, `heart_outlined`, `boba1` (cup), and legacy tapioca pearl assets. | The pearl assets are intentionally excluded from the redesign: their gradient-ball treatment previously looked tacky as ratings and should not return unless they are redrawn. Star fill `#F8EE9B` reads washed-out. |
 | Badge art | 34 illustrated shield badges (pastel, sparkles, roman-numeral tiers). | Strongest "collectible" asset in the app, but the flat Material chrome around it makes badges look imported from a different product. |
 | Brand marks | `BrandMark` → mascot `IconPic` or deterministic `BrandLettering` (8 dark palettes, 1–2 letters). | Good foundation. Reuse and extend (silhouette state, accent stripe). |
 
@@ -50,7 +50,7 @@ The data model already *is* a dex: **Brand** = the collectible; **Shop row** (`s
 | `ShopDetailPage` banner + draggable sheet | **Stay** | Re-token only. |
 | `BrandDetailsPage` | **Stay** | Re-token; add "in your collection" chip. |
 | Settings pages (ListTiles) | **Evolve** | Group into sections; fix Privacy icon; theme picker → preview cards. |
-| Rankings | **Stay** | Restyle rows; keep as "Leaderboard" inside Friends. |
+| Rankings | **Stay** | Restyle rows; keep as "Leaderboard" on You. |
 | Hand-rolled skeletons (×6) | **Replace → `SkeletonBox`** | One primitive, token-driven. |
 | `TopSnackBar` | **Stay** | Re-token colors. |
 
@@ -71,7 +71,7 @@ The data model already *is* a dex: **Brand** = the collectible; **Shop row** (`s
 A warm, paper-and-ink collector's binder. Not a game HUD, not a Pokédex screen. Cues:
 
 - **Paper base, ink text, one accent.** Backgrounds are warm off-whites (or deep browns in dark themes). The theme accent is used sparingly: header, nav, primary buttons, progress fill, chips. Cards are near-white "printed" surfaces with a 1px ink-tinted outline and no drop shadow. Only floating chrome (nav pill, sheets, menus) gets a soft shadow.
-- **Stars mean quality; pearls mean progress.** Ratings keep the star (re-colored to a warm gold). Collection progress, counts, and completion use the existing pearl SVGs (outline → half → full). This gives Bobadex a signature progress glyph without inventing new art.
+- **Stars mean quality; bars and seals mean progress.** Ratings keep the star (re-colored to a warm gold). Collection progress uses restrained linear bars and regional seals. Do not use the existing tapioca pearl SVGs unless replacement assets are designed and reviewed.
 - **Brand identity carries the color.** Tiles are neutral so each brand's mascot or lettering palette is the color on screen. A 2–3dp accent "spine" on entry tiles and region cards uses a brand/region-derived hue, so a grid of 30 entries has visible variety like a shelf of different cards.
 - **Serif numerals and headlines.** A soft display serif for titles, counts, and ratings (the wordmark is a chunky script; a soft serif sits next to it comfortably and next to the badge illustrations). Body text stays system sans for legibility and native feel.
 - **Collected vs uncollected is a first-class visual state.** Uncollected entries render as monochrome silhouettes with dashed outlines. This single state, applied everywhere (Collection page, Brand page chip, Feed "you have this too"), is what makes it feel like a dex.
@@ -105,7 +105,6 @@ class BobaTokens extends ThemeExtension<BobaTokens> {
   final Color star;        // rating fill
   final Color starOutline; // rating stroke (transparent on dark)
   final Color heart;       // favorite
-  final Color pearl;       // progress "tapioca" fill
   final Color success;
   final Color danger;
   // misc
@@ -132,7 +131,7 @@ Access via `extension BobaContext on BuildContext { BobaTokens get boba => Theme
 
 ### 2.3 Typography (`boba_typography.dart`)
 
-Display font: **Fraunces** (Google Fonts, OFL) static TTFs at weights 500, 600, 700, high `SOFT` axis cut. Until the font files are added, fall back to the bundled `NotoSerif` SemiBold (already in `pubspec.yaml`). Body/UI: platform default (SF on iOS, Roboto on Android). **[decision]** if the owner prefers a single bundled font for both platforms, use Inter for body; not required.
+Display font: **Fraunces** (Google Fonts package) at weight 600. Body/UI: **Inter** (Google Fonts package) at weights 400, 500, and 600. The bundled `NotoSerif` remains available as a fallback asset.
 
 | Role | Font | Size/line | Weight | Use |
 |---|---|---|---|---|
@@ -149,8 +148,8 @@ Map into `TextTheme`: `displaySmall=display`, `headlineSmall=headline`, `titleMe
 
 ### 2.4 Iconography
 - Use `*_rounded` Material icons everywhere (`Icons.settings_rounded`, etc.). Audit and replace non-rounded variants.
-- App glyphs (SVG, `lib/assets/icons/`): `star`, `heart`, `boba1` → rename usage as "cup" (drinks), `pearl_*` (progress). Add two SVGs: `shield.svg` (badges stat), `seal.svg` (region placeholder). Tint via `ColorFilter.mode(color, BlendMode.srcIn)`; never bake theme colors into SVG.
-- Stat glyph mapping: Brands → `pearl_full`, Drinks → `cup`, Badges → `shield`, Friends → `Icons.group_rounded`.
+- App glyphs (SVG, `lib/assets/icons/`): `star`, `heart`, `boba1` → rename usage as "cup" (drinks). Add two SVGs: `shield.svg` (badges stat), `seal.svg` (region placeholder). Tint via `ColorFilter.mode(color, BlendMode.srcIn)`; never bake theme colors into SVG.
+- Stat glyph mapping: Brands → `Icons.storefront_rounded`, Drinks → `cup`, Badges → `shield`, Friends → `Icons.group_rounded`.
 
 ---
 
@@ -159,8 +158,8 @@ Map into `TextTheme`: `displaySmall=display`, `headlineSmall=headline`, `titleMe
 Themes are named, complete token sets. Users pick a theme, never a raw color. Each theme is explicitly light or dark. (System-following light/dark pairing is a later addition via an optional `darkPartnerSlug`.)
 
 Shared semantic values used by all themes unless overridden:
-- Light: `star #E8B84A`, `starOutline #6B4E1A @ 60%`, `heart #E07A7A`, `pearl #2B1F17`, `success #4E8A5B`, `danger #C4453F`, `shadow #2B1F17 @ 12%`.
-- Dark: `star #F0C25A`, `starOutline transparent`, `heart #EA8B8B`, `pearl #D9B08C`, `success #6FB07C`, `danger #E06B66`, `shadow #000000 @ 50%`.
+- Light: `star #E8B84A`, `starOutline #6B4E1A @ 60%`, `heart #E07A7A`, `success #4E8A5B`, `danger #C4453F`, `shadow #2B1F17 @ 12%`.
+- Dark: `star #F0C25A`, `starOutline transparent`, `heart #EA8B8B`, `success #6FB07C`, `danger #E06B66`, `shadow #000000 @ 50%`.
 
 ### 3.1 Light themes
 
@@ -169,9 +168,9 @@ Shared semantic values used by all themes unless overridden:
 | `classic_milk_tea` (default) | Classic Milk Tea | `#F5EEE3` | `#FFFCF7` | `#EFE5D6` | `#E3D6C5` | `#2B1F17` | `#6F6157` | `#B8AB9E` | `#8A5A3C` | `#FFFFFF` | `#EBD9C7` | `#6E4429` |
 | `matcha` | Matcha | `#EFF3E9` | `#FBFDF8` | `#E4EBDC` | `#D6DFCC` | `#1E271C` | `#5F6B5A` | `#A9B3A3` | `#5C7F4C` | `#FFFFFF` | `#DAE7CF` | `#46633A` |
 | `taro` | Taro | `#F2EEF7` | `#FCFAFE` | `#E8E1F0` | `#DCD3E6` | `#27203A` | `#695F7A` | `#B0A7BF` | `#7B5AA6` | `#FFFFFF` | `#E5DAF1` | `#5E4384` |
-| `strawberry` | Strawberry | `#FAEFF0` | `#FFFAFA` | `#F3E1E3` | `#EBD5D7` | `#33201F` | `#7A625F` | `#BFA9A7` | `#C5566A` | `#FFFFFF` | `#F6D6DC` | `#9E3F52` |
-| `thai_tea` | Thai Tea | `#FAF0E6` | `#FFFAF5` | `#F2E2D3` | `#EAD8C6` | `#33241A` | `#7A6656` | `#BFAB9B` | `#D0703A` | `#FFFFFF` | `#F5DBC8` | `#A6512A` |
-| `mango` | Mango | `#FBF4E2` | `#FFFCF4` | `#F3E8CF` | `#EADDBE` | `#33290F` | `#77693F` | `#BBAE86` | `#D9A23A` | `#2A2008` | `#F7E6B8` | `#8C6716` |
+| `strawberry` | Strawberry | `#FAEFF0` | `#FFFAFA` | `#F3E1E3` | `#EBD5D7` | `#33201F` | `#7A625F` | `#BFA9A7` | `#B84A60` | `#FFFFFF` | `#F6D6DC` | `#9E3F52` |
+| `thai_tea` | Thai Tea | `#FAF0E6` | `#FFFAF5` | `#F2E2D3` | `#EAD8C6` | `#33241A` | `#7A6656` | `#BFAB9B` | `#B85A2A` | `#FFFFFF` | `#F5DBC8` | `#A6512A` |
+| `mango` | Mango | `#FBF4E2` | `#FFFCF4` | `#F3E8CF` | `#EADDBE` | `#33290F` | `#77693F` | `#BBAE86` | `#D9A23A` | `#2A2008` | `#F7E6B8` | `#73520F` |
 | `oolong` | Oolong | `#F1F1EE` | `#FBFBF9` | `#E6E7E2` | `#D8DAD4` | `#22252A` | `#646A72` | `#A6ABB2` | `#4E6F6C` | `#FFFFFF` | `#D8E5E3` | `#3B5654` |
 
 ### 3.2 Dark themes
@@ -239,12 +238,11 @@ Every component below is theme-token driven, has explicit states, and a `Skeleto
 | `BobaSearchField` | `CustomSearchBar`, `CompactTextRow` | `controller, hint, onChanged, trailing?` |
 | `FilterSortBar` | existing | keep API; render search + scrollable `BobaChip`s; tapping selected chip toggles direction and shows ↑/↓ trailing glyph; removes vertical divider |
 | `RatingText` | `NumberRating`, inline star+number rows | `value: double?, size: sm(13) \| md(16) \| lg(22)`, `numeral` style + gold star; `null` → "—" |
-| `PearlProgress` | none | `value 0..1, count: 5 \| 10, size`, renders `pearl_outline/half/full` SVGs tinted `pearl`; `semanticsLabel` |
-| `PearlProgressBar` | none | linear, 8dp tall, track `surfaceAlt`, fill `accent`, optional label "18 / 50" in `numeral` |
+| `BobaProgressBar` | none | linear, 8dp tall, track `surfaceAlt`, fill `accent`, optional label "18 / 50" in `numeral`; no decorative pearl dependency |
 | `StatChip` | `StatCard` | `glyph (SVG or IconData), value:int, label`, count-up 600ms (reuse `_CountUp`), compact horizontal |
 | `StatTrio` | 3× `StatCard` row | `[StatChip×3]`, equal widths |
 | `SectionHeader` | ad-hoc `Text(bold)` + Spacer | `title, trailing? (BobaButton.tertiary sm), padding` |
-| `EmptyState` | `Constants.emptyListTextStyle` centers | `illustration (pearl cluster default), title, body?, action?` |
+| `EmptyState` | `Constants.emptyListTextStyle` centers | `illustration (cup outline default), title, body?, action?` |
 | `SkeletonBox` | 6 hand-rolled skeletons | `width, height, radius`, shimmer `surfaceAlt`→`outline` 1200ms loop; `SkeletonCircle`, `SkeletonText(lines)` helpers |
 | `BrandMark` | existing | add `silhouette: bool` (renders lettering in `inkFaint` on `surfaceAlt` with dashed `outline`; mascot desaturated 100% + 45% opacity), `accent: Color` getter derived from slug hash → one of 8 hues (reuse `_palettes[i].background` lightened), `showAccentRing: bool` |
 | `EntryTile` | `ShopGridTile` | see §6.3 |
@@ -269,7 +267,7 @@ Move to a 4-tab persistent shell using go_router `StatefulShellRoute.indexedStac
 |---|---|---|
 | **Dex** | `/dex` | current `HomePage` for the signed-in user |
 | **Collect** | `/collect` | new `CollectionPage` (§9). Until backend lands, ships behind `FeatureFlags.collection`; tab hidden when false (3 tabs + center "+"). |
-| **Friends** | `/friends` | segmented: Feed · Shared · People. Merges `SocialPage` and `FriendsPage`; People shows request badge; Leaderboard (Rankings) entry lives at top of People. |
+| **Friends** | `/friends` | segmented: Feed · Shared · People. Merges `SocialPage` and `FriendsPage`; People shows request badge. Leaderboard is on You, not Friends. |
 | **You** | `/you` | `AccountViewPage` for self, with `CollectorCard`; rows to Achievements, Settings, About. |
 | **+** (center, raised) | pushes `AddShopSearchPage` | unchanged flow |
 
@@ -283,14 +281,14 @@ Other users' pages (`HomePage(userId: other)`, `AccountViewPage(other)`) remain 
 
 ### 6.1 Structure (`CustomScrollView`)
 1. `SliverAppBar` (pinned, bg `bg`, no elevation): title in `display` "Leon's Bobadex" (other users: "Ana's Bobadex"). Trailing: current user → avatar 32 (tap → You); other user → none.
-2. **`DexHeader` sliver**: one line of `StatChip`s in a row (no card): `● 24 brands  ◇ 87 drinks  ⛨ 6 badges`. When Collection is enabled, a second line: `RegionSeal 20 + "Santa Clara County" + PearlProgressBar 18/50` (tap → RegionDetail). Collapses on scroll.
+2. **`DexHeader` sliver**: one line of `StatChip`s in a row (no card): `● 24 brands  ◇ 87 drinks  ⛨ 6 badges`. When Collection is enabled, a second line: `RegionSeal 20 + "Santa Clara County" + BobaProgressBar 18/50` (tap → RegionDetail). Collapses on scroll.
 3. `FilterSortBar` (pinned as `SliverPersistentHeader`): search + chips `Favorites (heart, toggle filter) · Rating · Name · Recent`; default sort favorite-desc (current default is `favorite-asc`, which puts favorites last — **fix to desc**).
 4. Grid sliver of `EntryTile`, `crossAxisCount = user.gridColumns`, spacing 8 (from 4), padding 12, aspect 1.0 (mark style) or 0.85 (photo style shows more image).
 5. Bottom padding 120 for nav.
 
 ### 6.2 States
 - Loading: `EntryTileSkeleton` grid (8) + header skeleton.
-- Empty, own dex: grid shows 6 `EntryTile.placeholder` (dashed, `inkFaint` pearl glyph) and an `EmptyState` card overlaid at top: "Your dex is empty" / "Add your first brand to start your collection." / `BobaButton.primary "Add a brand"`. Replaces `FirstRunCard` overlay.
+- Empty, own dex: grid shows 6 `EntryTile.placeholder` tiles (dashed, `inkFaint` cup/seal glyph) and an `EmptyState` card overlaid at top: "Your dex is empty" / "Add your first brand to start your collection." / `BobaButton.primary "Add a brand"`. Replaces `FirstRunCard` overlay.
 - Empty, other user: `EmptyState` "No entries yet".
 - No search results: `EmptyState` "Nothing matches "xyz"" with tertiary "Clear".
 
@@ -307,7 +305,7 @@ Mark style (default):
 
 Photo style: as today (cover image, bottom gradient `ink@80%→0`), text in white with `numeral` rating; radius `lg`; heart top-right white; fallback to `BrandLettering(expand)` when no banner. Keep `useMascots` logic.
 
-Placeholder style (empty state and Collection uncollected): `BobaCard.inset`, dashed 1dp `outline` border (custom painter), `BrandMark(silhouette: true)` or pearl glyph, name in `inkFaint`, footer shows "N locations" (Collection) or nothing.
+Placeholder style (empty state and Collection uncollected): `BobaCard.inset`, dashed 1dp `outline` border (custom painter), `BrandMark(silhouette: true)` or a neutral cup/seal glyph, name in `inkFaint`, footer shows "N locations" (Collection) or nothing.
 
 Semantics: `"Gong Cha, rated 4.5, 6 drinks, favorite"`.
 
@@ -372,7 +370,7 @@ Anatomy (72dp min, padding 12/16):
 5. **Photos from friends** strip (`HorizontalPhotoPreview`) if the RPC returns media paths; `galleryCount`/`filePath` already exist in `FriendShopInfo` but are unused; if paths are absent, section hidden (backend ask §11).
 
 ### 8.6 People
-`CollectorCard.compact` rows; search field; "Requests (N)" row at top → `FriendRequestsPage`; "Leaderboard ›" row → `RankingsPage` (restyled rows using `CollectorCard.compact` and `RatingText`).
+`CollectorCard.compact` rows; search field; "Requests (N)" row at top → `FriendRequestsPage`. Leaderboard is not on this tab.
 
 ---
 
@@ -382,7 +380,7 @@ Anatomy (72dp min, padding 12/16):
 - **Region**: a boundary (`ref.boundaries`, `level 6 = county` for v1; cities later). Fields: `id, name, level, parentId?, abbreviation (derived: first letters, e.g. "SCC"), silhouettePath? (simplified SVG path string, backend-provided)`.
 - **Collectible**: `(regionId, brandSlug, locationCount)` where `locationCount ≥ threshold` (threshold is server-side; default 3; hidden from UI except in an info sheet).
 - **Progress**: `collected = collectibles ∩ user.shops.brandSlug`; `fraction = collected / total`.
-- **Tier** by fraction: `< 0.25 Sipper`, `< 0.5 Regular`, `< 0.75 Local`, `< 1 Devotee`, `1.0 Legend`. **[decision]** names are placeholders in the boba register; keep them un-gamey.
+- No named progress tiers in v1. Show the exact count, percentage, and distance to completion. A future naming system can be added only if it improves comprehension.
 - Repository interface (`lib/collection/collection_repository.dart`) with `MockCollectionRepository` (fixture JSON under `lib/assets/fixtures/collection_mock.json`) and `SupabaseCollectionRepository` (Phase 4b). UI is built against the interface.
 
 ### 9.2 Concepts considered
@@ -403,19 +401,19 @@ Recommendation: **B as the frame, C's list/filters for scale, D's empty-slot vis
 4. `SectionHeader "Regions"` + list of `RegionCard` sorted: home first, then progress desc, then name. Only regions where the user has ≥1 collected or home region appear; others via "Explore regions" search row at the bottom.
 5. Empty (no regions, no home): `EmptyState` "Pick your home region" + `BobaButton.primary "Choose region"`.
 
-`RegionCard`: `BobaCard.flat`, `accentSpine = region hue` (hash of id → 8 hues), left `RegionSeal 48`, name `title`, `numeral` "18 / 50" right, `PearlProgressBar` full width, `caption` row "Regular · +2 this month" (delta = collected entries with `createdAt` in last 30 days), then a row of the 5 most recently collected `BrandMark 28`s. Completed regions: seal filled `accent`, small `caption` "Complete ✓". Tap → `RegionDetailPage`.
+`RegionCard`: `BobaCard.flat`, `accentSpine = region hue` (hash of id → 8 hues), left `RegionSeal 48`, name `title`, `numeral` "18 / 50" right, `BobaProgressBar` full width, `caption` row "+2 this month" (delta = collected entries with `createdAt` in last 30 days), then a row of the 5 most recently collected `BrandMark 28`s. Completed regions: seal filled `accent`, small `caption` "Complete ✓". Tap → `RegionDetailPage`.
 
 `RegionSeal`: circular 1.5dp `ink` ring, inner `surfaceAlt`; if `silhouettePath` present, draw it centered in `inkMuted` at 70% of diameter; else abbreviation in `numeral`. Completed: ring + fill `accent`, silhouette/abbr in `onAccent`, 6 tiny notches around the ring (stamp look, `CustomPainter`).
 
 ### 9.4 `RegionDetailPage`
-1. Hero (not a card, on `bg`): `RegionSeal 72`, name `display`, `numeral` 40/44 "18 / 50", `caption inkMuted` "brands collected", `PearlProgressBar` with tier label "Regular · 7 to Local".
+1. Hero (not a card, on `bg`): `RegionSeal 72`, name `display`, `numeral` 40/44 "18 / 50", `caption inkMuted` "brands collected", `BobaProgressBar` with helper text "32 left to complete".
 2. Filter chips: All · Collected (18) · Missing (32); sort: A–Z · Most locations · Recently collected.
 3. Grid (`gridColumns` from settings, min 3 on this page for scanability): `EntryTile` — collected → mark style with your `RatingText`; missing → placeholder style with real brand name (knowing what exists is part of the fun) and `caption` "12 locations". Tap collected → your `ShopDetailPage`; tap missing → `BrandDetailsPage` (its "Add Visit" button completes the loop).
 4. "Elsewhere" section (collapsed by default): your entries for brands that are *not* collectibles in this region (below threshold / outside region) so denominators stay honest.
 5. Static silhouette only; no interactive map.
 
 ### 9.5 Celebration (`CelebrationOverlay`)
-Trigger: after `ShopState.add` when `collected == total` for any region (or on badge unlock, reuse for achievements). Full-screen scrim `ink@40%`, `BobaCard.floating` center: `RegionSeal 120` stamps in (`stamp` motion: scale 1.6→1.0, rotate −8°→0, `HapticFeedback.mediumImpact`), title `headline` "Santa Clara County complete", `caption` "50 / 50 brands", 20 pearl particles fall for 900ms, `BobaButton.primary "Nice"`. Dismiss on tap outside. Skips animation when `disableAnimations`.
+Trigger: after `ShopState.add` when `collected == total` for any region (or on badge unlock, reuse for achievements). Full-screen scrim `ink@40%`, `BobaCard.floating` center: `RegionSeal 120` stamps in (`stamp` motion: scale 1.6→1.0, rotate −8°→0, `HapticFeedback.mediumImpact`), title `headline` "Santa Clara County complete", `caption` "50 / 50 brands", restrained accent confetti falls for 900ms, `BobaButton.primary "Nice"`. Dismiss on tap outside. Skips animation when `disableAnimations`.
 
 Also emit an achievement: `depends_on: {type: 'region_complete', region_id}` (backend §11).
 
@@ -493,16 +491,20 @@ Layout choices (columns, photos vs icons) are removed from onboarding; defaults 
 ### Phase 0 — Foundation (blocks everything)
 1. Add `lib/ui/theme/{boba_tokens,boba_themes,boba_theme_builder,boba_typography}.dart`; add Fraunces TTFs to `lib/assets/fonts/` + `pubspec.yaml`.
 2. `bobadex.dart` uses `BobaThemeBuilder.build(BobaThemes.resolve(slug))`. Delete `Constants.themeMap`, `getThemeColor`, `AppButtonStyles`, `heartColor`, `starColor`, `badgeBgColor`, `emptyListTextStyle`, `badgeLabelStyle`. `Constants.defaultTheme = 'classic_milk_tea'`. Add `legacyThemeMap` + one-time write-back in `UserState.loadUser`.
-3. Add primitives: `BobaCard`, `BobaSheet`, `BobaButton`, `BobaChip`, `BobaSearchField`, `RatingText`, `PearlProgress(+Bar)`, `StatChip/StatTrio`, `SectionHeader`, `EmptyState`, `SkeletonBox`, `AvatarStack`. Extend `BrandMark` (silhouette, accent).
+3. Add primitives: `BobaCard`, `BobaSheet`, `BobaButton`, `BobaChip`, `BobaSearchField`, `RatingText`, `BobaProgressBar`, `StatChip/StatTrio`, `SectionHeader`, `EmptyState`, `SkeletonBox`, `AvatarStack`. Extend `BrandMark` (silhouette, accent).
 4. Mechanical migration of the 15 `getThemeColor` call sites and all hardcoded colors to tokens/primitives: `bobadex.dart`, `home_page.dart`, `shop_grid_tile.dart`, `shop_detail_page.dart`, `brand_details_page.dart`, `brand_about_section.dart`, `account_view_page.dart`, `friends_shop_details_page.dart`, `friends_shop_grid.dart`, `friend_requests_page.dart`, `filter_sort_bar.dart`, `custom_search_bar.dart`, `add_circle_button.dart`, `onboarding_wizard.dart`, `settings_theme_page.dart`, plus `stat_box.dart`, `feed_event_card.dart`, `top_snack_bar.dart`, `splash_page.dart`, `rankings_page.dart`, `achievements_page.dart`, `thumb_pic.dart`, `icon_pic.dart`, `rating_picker.dart`, `number_rating.dart`.
 5. Theme picker page (`ThemePreviewCard`) and onboarding theme step, since old slugs no longer exist.
 6. Add `tool/check_tokens.sh` and `test/theme_contrast_test.dart`; CI green.
 Done when: app runs with every theme, zero forbidden color references outside `lib/ui/theme`, screenshots of Home/Profile/Feed in Classic, Mango, Brown Sugar reviewed.
 
 ### Phase 1 — Shell + Dex (highest daily impact)
-1. `StatefulShellRoute` with 4 tabs (Collect hidden behind flag), `BobaNavBar`, remove Drawer, move Sign out to Settings, merge Friends+Social into Friends with segments.
-2. Home → `CustomScrollView` with `DexHeader`, pinned `FilterSortBar`, `EntryTile` (unify modes), default sort favorite-desc, empty-dex state replacing `FirstRunCard`.
-3. Settings grouped sections + fixes (Privacy icon, Export moved, Version row).
+Done.
+1. `StatefulShellRoute.indexedStack` with Dex / Friends / You. Collect remains behind `FeatureFlags.collection` (`false`). `BobaNavBar` is the persistent floating pill; `+` pushes `AddShopSearchPage` on the root navigator. Branch `NavigatorObserver`s hide the bar when a tab can pop. Drawer and Home pill nav are gone. `/home` redirects to `/dex`.
+2. Dex (`HomePage`) is a `CustomScrollView` with `DexHeader`, pinned `FilterSortBar` (search + chips, tap selected chip to flip direction), and `EntryTile`. Default sort is favorite-desc; favorite-asc puts favorites last. Empty dex replaces `FirstRunCard`.
+3. Friends hub segments: Feed, Shared, People. Leaderboard lives on You (not Friends). You app bar has a Settings gear; Achievements / Leaderboard / Settings / About remain in the list. CollectorCard is Phase 2.
+4. Settings grouped: Appearance, Account, Privacy & data (lock icon, export moved here), Session (sign out), About (version). Layout page has a live 2/3-column preview. Theme cards are name + swatches (no fake Gong Cha entry).
+5. `BobaNavBar`: equal tab columns with a reserved plus gap (Dex · Friends · + · You), always-on labels, sliding selected bubble. Island hides on scroll-down and on keyboard/branch push.
+6. Brand lettering: pastel paper palettes on light themes, chrome palettes on dark. Same seed maps to the same slot in both catalogs.
 
 ### Phase 2 — First impression + Profile
 1. Splash re-skin; Auth page presentation rework (`BobaSheet`, `DexBackdrop`); onboarding 3 steps; `AddShopSearchPage(embedded)`.
@@ -545,9 +547,9 @@ lib/
       boba_context.dart         # context.boba, context.bobaText
     components/
       boba_card.dart boba_sheet.dart boba_button.dart boba_chip.dart boba_search_field.dart
-      rating_text.dart pearl_progress.dart stat_chip.dart section_header.dart empty_state.dart
-      skeleton_box.dart avatar_stack.dart boba_nav_bar.dart theme_preview_card.dart
-      entry_tile.dart collector_card.dart feed_event_row.dart day_header.dart
+      rating_text.dart boba_progress_bar.dart stat_chip.dart section_header.dart empty_state.dart
+      skeleton_box.dart avatar_stack.dart       boba_nav_bar.dart theme_preview_card.dart entry_tile.dart dex_header.dart
+      settings_section.dart
       shared_brand_tile.dart rating_comparison_bar.dart region_seal.dart region_card.dart
       celebration_overlay.dart settings_section.dart dex_backdrop.dart
   collection/

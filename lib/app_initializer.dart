@@ -29,7 +29,6 @@ class _AppInitializerState extends State<AppInitializer> {
   Session? _lastHandledSession;
   String? _lastUserId;
   bool _routingLock = false;
-  bool _justDidPasswordReset = false;
   StreamSubscription? _achievmentSub;
   StreamSubscription<AuthState>? _authSub;
   final _mediaRT = MediaRealtimeService();
@@ -54,7 +53,7 @@ class _AppInitializerState extends State<AppInitializer> {
   Future<void> _postSignInLoadAndRoute(Session session) async {
     try {
       final ok = await _handleSignedIn(session);
-      await goRoot(ok ? '/home' : '/auth');
+      await goRoot(ok ? '/dex' : '/auth');
     } catch (e, st) {
       debugPrint('Post sign-in load failed: $e\n$st');
       await goRoot('/auth');
@@ -88,7 +87,7 @@ class _AppInitializerState extends State<AppInitializer> {
     // (Re)subscribe
     await _authSub?.cancel();
     _authSub = auth.onAuthStateChange.listen((data) async {
-      final event   = data.event;
+      final event = data.event;
       final session = data.session;
 
       final uid = Supabase.instance.client.auth.currentUser?.id;
@@ -111,14 +110,10 @@ class _AppInitializerState extends State<AppInitializer> {
 
           case AuthChangeEvent.signedIn:
             if (session != null) {
-              if (_justDidPasswordReset) {
-                debugPrint('Password reset detected, waiting for database consistency');
-                await Future.delayed(const Duration(milliseconds: 1500));
-                _justDidPasswordReset = false;
+              if (_lastUserId != null && _lastUserId == session.user.id) {
+                break;
               }
-
               await goRoot('/splash');
-
               unawaited(_postSignInLoadAndRoute(session));
             } else {
               await goRoot('/auth');
@@ -126,17 +121,13 @@ class _AppInitializerState extends State<AppInitializer> {
             break;
 
           case AuthChangeEvent.signedOut:
+            _lastUserId = null;
+            _lastHandledSession = null;
             _resetAllStates();
             await _achievmentSub?.cancel();
             _achievmentSub = null;
             await _mediaRT.stop();
             await goRoot('/auth');
-            break;
-
-          case AuthChangeEvent.passwordRecovery:
-            if (rootCanPop()) rootPop();
-            _justDidPasswordReset = true;
-            await goRoot('/reset');
             break;
 
           case AuthChangeEvent.tokenRefreshed:
@@ -184,11 +175,10 @@ class _AppInitializerState extends State<AppInitializer> {
     final user = userState.current;
     if (user.id.isEmpty) {
       debugPrint('No valid user loaded — retrying with delay');
-      
-      // Wait longer for database consistency after password reset
+
       await Future.delayed(const Duration(milliseconds: 1000));
       await userState.loadCurrent(force: true);
-      
+
       final retryUser = userState.current;
       if (retryUser.id.isEmpty) {
         debugPrint('No valid user loaded after retry — skipping rest');
@@ -225,25 +215,26 @@ class _AppInitializerState extends State<AppInitializer> {
 
     if (hasErrors) {
       debugPrint('Some providers failed to load. Showing partial data.');
-      if(mounted) {
-        notify(
-          'Some data failed to load. Try refreshing.',
-          SnackType.error,
-        );
+      if (mounted) {
+        notify('Some data failed to load. Try refreshing.', SnackType.error);
       }
     }
 
     if (_achievmentSub != null) {
-      try { await _achievmentSub!.cancel(); } catch (_) {}
+      try {
+        await _achievmentSub!.cancel();
+      } catch (_) {}
       _achievmentSub = null;
     }
-    _achievmentSub = achievementsState.unlockedAchievementsStream.listen((achievement) {
+    _achievmentSub = achievementsState.unlockedAchievementsStream.listen((
+      achievement,
+    ) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         notifyAchievement(achievement.name);
         context.read<FeedState>().fetchFeed(refresh: true);
       });
     });
-    
+
     try {
       await Future.wait([
         achievementsState.checkAndUnlockShopAchievement(shopState),
@@ -255,7 +246,9 @@ class _AppInitializerState extends State<AppInitializer> {
         achievementsState.checkAndUnlockBrandAchievement(shopState),
         achievementsState.checkAndUpdateAllAchievement(),
       ]);
-      debugPrint('Loaded ${achievementsState.userAchievements.length} user achievements');
+      debugPrint(
+        'Loaded ${achievementsState.userAchievements.length} user achievements',
+      );
     } catch (e) {
       debugPrint('Error loading user achievements: $e');
     }
@@ -278,13 +271,15 @@ class _AppInitializerState extends State<AppInitializer> {
         }
       },
       onOwnMediaDeleted: (_) {
-        notify('One of your uploads was removed by moderators.', SnackType.error);
+        notify(
+          'One of your uploads was removed by moderators.',
+          SnackType.error,
+        );
       },
     );
 
     return true;
   }
-
 
   @override
   Widget build(BuildContext context) => const SizedBox.shrink();

@@ -11,6 +11,7 @@ import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
 import 'package:bobadex/widgets/image_widgets/multiselect_image_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/shop.dart';
@@ -24,7 +25,7 @@ class AddOrEditShopDialog extends StatefulWidget {
   final Future<Shop> Function(Shop) onSubmit;
   final Brand? brand;
 
-  const AddOrEditShopDialog ({
+  const AddOrEditShopDialog({
     super.key,
     this.shop,
     required this.onSubmit,
@@ -39,7 +40,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
   final _formkey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _notesController;
-  String ? _brandSlug;
+  String? _brandSlug;
   late double _rating;
   bool _isSubmitting = false;
   final List<GalleryImage> _selectedImages = [];
@@ -107,19 +108,20 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
     final userId = Supabase.instance.client.auth.currentUser!.id;
 
     try {
-      final newShop = widget.shop?.copyWith(
-        name: _nameController.text.trim(),
-        rating: _rating,
-        notes: _notesController.text.trim(),
-        brandSlug: _brandSlug,
-      ) ??
-        Shop(
-          name: _nameController.text.trim(),
-          userId: userId,
-          rating: _rating,
-          notes: _notesController.text.trim(),
-          brandSlug: _brandSlug,
-        );
+      final newShop =
+          widget.shop?.copyWith(
+            name: _nameController.text.trim(),
+            rating: _rating,
+            notes: _notesController.text.trim(),
+            brandSlug: _brandSlug,
+          ) ??
+          Shop(
+            name: _nameController.text.trim(),
+            userId: userId,
+            rating: _rating,
+            notes: _notesController.text.trim(),
+            brandSlug: _brandSlug,
+          );
       final submittedShop = await widget.onSubmit(newShop);
       final shopId = submittedShop.id!;
       await shopMediaState.loadForShop(shopId, force: false);
@@ -131,7 +133,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
         final tempId = Uuid().v4();
         tempIds.add(tempId);
         shopMediaState.addPendingForShop(
-          shopId, 
+          shopId,
           ShopMedia(
             id: tempId,
             shopId: shopId,
@@ -146,55 +148,59 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
         );
       }
 
-      await Future.wait(_selectedImages.asMap().entries.map((entry) async {
-        final idx = entry.key;
-        final img = entry.value;
-        final tempId = tempIds[idx];
+      await Future.wait(
+        _selectedImages.asMap().entries.map((entry) async {
+          final idx = entry.key;
+          final img = entry.value;
+          final tempId = tempIds[idx];
 
-        try {
-          final imagePath = await ImageUploaderHelper.uploadImage(
-            file: img.file!,
-            folder: 'shop-gallery',
-          );
+          try {
+            final imagePath = await ImageUploaderHelper.uploadImage(
+              file: img.file!,
+              folder: 'shop-gallery',
+            );
 
-          final realMedia = ShopMedia(
-            id: '', // Will be set by backend
-            shopId: shopId,
-            userId: userId,
-            imagePath: imagePath,
-            comment: img.comment,
-            visibility: img.visibility,
-            isBanner: idx == 0 && !hadBannerPath,
-          );
+            final realMedia = ShopMedia(
+              id: '', // Will be set by backend
+              shopId: shopId,
+              userId: userId,
+              imagePath: imagePath,
+              comment: img.comment,
+              visibility: img.visibility,
+              isBanner: idx == 0 && !hadBannerPath,
+            );
 
-          await shopMediaState.addMedia(realMedia, replacePendingId: tempId);
-          await analytics.mediaUploaded(shopId: shopId, count: 1);
-        } catch (e) {
-          debugPrint('Error uploading images: $e');
-          shopMediaState.removePendingForShop(shopId, tempId);
-          if (e.toString().contains('statusCode: 409')) {
-            notify('Image already exists, skipping', SnackType.info);
-          } else if (mounted) {
-            notify('Error uploading images', SnackType.error);
+            await shopMediaState.addMedia(realMedia, replacePendingId: tempId);
+            await analytics.mediaUploaded(shopId: shopId, count: 1);
+          } catch (e) {
+            debugPrint('Error uploading images: $e');
+            shopMediaState.removePendingForShop(shopId, tempId);
+            if (e.toString().contains('statusCode: 409')) {
+              notify('Image already exists, skipping', SnackType.info);
+            } else if (mounted) {
+              notify('Error uploading images', SnackType.error);
+            }
           }
-        }
-      }));
+        }),
+      );
 
       await achievementState.checkAndUnlockMediaUploadAchievement();
 
-      await Future.wait(_pendingDrinks.asMap().entries.map((entry) async {
-        final drink = entry.value;
+      await Future.wait(
+        _pendingDrinks.asMap().entries.map((entry) async {
+          final drink = entry.value;
 
-        try {
-          await drinkState.add(drink.toDrink(shopId: shopId), shopId);
-          await analytics.drinkAdded(rating: drink.rating, name: drink.name);
-          await achievementState.checkAndUnlockDrinkAchievement(drinkState);
-          await achievementState.checkAndUnlockNotesAchievement(drinkState);
-        } catch (e) {
-          debugPrint('Error adding drink: $e');
-          notify('Error adding drink.', SnackType.error);
-        }
-      }));
+          try {
+            await drinkState.add(drink.toDrink(shopId: shopId), shopId);
+            await analytics.drinkAdded(rating: drink.rating, name: drink.name);
+            await achievementState.checkAndUnlockDrinkAchievement(drinkState);
+            await achievementState.checkAndUnlockNotesAchievement(drinkState);
+          } catch (e) {
+            debugPrint('Error adding drink: $e');
+            notify('Error adding drink.', SnackType.error);
+          }
+        }),
+      );
 
       _pendingDrinks.clear();
 
@@ -202,7 +208,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
         try {
           await feedState.finalizeShopAdd(
             currentUser: user,
-            shopId: submittedShop.id!
+            shopId: submittedShop.id!,
           );
         } catch (e) {
           debugPrint('Error adding feed event: $e');
@@ -228,7 +234,6 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final shopMediaState = context.read<ShopMediaState>();
@@ -248,11 +253,14 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
           final maxHeight = constraints.maxHeight - viewInsets.bottom - 24;
 
           const double _footerHeight = 48; // Row height
-          const double _footerVPad = 8;   // vertical padding around the Row
+          const double _footerVPad = 8; // vertical padding around the Row
           const double _footerTotal = _footerHeight + (_footerVPad * 2);
 
           return Dialog(
-            insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 24,
+            ),
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: maxHeight > 300 ? maxHeight : 300, // minimum height
@@ -269,27 +277,38 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            if (_isSubmitting) const LinearProgressIndicator(minHeight: 2),
+                            if (_isSubmitting)
+                              const LinearProgressIndicator(minHeight: 2),
                             // --- TITLE & NAME FIELD ---
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(
                                     child: Text(
                                       isNewShop ? 'Add Shop' : 'Edit Shop',
-                                      style: Theme.of(context).textTheme.headlineSmall,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.headlineSmall,
                                       textAlign: TextAlign.center,
                                     ),
                                   ),
                                   // small "+ Drink" button
                                   if (isNewShop)
                                     IconButton.filledTonal(
-                                      tooltip: _showMiniDrinkForm ? 'Hide drink form' : 'Add a drink',
-                                      icon: Icon(_showMiniDrinkForm ? Icons.remove : Icons.add),
+                                      tooltip: _showMiniDrinkForm
+                                          ? 'Hide drink form'
+                                          : 'Add a drink',
+                                      icon: Icon(
+                                        _showMiniDrinkForm
+                                            ? Icons.remove
+                                            : Icons.add,
+                                      ),
                                       onPressed: () => setState(() {
-                                        _showMiniDrinkForm = !_showMiniDrinkForm;
+                                        _showMiniDrinkForm =
+                                            !_showMiniDrinkForm;
                                       }),
                                     ),
                                 ],
@@ -310,16 +329,22 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                         textAlign: TextAlign.left,
-                                      ))
+                                      ),
+                                    )
                                   : TextFormField(
                                       controller: _nameController,
                                       decoration: const InputDecoration(
                                         labelText: 'Shop Name',
                                       ),
-                                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                       textAlign: TextAlign.left,
                                       validator: (value) =>
-                                          value == null || value.isEmpty ? 'Enter a name' : null,
+                                          value == null || value.isEmpty
+                                          ? 'Enter a name'
+                                          : null,
                                     ),
                             ),
                             const SizedBox(height: 2),
@@ -327,15 +352,22 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                             Align(
                               alignment: Alignment.centerLeft,
                               child: Padding(
-                                padding: const EdgeInsets.only(top: 12, bottom: 12),
-                                child: Text('Rating', style: Theme.of(context).textTheme.labelLarge),
+                                padding: const EdgeInsets.only(
+                                  top: 12,
+                                  bottom: 12,
+                                ),
+                                child: Text(
+                                  'Rating',
+                                  style: Theme.of(context).textTheme.labelLarge,
+                                ),
                               ),
                             ),
                             StatefulBuilder(
                               builder: (context, setState) {
                                 return RatingPicker(
                                   rating: _rating,
-                                  onChanged: (val) => setState(() => _rating = val),
+                                  onChanged: (val) =>
+                                      setState(() => _rating = val),
                                 );
                               },
                             ),
@@ -367,13 +399,16 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                                 child: ListView.separated(
                                   scrollDirection: Axis.horizontal,
                                   itemCount: _selectedImages.length,
-                                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(width: 8),
                                   itemBuilder: (context, index) {
                                     final image = _selectedImages[index];
                                     return Stack(
                                       children: [
                                         ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                           child: Image.file(
                                             image.file!,
                                             width: 100,
@@ -386,14 +421,24 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                                           right: 0,
                                           child: GestureDetector(
                                             onTap: () {
-                                              setState(() => _selectedImages.removeAt(index));
+                                              setState(
+                                                () => _selectedImages.removeAt(
+                                                  index,
+                                                ),
+                                              );
                                             },
                                             child: Container(
                                               decoration: BoxDecoration(
-                                                color: Colors.black45,
-                                                borderRadius: BorderRadius.circular(12),
+                                                color: context.boba.imageScrim
+                                                    .withValues(alpha: 0.45),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
                                               ),
-                                              child: const Icon(Icons.close, size: 20, color: Colors.white),
+                                              child: Icon(
+                                                Icons.close,
+                                                size: 20,
+                                                color: context.boba.onImage,
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -415,10 +460,13 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                                 nameCtrl: _miniDrinkNameCtrl,
                                 notesCtrl: _miniDrinkNotesCtrl,
                                 rating: _miniDrinkRating,
-                                onRatingChanged: (v) => setState(() => _miniDrinkRating = v),
-                                onCancel: () => setState(() => _showMiniDrinkForm = false),
+                                onRatingChanged: (v) =>
+                                    setState(() => _miniDrinkRating = v),
+                                onCancel: () =>
+                                    setState(() => _showMiniDrinkForm = false),
                                 onAdd: () {
-                                  if (_miniDrinkFormKey.currentState!.validate()) {
+                                  if (_miniDrinkFormKey.currentState!
+                                      .validate()) {
                                     final drink = DrinkFormData(
                                       name: _miniDrinkNameCtrl.text.trim(),
                                       rating: _miniDrinkRating,
@@ -445,8 +493,12 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                                 runSpacing: 8,
                                 children: _pendingDrinks.map((d) {
                                   return Chip(
-                                    label: Text('${d.name} • ${d.rating.toStringAsFixed(1)}'),
-                                    onDeleted: () => setState(() => _pendingDrinks.remove(d)),
+                                    label: Text(
+                                      '${d.name} • ${d.rating.toStringAsFixed(1)}',
+                                    ),
+                                    onDeleted: () => setState(
+                                      () => _pendingDrinks.remove(d),
+                                    ),
                                   );
                                 }).toList(),
                               ),
@@ -469,11 +521,16 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                         color: Theme.of(context).dialogTheme.backgroundColor,
                         surfaceTintColor: Colors.transparent,
                         shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
+                          borderRadius: BorderRadius.vertical(
+                            bottom: Radius.circular(12),
+                          ),
                         ),
                         child: Padding(
                           // keep your V padding var
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: _footerVPad),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: _footerVPad,
+                          ),
                           child: SizedBox(
                             height: _footerHeight,
                             child: Row(
@@ -488,14 +545,25 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                                   onPressed: _isSubmitting
                                       ? null
                                       : () => _handleSubmit(
-                                            shopMediaState, drinkState, achievementState, feedState, analytics, user,
-                                          ),
+                                          shopMediaState,
+                                          drinkState,
+                                          achievementState,
+                                          feedState,
+                                          analytics,
+                                          user,
+                                        ),
                                   child: _isSubmitting
-                                      ? const SizedBox(
-                                          width: 16, height: 16,
-                                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                      ? SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: context.boba.onAccent,
+                                          ),
                                         )
-                                      : (isNewShop ? const Text('Add Shop') : const Text('Save')),
+                                      : (isNewShop
+                                            ? const Text('Add Shop')
+                                            : const Text('Save')),
                                 ),
                               ],
                             ),
@@ -503,8 +571,8 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
                         ),
                       ),
                     ),
-                  )
-                ]
+                  ),
+                ],
               ),
             ),
           );
@@ -545,27 +613,31 @@ class _MiniDrinkForm extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Add a drink', style: Theme.of(context).textTheme.titleSmall),
+              Text(
+                'Add a drink',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: nameCtrl,
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(labelText: 'Drink Name'),
                 maxLength: Constants.maxDrinkNameLength,
-                validator: (v) => v == null || v.isEmpty ? 'Enter a name' : null,
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Enter a name' : null,
               ),
               const SizedBox(height: 8),
               Align(
                 alignment: Alignment.centerLeft,
                 child: Padding(
                   padding: const EdgeInsets.only(top: 4, bottom: 8),
-                  child: Text('Rating', style: Theme.of(context).textTheme.labelLarge),
+                  child: Text(
+                    'Rating',
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
                 ),
               ),
-              RatingPicker(
-                rating: rating,
-                onChanged: onRatingChanged,
-              ),
+              RatingPicker(rating: rating, onChanged: onRatingChanged),
               const SizedBox(height: 8),
               TextFormField(
                 controller: notesCtrl,

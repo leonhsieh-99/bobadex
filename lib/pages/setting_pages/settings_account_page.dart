@@ -1,11 +1,11 @@
 import 'package:bobadex/config/constants.dart';
-import 'package:bobadex/helpers/export_data.dart';
 import 'package:bobadex/helpers/image_uploader_helper.dart';
 import 'package:bobadex/navigation.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/utils/validators.dart';
-import 'package:bobadex/widgets/change_password_dialong.dart';
+import 'package:bobadex/pages/setting_pages/email_change_page.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -15,7 +15,7 @@ import '../../helpers/image_picker_helper.dart';
 import '../../state/user_state.dart';
 import '../../widgets/text_field_edit_dialog.dart';
 
-class SettingsAccountPage extends StatefulWidget{
+class SettingsAccountPage extends StatefulWidget {
   const SettingsAccountPage({super.key});
 
   @override
@@ -38,9 +38,10 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
     super.dispose();
   }
 
-
   void _handleImagePick(UserState userState) async {
-    bool imageExits = userState.current.profileImagePath != null && userState.current.profileImagePath!.isNotEmpty;
+    bool imageExits =
+        userState.current.profileImagePath != null &&
+        userState.current.profileImagePath!.isNotEmpty;
     final pickedFile = await pickImageWithDialog(context, _picker, imageExits);
     final oldImagePath = userState.current.profileImagePath;
     if (pickedFile == null) return;
@@ -78,20 +79,19 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
 
         notify('Image uploaded', SnackType.success);
       }
-      if (_removeExistingImage && oldImagePath != null && oldImagePath.isNotEmpty) {
+      if (_removeExistingImage &&
+          oldImagePath != null &&
+          oldImagePath.isNotEmpty) {
         try {
-          ImageUploaderHelper.deleteImage(
-            oldImagePath,
-          );
-        }
-        catch (e) {
+          ImageUploaderHelper.deleteImage(oldImagePath);
+        } catch (e) {
           debugPrint('Error deleting image: $e');
         }
       }
       await Supabase.instance.client
-        .from('users')
-        .update({'profile_image_path': path})
-        .eq('id', userState.current.id);
+          .from('users')
+          .update({'profile_image_path': path})
+          .eq('id', userState.current.id);
     } catch (e) {
       notify('Error updating profile picture', SnackType.error);
     } finally {
@@ -122,11 +122,19 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
             await closeKeyboard();
           },
           child: AlertDialog(
-            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Text(
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 24,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text(
               'Delete Account',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: context.boba.danger,
+              ),
             ),
             content: SingleChildScrollView(
               child: Column(
@@ -159,13 +167,18 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                         Expanded(
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).colorScheme.primary,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.primary,
+                              foregroundColor: context.boba.onAccent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
                             onPressed: () async {
                               await closeKeyboard();
-                              if (context.mounted) Navigator.of(context).pop(false);
+                              if (context.mounted)
+                                Navigator.of(context).pop(false);
                             },
                             child: const Text('Cancel'),
                           ),
@@ -176,28 +189,34 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                             onPressed: () async {
                               if (controller.text.trim() == deleteKey) {
                                 await closeKeyboard();
-                                if (context.mounted) Navigator.of(context).pop(true);
+                                if (context.mounted)
+                                  Navigator.of(context).pop(true);
                               } else {
-                                notify("Please enter 'DELETE' in all caps", SnackType.error);
+                                notify(
+                                  "Please enter 'DELETE' in all caps",
+                                  SnackType.error,
+                                );
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              backgroundColor: context.boba.danger,
+                              foregroundColor: context.boba.onAccent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
                             child: const Text('Delete'),
                           ),
                         ),
-                      ]
-                    )
-                  )
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
-        )
-      )
+        ),
+      ),
     );
 
     controller.dispose();
@@ -210,7 +229,9 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
     final confirm = await deleteConfirmationDialog(context);
     if (!confirm) return 'Canceled';
     try {
-      final res = await Supabase.instance.client.functions.invoke('delete-user');
+      final res = await Supabase.instance.client.functions.invoke(
+        'delete-user',
+      );
       if (res.status == 200) {
         await goRoot('/auth');
         notify('Account successfully deleted', SnackType.info);
@@ -238,19 +259,34 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
             children: [
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 12,
+                  ),
                   children: [
                     Center(
                       child: GestureDetector(
                         onTap: () => _handleImagePick(userState),
-                        child: ThumbPic(path: user.profileImagePath, size: 150)
+                        child: ThumbPic(path: user.profileImagePath, size: 150),
                       ),
                     ),
                     const SizedBox(height: 16),
 
                     ListTile(
-                      leading: const Text('Name', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                      trailing: Text(user.displayName, style: const TextStyle(fontWeight: FontWeight.w300, fontSize: 18)),
+                      leading: const Text(
+                        'Name',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      trailing: Text(
+                        user.displayName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w300,
+                          fontSize: 18,
+                        ),
+                      ),
                       onTap: () async {
                         final newName = await textFieldEditDialog(
                           context: context,
@@ -271,8 +307,20 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                     ),
 
                     ListTile(
-                      leading: const Text('Username', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                      trailing: Text(user.username, style: const TextStyle(fontWeight: FontWeight.w300, fontSize: 18)),
+                      leading: const Text(
+                        'Username',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      trailing: Text(
+                        user.username,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w300,
+                          fontSize: 18,
+                        ),
+                      ),
                       onTap: () async {
                         final newUsername = await textFieldEditDialog(
                           context: context,
@@ -282,11 +330,14 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                           maxLines: 1,
                           validator: Validators.validateUsername,
                           asyncValidator: (username) async {
-                            final exists = await userState.usernameExists(username);
+                            final exists = await userState.usernameExists(
+                              username,
+                            );
                             return exists ? 'Username is taken' : null;
                           },
                         );
-                        if (newUsername != null && newUsername != user.username) {
+                        if (newUsername != null &&
+                            newUsername != user.username) {
                           try {
                             await userState.setUsername(newUsername);
                             notify('Username updated', SnackType.success);
@@ -298,25 +349,55 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                     ),
 
                     ListTile(
-                      leading: const Text('Email', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                      leading: const Text(
+                        'Email',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
                       trailing: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 220),
                         child: Text(
-                          Supabase.instance.client.auth.currentUser?.email ?? '—',
+                          Supabase.instance.client.auth.currentUser?.email ??
+                              '—',
                           textAlign: TextAlign.right,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w300, fontSize: 18),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w300,
+                            fontSize: 18,
+                          ),
                         ),
                       ),
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const EmailChangePage(),
+                          ),
+                        );
+                        if (context.mounted) setState(() {});
+                      },
                     ),
 
                     ListTile(
-                      leading: const Text('Bio', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                      leading: const Text(
+                        'Bio',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
                       trailing: Text(
                         (user.bio != null && user.bio!.isNotEmpty)
-                            ? (user.bio!.length > 10 ? '${user.bio!.substring(0, 10)}...' : user.bio!)
+                            ? (user.bio!.length > 10
+                                  ? '${user.bio!.substring(0, 10)}...'
+                                  : user.bio!)
                             : 'Add bio',
-                        style: const TextStyle(fontWeight: FontWeight.w300, fontSize: 18),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w300,
+                          fontSize: 18,
+                        ),
                       ),
                       onTap: () async {
                         final newBio = await textFieldEditDialog(
@@ -337,23 +418,7 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                       },
                     ),
 
-                    ListTile(
-                      leading: const Text('Change Password', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                      trailing: Icon(Icons.lock, color: Colors.black.withValues(alpha: 0.6)),
-                      onTap: () => changePasswordDialog(context),
-                    ),
-
                     const SizedBox(height: 8),
-
-                    ListTile(
-                      leading: const Icon(Icons.file_download_outlined),
-                      title: const Text('Export my data'),
-                      subtitle: const Text('Copy a JSON export to clipboard'),
-                      onTap: () async {
-                        final res = await exportMyData(context); // your helper
-                        if (res == true) notify('Export copied!', SnackType.success);
-                      },
-                    ),
                   ],
                 ),
               ),
@@ -366,10 +431,12 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                     icon: const Icon(Icons.delete_forever),
                     label: const Text('Delete Account'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
+                      backgroundColor: context.boba.danger,
+                      foregroundColor: context.boba.onAccent,
                       minimumSize: const Size.fromHeight(50),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     onPressed: () async {
                       final res = await deleteAccount(context);
@@ -385,11 +452,13 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
         if (_isLoading)
           Positioned.fill(
             child: Container(
-              color: Colors.black.withValues(alpha: 0.1),
-              child: const Center(
+              color: context.boba.imageScrim.withValues(alpha: 0.1),
+              child: Center(
                 child: CircularProgressIndicator(
                   backgroundColor: Colors.transparent,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    context.boba.onImage,
+                  ),
                 ),
               ),
             ),

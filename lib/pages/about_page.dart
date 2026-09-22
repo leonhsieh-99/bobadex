@@ -2,20 +2,23 @@ import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/config/ai_disclosure.dart';
 import 'package:bobadex/pages/setting_pages/settings_ai_data_page.dart';
 import 'package:flutter/material.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 // import 'package:url_launcher/url_launcher.dart';
 
 class AboutPage extends StatelessWidget {
-  const AboutPage ({super.key});
+  const AboutPage({super.key});
 
-  static const _privacyUrl = 'https://leonhsieh-99.github.io/bobadex-legal/privacy.html';
-  static const _termsUrl   = 'https://leonhsieh-99.github.io/bobadex-legal/terms.html';
+  static const _privacyUrl =
+      'https://leonhsieh-99.github.io/bobadex-legal/privacy.html';
+  static const _termsUrl =
+      'https://leonhsieh-99.github.io/bobadex-legal/terms.html';
   static const _supportEmail = 'leonchsieh@gmail.com';
-
 
   Future<void> _openUrl(String url) async {
     final uri = Uri.parse(url);
@@ -28,9 +31,11 @@ class AboutPage extends StatelessWidget {
     final uri = Uri(
       scheme: 'mailto',
       path: _supportEmail,
-      query: Uri(queryParameters: {
-        'subject': 'Bobadex feedback v${info.version} (${info.buildNumber})',
-      }).query,
+      query: Uri(
+        queryParameters: {
+          'subject': 'Bobadex feedback v${info.version} (${info.buildNumber})',
+        },
+      ).query,
     );
     if (!await launchUrl(uri)) {
       // Fallback: copy to clipboard
@@ -57,10 +62,7 @@ class AboutPage extends StatelessWidget {
         final build = snapshot.data?.buildNumber ?? '';
 
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('About'),
-            centerTitle: true,
-          ),
+          appBar: AppBar(title: const Text('About'), centerTitle: true),
           body: ListView(
             padding: const EdgeInsets.all(20),
             children: [
@@ -87,15 +89,20 @@ class AboutPage extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Center(
-                child: Text('Version $version ($build)',
-                  style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                child: Text(
+                  'Version $version ($build)',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: context.boba.inkMuted,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
               // About section
               Card(
                 elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
@@ -113,8 +120,10 @@ class AboutPage extends StatelessWidget {
               // App limitations / disclaimer
               Card(
                 elevation: 1,
-                color: Colors.orange[50],
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                color: context.boba.accentSoft,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
@@ -123,7 +132,9 @@ class AboutPage extends StatelessWidget {
                     '• Currently the database only has California locations\n'
                     '• Data may be wiped between updates.\n'
                     '• Please report bugs or feedback!',
-                    style: theme.textTheme.bodySmall?.copyWith(color: Colors.orange[900]),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: context.boba.accentInk,
+                    ),
                   ),
                 ),
               ),
@@ -131,7 +142,9 @@ class AboutPage extends StatelessWidget {
               Card(
                 elevation: 0,
                 color: theme.colorScheme.primary.withValues(alpha: 0.07),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -151,7 +164,9 @@ class AboutPage extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const SettingsAiDataPage()),
+                          MaterialPageRoute(
+                            builder: (_) => const SettingsAiDataPage(),
+                          ),
                         ),
                         child: const Text('Learn more'),
                       ),
@@ -164,19 +179,26 @@ class AboutPage extends StatelessWidget {
               Card(
                 elevation: 0,
                 color: theme.colorScheme.primary.withValues(alpha: 0.07),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 18,
+                    horizontal: 16,
+                  ),
                   child: Column(
                     children: [
-                      Text('Contact',
+                      Text(
+                        'Contact',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.primary,
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Text('Questions, bugs, or suggestions?\nTap below to email me!',
+                      Text(
+                        'Questions, bugs, or suggestions?\nTap below to email me!',
                         style: theme.textTheme.bodySmall,
                         textAlign: TextAlign.center,
                       ),
@@ -203,19 +225,25 @@ class AboutPage extends StatelessWidget {
                       ),
                     ],
                   ),
-                )
+                ),
               ),
               const SizedBox(height: 16),
               // Legal links
               Card(
                 elevation: 0,
                 color: theme.colorScheme.primary.withValues(alpha: 0.07),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 18,
+                    horizontal: 16,
+                  ),
                   child: Column(
                     children: [
-                      Text('Legal',
+                      Text(
+                        'Legal',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: theme.colorScheme.primary,
@@ -232,15 +260,17 @@ class AboutPage extends StatelessWidget {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                               ),
                               onPressed: () => _openUrl(_privacyUrl),
                               child: Text(
                                 'Privacy Policy',
                                 style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12
-                                )
+                                  color: context.boba.onAccent,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                           ),
@@ -253,15 +283,17 @@ class AboutPage extends StatelessWidget {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                               ),
                               onPressed: () => _openUrl(_termsUrl),
                               child: Text(
                                 'Terms of Service',
                                 style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12
-                                )
+                                  color: context.boba.onAccent,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                           ),
@@ -273,18 +305,21 @@ class AboutPage extends StatelessWidget {
               ),
               Center(
                 child: InkWell(
-                  onTap: () => _openUrl('https://www.openstreetmap.org/copyright'),
+                  onTap: () =>
+                      _openUrl('https://www.openstreetmap.org/copyright'),
                   child: Text(
                     '© OpenStreetMap contributors (ODbL)',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[700], decoration: TextDecoration.underline),
+                      color: context.boba.inkMuted,
+                      decoration: TextDecoration.underline,
+                    ),
                   ),
                 ),
               ),
-            ]
+            ],
           ),
         );
-      }
+      },
     );
   }
 }

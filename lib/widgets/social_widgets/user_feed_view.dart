@@ -1,12 +1,12 @@
-import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/models/feed_event.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:bobadex/widgets/social_widgets/feed_card_options.dart';
 import 'package:bobadex/widgets/social_widgets/feed_event_card.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserFeedView extends StatefulWidget {
-  final String userId;   // <- fix type
+  final String userId; // <- fix type
   final bool isOwner;
   final int pageSize;
 
@@ -62,7 +62,9 @@ class _UserFeedViewState extends State<UserFeedView> {
       };
 
       final resp = await _supabase.rpc('get_user_feed', params: params);
-      final items = (resp as List).map((j) => FeedEvent.fromJson(j as Map<String, dynamic>)).toList();
+      final items = (resp as List)
+          .map((j) => FeedEvent.fromJson(j as Map<String, dynamic>))
+          .toList();
 
       if (items.isNotEmpty) {
         final last = items.last;
@@ -98,8 +100,10 @@ class _UserFeedViewState extends State<UserFeedView> {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Text(
-          widget.isOwner ? "You haven't posted anything yet" : "No activity yet",
-          style: Constants.emptyListTextStyle,
+          widget.isOwner
+              ? "You haven't posted anything yet"
+              : "No activity yet",
+          style: context.bobaText.empty,
           textAlign: TextAlign.center,
         ),
       );
@@ -112,17 +116,20 @@ class _UserFeedViewState extends State<UserFeedView> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: _items.length,
-          itemBuilder: (context, i) => FeedEventCard(event: _items[i], variant: FeedCardVariant.userProfile),
+          itemBuilder: (context, i) => FeedEventCard(
+            event: _items[i],
+            variant: FeedCardVariant.userProfile,
+          ),
         ),
         if (_hasMore)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: _isLoadingMore
-              ? const Center(child: CircularProgressIndicator())
-              : TextButton(
-                  onPressed: () => _fetch(initial: false),
-                  child: const Text('Load more'),
-                ),
+                ? const Center(child: CircularProgressIndicator())
+                : TextButton(
+                    onPressed: () => _fetch(initial: false),
+                    child: const Text('Load more'),
+                  ),
           ),
         Align(
           alignment: Alignment.center,

@@ -1,17 +1,15 @@
 import 'package:bobadex/models/city.dart';
 import 'package:bobadex/state/city_data_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:provider/provider.dart';
 
 class AddNewBrandDialog extends StatefulWidget {
   final Future<String?> Function(String name, City city) onSubmit;
-  const AddNewBrandDialog ({
-    super.key,
-    required this.onSubmit,
-  });
+  const AddNewBrandDialog({super.key, required this.onSubmit});
 
   @override
-  State<AddNewBrandDialog> createState () => _AddNewBrandDialogState();
+  State<AddNewBrandDialog> createState() => _AddNewBrandDialogState();
 }
 
 class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
@@ -36,7 +34,7 @@ class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
   Future<void> _loadCities() async {
     final cityProvider = context.read<CityDataProvider>();
     final loaded = await cityProvider.getCities();
-    if (mounted) { 
+    if (mounted) {
       setState(() => _cities = loaded);
     }
   }
@@ -49,10 +47,12 @@ class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
     final pattern = value.text.toLowerCase().trim();
     if (pattern.isEmpty) return cities.take(10);
     return cities
-      .where((city) =>
-          city.name.toLowerCase().contains(pattern) ||
-          city.state.toLowerCase().contains(pattern))
-      .take(10);
+        .where(
+          (city) =>
+              city.name.toLowerCase().contains(pattern) ||
+              city.state.toLowerCase().contains(pattern),
+        )
+        .take(10);
   }
 
   @override
@@ -72,10 +72,9 @@ class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
                 TextFormField(
                   controller: _nameController,
                   textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    labelText: 'Brand name',
-                  ),
-                  validator: (value) => value == null || value.isEmpty ? 'Enter a name' : null,
+                  decoration: const InputDecoration(labelText: 'Brand name'),
+                  validator: (value) =>
+                      value == null || value.isEmpty ? 'Enter a name' : null,
                 ),
                 Autocomplete<City>(
                   displayStringForOption: _cityLabel,
@@ -83,21 +82,26 @@ class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
                   onSelected: (City city) {
                     setState(() => _selectedCity = city);
                   },
-                  fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                    return TextFormField(
-                      controller: controller,
-                      focusNode: focusNode,
-                      decoration: const InputDecoration(labelText: 'City, State'),
-                      validator: (_) => _selectedCity == null ? 'Select a city' : null,
-                      onFieldSubmitted: (_) => onFieldSubmitted(),
-                      onChanged: (value) {
-                        final selected = _selectedCity;
-                        if (selected != null && value != _cityLabel(selected)) {
-                          setState(() => _selectedCity = null);
-                        }
+                  fieldViewBuilder:
+                      (context, controller, focusNode, onFieldSubmitted) {
+                        return TextFormField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          decoration: const InputDecoration(
+                            labelText: 'City, State',
+                          ),
+                          validator: (_) =>
+                              _selectedCity == null ? 'Select a city' : null,
+                          onFieldSubmitted: (_) => onFieldSubmitted(),
+                          onChanged: (value) {
+                            final selected = _selectedCity;
+                            if (selected != null &&
+                                value != _cityLabel(selected)) {
+                              setState(() => _selectedCity = null);
+                            }
+                          },
+                        );
                       },
-                    );
-                  },
                   optionsViewBuilder: (context, onSelected, options) {
                     return Align(
                       alignment: Alignment.topLeft,
@@ -106,19 +110,19 @@ class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxHeight: 240),
                           child: options.isEmpty
-                            ? const ListTile(title: Text('No city found'))
-                            : ListView.builder(
-                                padding: EdgeInsets.zero,
-                                shrinkWrap: true,
-                                itemCount: options.length,
-                                itemBuilder: (context, index) {
-                                  final city = options.elementAt(index);
-                                  return ListTile(
-                                    title: Text(_cityLabel(city)),
-                                    onTap: () => onSelected(city),
-                                  );
-                                },
-                              ),
+                              ? const ListTile(title: Text('No city found'))
+                              : ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  shrinkWrap: true,
+                                  itemCount: options.length,
+                                  itemBuilder: (context, index) {
+                                    final city = options.elementAt(index);
+                                    return ListTile(
+                                      title: Text(_cityLabel(city)),
+                                      onTap: () => onSelected(city),
+                                    );
+                                  },
+                                ),
                         ),
                       ),
                     );
@@ -126,22 +130,29 @@ class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
                 ),
                 SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: _isSubmitting ? null : () async {
-                    if (_formKey.currentState?.validate() != true || _selectedCity == null) return;
-                    setState(() => _isSubmitting = true);
-                    final error = await widget.onSubmit(_nameController.text, _selectedCity!);
-                    setState(() => _isSubmitting = false);
-                    if (context.mounted) {
-                      Navigator.of(context).pop(error ?? 'success');
-                    }
-                  },
+                  onPressed: _isSubmitting
+                      ? null
+                      : () async {
+                          if (_formKey.currentState?.validate() != true ||
+                              _selectedCity == null)
+                            return;
+                          setState(() => _isSubmitting = true);
+                          final error = await widget.onSubmit(
+                            _nameController.text,
+                            _selectedCity!,
+                          );
+                          setState(() => _isSubmitting = false);
+                          if (context.mounted) {
+                            Navigator.of(context).pop(error ?? 'success');
+                          }
+                        },
                   child: Text('Submit'),
                 ),
                 SizedBox(height: 10),
                 Text(
                   'City and state data provided by https://simplemaps.com/data/us-cities',
                   style: TextStyle(
-                    color: Colors.grey,
+                    color: context.boba.inkMuted,
                     fontWeight: FontWeight.w300,
                     fontSize: 8,
                   ),
