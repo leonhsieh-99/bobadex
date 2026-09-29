@@ -7,6 +7,7 @@ class MediaRealtimeService {
   RealtimeChannel? _chInvalid;
   bool _starting = false;
   bool _started  = false;
+  bool _gaveUp = false;
 
   bool get isStarted => _started;
 
@@ -14,11 +15,9 @@ class MediaRealtimeService {
     required Future<void> Function(String deletedId) onDeleteById,
     void Function(String path)? onOwnMediaDeleted, // optional toast/UI
   }) {
-    if (_started || _starting || _chInvalid != null) {
-      debugPrint('MediaRealtimeService: already started/starting, skip');
-      return;
-    }
-    
+    if (_gaveUp || _started || _starting || _chInvalid != null) return;
+
+    _starting = true;
     final supa = Supabase.instance.client;
 
     final ch = supa.channel('public:media_invalidation');
@@ -45,14 +44,27 @@ class MediaRealtimeService {
         },
       )
       ..subscribe((status, err) {
-        debugPrint('media_invalidation status: $status ${err ?? ""}');
         if (status == RealtimeSubscribeStatus.subscribed) {
           _started = true;
           _starting = false;
-        } else if (status == RealtimeSubscribeStatus.closed ||
-                   status == RealtimeSubscribeStatus.channelError) {
+          return;
+        }
+        if (status == RealtimeSubscribeStatus.closed ||
+            status == RealtimeSubscribeStatus.channelError) {
           _started = false;
           _starting = false;
+          if (_gaveUp) return;
+          _gaveUp = true;
+          debugPrint(
+            'media_invalidation unavailable, stopping retries: ${err ?? status}',
+          );
+          final channel = _chInvalid;
+          _chInvalid = null;
+          if (channel != null) {
+            Future<void>(() {
+              Supabase.instance.client.removeChannel(channel);
+            });
+          }
         }
       });
   }
@@ -64,5 +76,6 @@ class MediaRealtimeService {
     }
     _starting = false;
     _started  = false;
+    _gaveUp = false;
   }
 }

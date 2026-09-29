@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:bobadex/ui/components/boba_card.dart';
 import 'package:bobadex/ui/theme/boba_context.dart';
+import 'package:bobadex/ui/theme/boba_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -49,7 +50,6 @@ class _SplashPageState extends State<SplashPage> {
   }
 }
 
-// Split out static layout so rebuilds are cheap and non-janky.
 class _SplashContent extends StatelessWidget {
   const _SplashContent();
 
@@ -58,22 +58,19 @@ class _SplashContent extends StatelessWidget {
     final state = context.findAncestorStateOfType<_SplashPageState>()!;
     final fact = state.randomFact;
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Logo
-        Center(
-          child: SvgPicture.asset(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: BobaSpace.x6),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SvgPicture.asset(
             'lib/assets/logo.svg',
-            width: 200,
-            height: 200,
+            width: 160,
+            height: 160,
             fit: BoxFit.contain,
           ),
-        ),
-        SizedBox(height: 32),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24),
-          child: BobaCard(
+          const SizedBox(height: BobaSpace.x7),
+          BobaCard(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -81,7 +78,7 @@ class _SplashContent extends StatelessWidget {
                   Icons.lightbulb_outline_rounded,
                   color: context.boba.accent,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: BobaSpace.x3),
                 Expanded(
                   child: Text(
                     fact,
@@ -91,8 +88,8 @@ class _SplashContent extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

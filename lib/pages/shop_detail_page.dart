@@ -27,6 +27,7 @@ import '../widgets/add_edit_shop_dialog.dart';
 import '../widgets/filter_sort_bar.dart';
 import '../state/drink_state.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:bobadex/ui/components/boba_card.dart';
 import 'package:bobadex/ui/theme/boba_context.dart';
 
 class ShopDetailPage extends StatefulWidget {
@@ -539,6 +540,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                   ),
                                   child: FilterSortBar(
                                     controller: _searchController,
+                                    searchHint: 'Search drinks',
                                     sortOptions: [
                                       SortOption('favorite', Icons.favorite),
                                       SortOption('rating', Icons.star),
@@ -558,419 +560,430 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                 ),
 
                                 Expanded(
-                                  child: (drinks.isEmpty)
-                                      ? Center(
-                                          child: Text(
-                                            'No drinks yet',
-                                            style: context.bobaText.empty,
-                                          ),
-                                        )
-                                      : ListView.builder(
-                                          padding: const EdgeInsets.only(
-                                            bottom: 24,
-                                          ),
-                                          itemCount: visibleDrinks.length,
-                                          itemBuilder: (context, index) {
-                                            final drink = visibleDrinks[index];
-                                            return Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 4,
-                                                  ),
-                                              child: Stack(
-                                                children: [
-                                                  Container(
-                                                    decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            12,
-                                                          ),
+                                  child: BobaCard(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4,
+                                    ),
+                                    child: (drinks.isEmpty)
+                                        ? Center(
+                                            child: Text(
+                                              'No drinks yet',
+                                              style: context.bobaText.empty,
+                                            ),
+                                          )
+                                        : ListView.builder(
+                                            padding: const EdgeInsets.only(
+                                              bottom: 24,
+                                            ),
+                                            itemCount: visibleDrinks.length,
+                                            itemBuilder: (context, index) {
+                                              final drink =
+                                                  visibleDrinks[index];
+                                              return Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 4,
                                                     ),
-                                                    child: Card(
-                                                      margin:
-                                                          EdgeInsets.symmetric(
-                                                            horizontal: 0,
-                                                            vertical: 2,
-                                                          ),
-                                                      shape: RoundedRectangleBorder(
+                                                child: Stack(
+                                                  children: [
+                                                    Container(
+                                                      decoration: BoxDecoration(
                                                         borderRadius:
                                                             BorderRadius.circular(
                                                               12,
                                                             ),
                                                       ),
-                                                      child: Theme(
-                                                        data: Theme.of(context)
-                                                            .copyWith(
-                                                              dividerColor: Colors
-                                                                  .transparent,
+                                                      child: Card(
+                                                        elevation: 0,
+                                                        color:
+                                                            Colors.transparent,
+                                                        margin:
+                                                            EdgeInsets.symmetric(
+                                                              horizontal: 0,
+                                                              vertical: 0,
                                                             ),
-                                                        child: ExpansionTile(
-                                                          initiallyExpanded:
-                                                              drink.notes !=
-                                                                  null &&
-                                                              drink
-                                                                  .notes!
-                                                                  .isNotEmpty,
-                                                          onExpansionChanged: (isExpanded) {
-                                                            setState(() {
-                                                              if (isExpanded) {
-                                                                _expandedDrinkIds
-                                                                    .add(
-                                                                      drink.id ??
-                                                                          '',
-                                                                    );
-                                                              } else {
-                                                                _expandedDrinkIds
-                                                                    .remove(
-                                                                      drink.id,
-                                                                    );
-                                                              }
-                                                            });
-                                                          },
-                                                          tilePadding:
-                                                              EdgeInsets.fromLTRB(
-                                                                6,
-                                                                0,
-                                                                0,
-                                                                0,
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                12,
                                                               ),
-                                                          trailing: Row(
-                                                            mainAxisSize:
-                                                                MainAxisSize
-                                                                    .min,
-                                                            children: [
-                                                              GestureDetector(
-                                                                onTap:
-                                                                    _isCurrentUser
-                                                                    ? () async {
-                                                                        final updated = drink.copyWith(
-                                                                          isFavorite:
-                                                                              !drink.isFavorite,
-                                                                        );
-                                                                        try {
-                                                                          await drinkState.update(
-                                                                            updated,
-                                                                          );
-                                                                          notify(
-                                                                            updated.isFavorite
-                                                                                ? 'Drink favorited.'
-                                                                                : 'Drink unfavorited',
-                                                                            SnackType.success,
-                                                                          );
-                                                                        } catch (
-                                                                          _
-                                                                        ) {
-                                                                          notify(
-                                                                            'Error updating favorite status.',
-                                                                            SnackType.error,
-                                                                          );
-                                                                        }
-                                                                      }
-                                                                    : null,
-                                                                child: SvgPicture.asset(
-                                                                  drink.isFavorite
-                                                                      ? 'lib/assets/icons/heart.svg'
-                                                                      : 'lib/assets/icons/heart_outlined.svg',
-                                                                  width: 16,
-                                                                  height: 16,
+                                                        ),
+                                                        child: Theme(
+                                                          data:
+                                                              Theme.of(
+                                                                context,
+                                                              ).copyWith(
+                                                                dividerColor: Colors
+                                                                    .transparent,
+                                                              ),
+                                                          child: ExpansionTile(
+                                                            initiallyExpanded:
+                                                                drink.notes !=
+                                                                    null &&
+                                                                drink
+                                                                    .notes!
+                                                                    .isNotEmpty,
+                                                            onExpansionChanged: (isExpanded) {
+                                                              setState(() {
+                                                                if (isExpanded) {
+                                                                  _expandedDrinkIds
+                                                                      .add(
+                                                                        drink.id ??
+                                                                            '',
+                                                                      );
+                                                                } else {
+                                                                  _expandedDrinkIds
+                                                                      .remove(
+                                                                        drink
+                                                                            .id,
+                                                                      );
+                                                                }
+                                                              });
+                                                            },
+                                                            tilePadding:
+                                                                EdgeInsets.fromLTRB(
+                                                                  6,
+                                                                  0,
+                                                                  0,
+                                                                  0,
                                                                 ),
-                                                              ),
-                                                              if (_isCurrentUser)
-                                                                PopupMenuButton<
-                                                                  String
-                                                                >(
-                                                                  icon: const Icon(
-                                                                    Icons
-                                                                        .more_horiz,
-                                                                    size: 16,
-                                                                  ),
-                                                                  onSelected: (value) async {
-                                                                    final shop =
-                                                                        shopState.getShop(
-                                                                          widget
-                                                                              .shopId,
-                                                                        );
-                                                                    switch (value) {
-                                                                      case 'pin':
-                                                                        final isPinned =
-                                                                            shop?.pinnedDrinkId ==
-                                                                            drink.id;
-                                                                        try {
-                                                                          await shopState.update(
-                                                                            shop!.copyWith(
-                                                                              pinnedDrinkId: isPinned
-                                                                                  ? null
-                                                                                  : drink.id,
-                                                                            ),
+                                                            trailing: Row(
+                                                              mainAxisSize:
+                                                                  MainAxisSize
+                                                                      .min,
+                                                              children: [
+                                                                GestureDetector(
+                                                                  onTap:
+                                                                      _isCurrentUser
+                                                                      ? () async {
+                                                                          final updated = drink.copyWith(
+                                                                            isFavorite:
+                                                                                !drink.isFavorite,
                                                                           );
-                                                                          notify(
-                                                                            'Pinned drink updated',
-                                                                            SnackType.success,
-                                                                          );
-                                                                        } catch (
-                                                                          _
-                                                                        ) {
-                                                                          notify(
-                                                                            'Error pinning drink',
-                                                                            SnackType.error,
-                                                                          );
-                                                                        }
-                                                                        break;
-                                                                      case 'edit':
-                                                                        await showDialog(
-                                                                          context:
-                                                                              context,
-                                                                          builder: (_) => AddOrEditDrinkDialog(
-                                                                            initialData: DrinkFormData(
-                                                                              name: drink.name,
-                                                                              rating: drink.rating,
-                                                                              notes: drink.notes,
-                                                                              isFavorite: drink.isFavorite,
-                                                                            ),
-                                                                            onSubmit:
-                                                                                (
-                                                                                  updatedDrink,
-                                                                                ) async {
-                                                                                  try {
-                                                                                    await drinkState.update(
-                                                                                      updatedDrink.toDrink(
-                                                                                        id: drink.id,
-                                                                                        shopId: drink.shopId,
-                                                                                      ),
-                                                                                    );
-                                                                                    await achievementState.checkAndUnlockDrinkAchievement(
-                                                                                      drinkState,
-                                                                                    );
-                                                                                    await achievementState.checkAndUnlockNotesAchievement(
-                                                                                      drinkState,
-                                                                                    );
-                                                                                    notify(
-                                                                                      'Drink updated.',
-                                                                                      SnackType.success,
-                                                                                    );
-                                                                                  } catch (
-                                                                                    _
-                                                                                  ) {
-                                                                                    notify(
-                                                                                      'Error updating drink.',
-                                                                                      SnackType.error,
-                                                                                    );
-                                                                                  }
-                                                                                },
-                                                                          ),
-                                                                        );
-                                                                        break;
-                                                                      case 'remove':
-                                                                        final confirm = await showDialog<bool>(
-                                                                          context:
-                                                                              context,
-                                                                          builder:
-                                                                              (
-                                                                                context,
-                                                                              ) => AlertDialog(
-                                                                                title: const Text(
-                                                                                  'Delete Drink',
-                                                                                ),
-                                                                                content: const Text(
-                                                                                  'Are you sure you want to delete this drink ?',
-                                                                                ),
-                                                                                actions: [
-                                                                                  TextButton(
-                                                                                    onPressed: () => Navigator.pop(
-                                                                                      context,
-                                                                                      false,
-                                                                                    ),
-                                                                                    child: const Text(
-                                                                                      'Cancel',
-                                                                                    ),
-                                                                                  ),
-                                                                                  TextButton(
-                                                                                    onPressed: () => Navigator.pop(
-                                                                                      context,
-                                                                                      true,
-                                                                                    ),
-                                                                                    child: const Text(
-                                                                                      'Delete',
-                                                                                    ),
-                                                                                  ),
-                                                                                ],
-                                                                              ),
-                                                                        );
-                                                                        if (confirm ==
-                                                                            true) {
                                                                           try {
-                                                                            await drinkState.remove(
-                                                                              drink.id!,
-                                                                            );
-                                                                            shopState.nullifyPinnedForDrink(
-                                                                              drink.id!,
+                                                                            await drinkState.update(
+                                                                              updated,
                                                                             );
                                                                             notify(
-                                                                              'Drink deleted',
+                                                                              updated.isFavorite
+                                                                                  ? 'Drink favorited.'
+                                                                                  : 'Drink unfavorited',
                                                                               SnackType.success,
                                                                             );
                                                                           } catch (
                                                                             _
                                                                           ) {
                                                                             notify(
-                                                                              'Error deleting drink',
+                                                                              'Error updating favorite status.',
                                                                               SnackType.error,
                                                                             );
                                                                           }
                                                                         }
-                                                                        break;
-                                                                    }
-                                                                  },
-                                                                  itemBuilder: (_) => [
-                                                                    PopupMenuItem(
-                                                                      value:
-                                                                          'pin',
-                                                                      child: Text(
-                                                                        drink.id !=
-                                                                                shopRead.pinnedDrinkId
-                                                                            ? 'Pin'
-                                                                            : 'Unpin',
-                                                                      ),
-                                                                    ),
-                                                                    PopupMenuItem(
-                                                                      value:
-                                                                          'edit',
-                                                                      child: Text(
-                                                                        'Edit',
-                                                                      ),
-                                                                    ),
-                                                                    PopupMenuItem(
-                                                                      value:
-                                                                          'remove',
-                                                                      child: Text(
-                                                                        'Remove',
-                                                                      ),
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                              if (!_isCurrentUser)
-                                                                SizedBox(
-                                                                  width: 16,
-                                                                ),
-                                                            ],
-                                                          ),
-                                                          title: Row(
-                                                            children: [
-                                                              AnimatedRotation(
-                                                                turns:
-                                                                    _expandedDrinkIds
-                                                                        .contains(
-                                                                          drink
-                                                                              .id,
-                                                                        )
-                                                                    ? 0.25
-                                                                    : 0.00,
-                                                                duration:
-                                                                    const Duration(
-                                                                      milliseconds:
-                                                                          200,
-                                                                    ),
-                                                                child: const Icon(
-                                                                  Icons
-                                                                      .chevron_right,
-                                                                  size: 20,
-                                                                ),
-                                                              ),
-                                                              const SizedBox(
-                                                                width: 4,
-                                                              ),
-                                                              Expanded(
-                                                                flex: 5,
-                                                                child: Text(
-                                                                  drink.name,
-                                                                  style: const TextStyle(
-                                                                    fontSize:
-                                                                        14,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w400,
-                                                                  ),
-                                                                  overflow:
-                                                                      TextOverflow
-                                                                          .ellipsis,
-                                                                  maxLines: 1,
-                                                                ),
-                                                              ),
-                                                              const SizedBox(
-                                                                width: 6,
-                                                              ),
-                                                              Expanded(
-                                                                flex: 2,
-                                                                child: Row(
-                                                                  children: [
-                                                                    SvgPicture.asset(
-                                                                      'lib/assets/icons/star.svg',
-                                                                      width: 14,
-                                                                      height:
-                                                                          14,
-                                                                    ),
-                                                                    SizedBox(
-                                                                      width: 6,
-                                                                    ),
-                                                                    Text(
-                                                                      drink
-                                                                          .rating
-                                                                          .toStringAsFixed(
-                                                                            1,
-                                                                          ),
-                                                                      style: const TextStyle(
-                                                                        fontSize:
-                                                                            14,
-                                                                        fontWeight:
-                                                                            FontWeight.w300,
-                                                                      ),
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                          children: [
-                                                            Padding(
-                                                              padding:
-                                                                  EdgeInsets.fromLTRB(
-                                                                    16,
-                                                                    0,
-                                                                    16,
-                                                                    16,
-                                                                  ),
-                                                              child: Align(
-                                                                alignment: Alignment
-                                                                    .centerLeft,
-                                                                child: Text(
-                                                                  (drink.notes ==
-                                                                              null ||
-                                                                          drink
-                                                                              .notes!
-                                                                              .isEmpty)
-                                                                      ? 'No notes yet...'
-                                                                      : drink
-                                                                            .notes!,
-                                                                  style: const TextStyle(
-                                                                    fontSize:
-                                                                        14,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w300,
+                                                                      : null,
+                                                                  child: SvgPicture.asset(
+                                                                    drink.isFavorite
+                                                                        ? 'lib/assets/icons/heart.svg'
+                                                                        : 'lib/assets/icons/heart_outlined.svg',
+                                                                    width: 16,
+                                                                    height: 16,
                                                                   ),
                                                                 ),
-                                                              ),
+                                                                if (_isCurrentUser)
+                                                                  PopupMenuButton<
+                                                                    String
+                                                                  >(
+                                                                    icon: const Icon(
+                                                                      Icons
+                                                                          .more_horiz,
+                                                                      size: 16,
+                                                                    ),
+                                                                    onSelected: (value) async {
+                                                                      final shop =
+                                                                          shopState.getShop(
+                                                                            widget.shopId,
+                                                                          );
+                                                                      switch (value) {
+                                                                        case 'pin':
+                                                                          final isPinned =
+                                                                              shop?.pinnedDrinkId ==
+                                                                              drink.id;
+                                                                          try {
+                                                                            await shopState.update(
+                                                                              shop!.copyWith(
+                                                                                pinnedDrinkId: isPinned
+                                                                                    ? null
+                                                                                    : drink.id,
+                                                                              ),
+                                                                            );
+                                                                            notify(
+                                                                              'Pinned drink updated',
+                                                                              SnackType.success,
+                                                                            );
+                                                                          } catch (
+                                                                            _
+                                                                          ) {
+                                                                            notify(
+                                                                              'Error pinning drink',
+                                                                              SnackType.error,
+                                                                            );
+                                                                          }
+                                                                          break;
+                                                                        case 'edit':
+                                                                          await showDialog(
+                                                                            context:
+                                                                                context,
+                                                                            builder: (_) => AddOrEditDrinkDialog(
+                                                                              initialData: DrinkFormData(
+                                                                                name: drink.name,
+                                                                                rating: drink.rating,
+                                                                                notes: drink.notes,
+                                                                                isFavorite: drink.isFavorite,
+                                                                              ),
+                                                                              onSubmit:
+                                                                                  (
+                                                                                    updatedDrink,
+                                                                                  ) async {
+                                                                                    try {
+                                                                                      await drinkState.update(
+                                                                                        updatedDrink.toDrink(
+                                                                                          id: drink.id,
+                                                                                          shopId: drink.shopId,
+                                                                                        ),
+                                                                                      );
+                                                                                      await achievementState.checkAndUnlockDrinkAchievement(
+                                                                                        drinkState,
+                                                                                      );
+                                                                                      await achievementState.checkAndUnlockNotesAchievement(
+                                                                                        drinkState,
+                                                                                      );
+                                                                                      notify(
+                                                                                        'Drink updated.',
+                                                                                        SnackType.success,
+                                                                                      );
+                                                                                    } catch (
+                                                                                      _
+                                                                                    ) {
+                                                                                      notify(
+                                                                                        'Error updating drink.',
+                                                                                        SnackType.error,
+                                                                                      );
+                                                                                    }
+                                                                                  },
+                                                                            ),
+                                                                          );
+                                                                          break;
+                                                                        case 'remove':
+                                                                          final confirm = await showDialog<bool>(
+                                                                            context:
+                                                                                context,
+                                                                            builder:
+                                                                                (
+                                                                                  context,
+                                                                                ) => AlertDialog(
+                                                                                  title: const Text(
+                                                                                    'Delete Drink',
+                                                                                  ),
+                                                                                  content: const Text(
+                                                                                    'Are you sure you want to delete this drink ?',
+                                                                                  ),
+                                                                                  actions: [
+                                                                                    TextButton(
+                                                                                      onPressed: () => Navigator.pop(
+                                                                                        context,
+                                                                                        false,
+                                                                                      ),
+                                                                                      child: const Text(
+                                                                                        'Cancel',
+                                                                                      ),
+                                                                                    ),
+                                                                                    TextButton(
+                                                                                      onPressed: () => Navigator.pop(
+                                                                                        context,
+                                                                                        true,
+                                                                                      ),
+                                                                                      child: const Text(
+                                                                                        'Delete',
+                                                                                      ),
+                                                                                    ),
+                                                                                  ],
+                                                                                ),
+                                                                          );
+                                                                          if (confirm ==
+                                                                              true) {
+                                                                            try {
+                                                                              await drinkState.remove(
+                                                                                drink.id!,
+                                                                              );
+                                                                              shopState.nullifyPinnedForDrink(
+                                                                                drink.id!,
+                                                                              );
+                                                                              notify(
+                                                                                'Drink deleted',
+                                                                                SnackType.success,
+                                                                              );
+                                                                            } catch (
+                                                                              _
+                                                                            ) {
+                                                                              notify(
+                                                                                'Error deleting drink',
+                                                                                SnackType.error,
+                                                                              );
+                                                                            }
+                                                                          }
+                                                                          break;
+                                                                      }
+                                                                    },
+                                                                    itemBuilder: (_) => [
+                                                                      PopupMenuItem(
+                                                                        value:
+                                                                            'pin',
+                                                                        child: Text(
+                                                                          drink.id !=
+                                                                                  shopRead.pinnedDrinkId
+                                                                              ? 'Pin'
+                                                                              : 'Unpin',
+                                                                        ),
+                                                                      ),
+                                                                      PopupMenuItem(
+                                                                        value:
+                                                                            'edit',
+                                                                        child: Text(
+                                                                          'Edit',
+                                                                        ),
+                                                                      ),
+                                                                      PopupMenuItem(
+                                                                        value:
+                                                                            'remove',
+                                                                        child: Text(
+                                                                          'Remove',
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                if (!_isCurrentUser)
+                                                                  SizedBox(
+                                                                    width: 16,
+                                                                  ),
+                                                              ],
                                                             ),
-                                                          ],
+                                                            title: Row(
+                                                              children: [
+                                                                AnimatedRotation(
+                                                                  turns:
+                                                                      _expandedDrinkIds
+                                                                          .contains(
+                                                                            drink.id,
+                                                                          )
+                                                                      ? 0.25
+                                                                      : 0.00,
+                                                                  duration:
+                                                                      const Duration(
+                                                                        milliseconds:
+                                                                            200,
+                                                                      ),
+                                                                  child: const Icon(
+                                                                    Icons
+                                                                        .chevron_right,
+                                                                    size: 20,
+                                                                  ),
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 4,
+                                                                ),
+                                                                Expanded(
+                                                                  flex: 5,
+                                                                  child: Text(
+                                                                    drink.name,
+                                                                    style: const TextStyle(
+                                                                      fontSize:
+                                                                          14,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .w400,
+                                                                    ),
+                                                                    overflow:
+                                                                        TextOverflow
+                                                                            .ellipsis,
+                                                                    maxLines: 1,
+                                                                  ),
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 6,
+                                                                ),
+                                                                Expanded(
+                                                                  flex: 2,
+                                                                  child: Row(
+                                                                    children: [
+                                                                      SvgPicture.asset(
+                                                                        'lib/assets/icons/star.svg',
+                                                                        width:
+                                                                            14,
+                                                                        height:
+                                                                            14,
+                                                                      ),
+                                                                      SizedBox(
+                                                                        width:
+                                                                            6,
+                                                                      ),
+                                                                      Text(
+                                                                        drink
+                                                                            .rating
+                                                                            .toStringAsFixed(
+                                                                              1,
+                                                                            ),
+                                                                        style: const TextStyle(
+                                                                          fontSize:
+                                                                              14,
+                                                                          fontWeight:
+                                                                              FontWeight.w300,
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                            children: [
+                                                              Padding(
+                                                                padding:
+                                                                    EdgeInsets.fromLTRB(
+                                                                      16,
+                                                                      0,
+                                                                      16,
+                                                                      16,
+                                                                    ),
+                                                                child: Align(
+                                                                  alignment:
+                                                                      Alignment
+                                                                          .centerLeft,
+                                                                  child: Text(
+                                                                    (drink.notes ==
+                                                                                null ||
+                                                                            drink.notes!.isEmpty)
+                                                                        ? 'No notes yet...'
+                                                                        : drink
+                                                                              .notes!,
+                                                                    style: const TextStyle(
+                                                                      fontSize:
+                                                                          14,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .w300,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
                                                         ),
                                                       ),
                                                     ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -1227,10 +1240,8 @@ class ShopDetailSkeleton extends StatelessWidget {
           Expanded(
             child: ListView.separated(
               itemCount: 6,
-              separatorBuilder: (_, __) => Divider(
-                height: 1,
-                color: context.boba.outline,
-              ),
+              separatorBuilder: (_, __) =>
+                  Divider(height: 1, color: context.boba.outline),
               itemBuilder: (context, index) {
                 return ListTile(
                   leading: Container(

@@ -1,7 +1,8 @@
 import 'package:bobadex/notification_bus.dart';
+import 'package:bobadex/pages/add_shop_search_page.dart';
 import 'package:bobadex/state/user_state.dart';
+import 'package:bobadex/ui/components/boba_button.dart';
 import 'package:bobadex/ui/components/theme_preview_card.dart';
-import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:bobadex/ui/theme/boba_themes.dart';
 import 'package:bobadex/ui/theme/boba_tokens.dart';
 import 'package:flutter/material.dart';
@@ -23,22 +24,26 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
     _pageController = PageController(initialPage: _page);
   }
 
-  void _next() {
-    setState(() => _page++);
+  void _go(int page) {
+    setState(() => _page = page);
     _pageController.animateToPage(
-      _page,
-      duration: Duration(milliseconds: 300),
+      page,
+      duration: BobaMotion.normal,
       curve: Curves.easeInOut,
     );
   }
 
-  void _back() {
-    setState(() => _page--);
-    _pageController.animateToPage(
-      _page,
-      duration: Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+  Future<void> _finish() async {
+    final userState = context.read<UserState>();
+    userState.saveTheme();
+    try {
+      await userState.setOnboarded();
+      if (mounted) Navigator.of(context).pop();
+    } catch (_) {
+      if (mounted) {
+        notify('Error saving onboarding. Try again', SnackType.error);
+      }
+    }
   }
 
   @override
@@ -49,333 +54,158 @@ class _OnboardingWizardState extends State<OnboardingWizard> {
 
   @override
   Widget build(BuildContext context) {
-    final userState = context.read<UserState>();
+    final userState = context.watch<UserState>();
     return Scaffold(
-      body: Padding(
-        padding: EdgeInsets.all(16),
-        child: PageView(
-          physics: NeverScrollableScrollPhysics(),
-          controller: _pageController,
-          children: [
-            // Step 1: About
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Welcome to Bobadex!",
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 24),
-                  Text(
-                    'Bobadex is a passion project I started to make it fun and easy to log all my milk tea adventures. '
-                    'This app was developed by just one person, so if you find bugs or run into missing features, '
-                    'please be patient and let me know through the contact page so I can make Bobadex better for everyone.\n\n'
-                    'Thanks for giving it a try. Let’s start tracking your boba journey together!',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  SizedBox(height: 24),
-                  ElevatedButton(onPressed: _next, child: Text("Next")),
-                ],
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(BobaSpace.x4),
+          child: PageView(
+            physics: const NeverScrollableScrollPhysics(),
+            controller: _pageController,
+            children: [
+              _WelcomeStep(onNext: () => _go(1)),
+              _ThemeStep(
+                userState: userState,
+                onBack: () => _go(0),
+                onNext: () {
+                  userState.saveTheme();
+                  _go(2);
+                },
               ),
+              _FirstBrandStep(onBack: () => _go(1), onSkip: _finish),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WelcomeStep extends StatelessWidget {
+  const _WelcomeStep({required this.onNext});
+
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const Spacer(),
+        Image.asset('lib/assets/badges/where_it_began.png', width: 120),
+        const SizedBox(height: BobaSpace.x6),
+        Text(
+          'Welcome to Bobadex',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: BobaSpace.x3),
+        Text(
+          'Every brand you try becomes an entry in your collection. Rate drinks, earn badges, and see what your friends are collecting.',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
+        const Spacer(),
+        BobaButton(label: 'Next', expanded: true, onPressed: onNext),
+      ],
+    );
+  }
+}
+
+class _ThemeStep extends StatelessWidget {
+  const _ThemeStep({
+    required this.userState,
+    required this.onBack,
+    required this.onNext,
+  });
+
+  final UserState userState;
+  final VoidCallback onBack;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Pick a theme', style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: BobaSpace.x3),
+        Expanded(
+          child: GridView.builder(
+            itemCount: BobaThemes.all.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: BobaSpace.x2,
+              crossAxisSpacing: BobaSpace.x2,
+              childAspectRatio: 1.35,
             ),
-            // Step 2: Theme/Settings
-            SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Text(
-                      "Pick your theme color",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 360,
-                      child: GridView.builder(
-                        itemCount: BobaThemes.all.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: BobaSpace.x2,
-                              crossAxisSpacing: BobaSpace.x2,
-                              childAspectRatio: 1.35,
-                            ),
-                        shrinkWrap: true,
-                        physics: const BouncingScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          final theme = BobaThemes.all[index];
-                          return ThemePreviewCard(
-                            definition: theme,
-                            selected: userState.current.themeSlug == theme.slug,
-                            onTap: () =>
-                                setState(() => userState.setTheme(theme.slug)),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    const Text(
-                      "Pick your page layout",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        GestureDetector(
-                          onTap: () =>
-                              setState(() => userState.setGridLayout(2)),
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 12),
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: userState.current.gridColumns == 2
-                                    ? context.boba.accent
-                                    : context.boba.outline,
-                                width: 2,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              color: context.boba.surface,
-                              boxShadow: [
-                                if (userState.current.gridColumns == 2)
-                                  BoxShadow(
-                                    color: context.boba.accent.withValues(
-                                      alpha: 0.1,
-                                    ),
-                                    blurRadius: 4,
-                                  ),
-                              ],
-                            ),
-                            child: const Column(
-                              children: [
-                                Icon(Icons.view_column, size: 36),
-                                Text(
-                                  "Cozy",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  "2 per row",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w300,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () =>
-                              setState(() => userState.setGridLayout(3)),
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 12),
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: userState.current.gridColumns == 3
-                                    ? context.boba.accent
-                                    : context.boba.outline,
-                                width: 2,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              color: context.boba.surface,
-                              boxShadow: [
-                                if (userState.current.gridColumns == 3)
-                                  BoxShadow(
-                                    color: context.boba.accent.withValues(
-                                      alpha: 0.1,
-                                    ),
-                                    blurRadius: 4,
-                                  ),
-                              ],
-                            ),
-                            child: const Column(
-                              children: [
-                                Icon(Icons.grid_view, size: 36),
-                                Text(
-                                  "Compact",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  "3 per row",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w300,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    const Text(
-                      "Pick your card layout",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        GestureDetector(
-                          onTap: () =>
-                              setState(() => userState.toggleUseIcons()),
-                          child: Container(
-                            constraints: BoxConstraints(
-                              maxWidth: MediaQuery.of(context).size.width / 3,
-                              minWidth: MediaQuery.of(context).size.width / 3,
-                            ),
-                            margin: const EdgeInsets.symmetric(horizontal: 12),
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: !userState.current.useIcons
-                                    ? context.boba.accent
-                                    : context.boba.outline,
-                                width: 2,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              color: context.boba.surface,
-                              boxShadow: [
-                                if (!userState.current.useIcons)
-                                  BoxShadow(
-                                    color: context.boba.accent.withValues(
-                                      alpha: 0.1,
-                                    ),
-                                    blurRadius: 4,
-                                  ),
-                              ],
-                            ),
-                            child: const Column(
-                              children: [
-                                Icon(Icons.photo, size: 36),
-                                Text(
-                                  "Use photos",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  "User uploaded photos as background",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w300,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () =>
-                              setState(() => userState.toggleUseIcons()),
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 12),
-                            constraints: BoxConstraints(
-                              maxWidth: MediaQuery.of(context).size.width / 3,
-                              minWidth: MediaQuery.of(context).size.width / 3,
-                            ),
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: userState.current.useIcons
-                                    ? context.boba.accent
-                                    : context.boba.outline,
-                                width: 2,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              color: context.boba.surface,
-                              boxShadow: [
-                                if (userState.current.useIcons)
-                                  BoxShadow(
-                                    color: context.boba.accent.withValues(
-                                      alpha: 0.1,
-                                    ),
-                                    blurRadius: 4,
-                                  ),
-                              ],
-                            ),
-                            child: const Column(
-                              children: [
-                                Icon(Icons.apps, size: 36),
-                                Text(
-                                  "Use icons",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  "Uses built-in icons as foreground",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w300,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 32),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () {
-                            userState.saveLayout();
-                            userState.saveTheme();
-                            _back();
-                          },
-                          child: const Text("Back"),
-                        ),
-                        ElevatedButton(
-                          onPressed: () async {
-                            userState.saveLayout();
-                            userState.saveTheme();
-                            try {
-                              await userState.setOnboarded();
-                              if (context.mounted) Navigator.of(context).pop();
-                            } catch (e) {
-                              if (context.mounted) {
-                                notify(
-                                  'Error saving onboarding. Try again',
-                                  SnackType.error,
-                                );
-                              }
-                            }
-                          },
-                          child: const Text("Done"),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+            itemBuilder: (context, index) {
+              final theme = BobaThemes.all[index];
+              return ThemePreviewCard(
+                definition: theme,
+                selected: userState.current.themeSlug == theme.slug,
+                onTap: () => userState.setTheme(theme.slug),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: BobaSpace.x3),
+        Row(
+          children: [
+            BobaButton(
+              variant: BobaButtonVariant.secondary,
+              label: 'Back',
+              onPressed: onBack,
+            ),
+            const SizedBox(width: BobaSpace.x3),
+            Expanded(
+              child: BobaButton(label: 'Next', onPressed: onNext),
             ),
           ],
         ),
-      ),
+      ],
+    );
+  }
+}
+
+class _FirstBrandStep extends StatelessWidget {
+  const _FirstBrandStep({required this.onBack, required this.onSkip});
+
+  final VoidCallback onBack;
+  final Future<void> Function() onSkip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Add your first brand',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: BobaSpace.x2),
+        Text(
+          'Search and add a shop, or skip and do it from Dex later.',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: BobaSpace.x3),
+        const Expanded(child: AddShopSearchPage(embedded: true)),
+        const SizedBox(height: BobaSpace.x3),
+        Row(
+          children: [
+            BobaButton(
+              variant: BobaButtonVariant.secondary,
+              label: 'Back',
+              onPressed: onBack,
+            ),
+            const Spacer(),
+            BobaButton(
+              variant: BobaButtonVariant.tertiary,
+              label: 'Skip for now',
+              onPressed: () => onSkip(),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

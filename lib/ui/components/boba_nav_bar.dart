@@ -41,7 +41,7 @@ class BobaNavBar extends StatelessWidget {
   List<BobaNavDestination> get _destinations => [
     const BobaNavDestination(icon: Icons.grid_view_rounded, label: 'Dex'),
     if (FeatureFlags.collection)
-      const BobaNavDestination(icon: Icons.map_rounded, label: 'Collect'),
+      const BobaNavDestination(icon: Icons.menu_book_rounded, label: 'Collect'),
     BobaNavDestination(
       icon: Icons.group_rounded,
       label: 'Friends',

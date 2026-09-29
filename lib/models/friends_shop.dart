@@ -18,7 +18,9 @@ class FriendsShop {
   });
 
   factory FriendsShop.fromJson(Map<String, dynamic> json) {
-    final rawFriends = (json['friends_info'] as Map?)?.cast<String, dynamic>() ?? const <String, dynamic>{};
+    final rawFriends =
+        (json['friends_info'] as Map?)?.cast<String, dynamic>() ??
+        const <String, dynamic>{};
 
     return FriendsShop(
       brandSlug: (json['brand_slug'] as String?) ?? '',
@@ -43,6 +45,7 @@ class FriendShopInfo {
   final String? filePath;
   final int drinksTried;
   final int? galleryCount;
+  final List<String> imagePaths;
 
   FriendShopInfo({
     required this.id,
@@ -53,14 +56,21 @@ class FriendShopInfo {
     this.filePath,
     required this.drinksTried,
     this.galleryCount,
+    this.imagePaths = const [],
   });
 
   factory FriendShopInfo.fromJson(
     Map<String, dynamic> json, {
     required String idFallback,
   }) {
+    final extra =
+        (json['image_paths'] as List?)
+            ?.map((e) => e.toString())
+            .where((p) => p.isNotEmpty)
+            .toList() ??
+        const <String>[];
     return FriendShopInfo(
-      id: (json['id'] as String?) ?? idFallback, 
+      id: (json['id'] as String?) ?? idFallback,
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       note: json['note'] as String?,
       isFavorite: (json['is_favorite'] as bool?) ?? false,
@@ -70,6 +80,7 @@ class FriendShopInfo {
       filePath: json['file_path'] as String?,
       drinksTried: (json['drinks_tried'] as int?) ?? 0,
       galleryCount: json['gallery_count'] as int?,
+      imagePaths: extra,
     );
   }
 }

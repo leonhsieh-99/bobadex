@@ -1,12 +1,12 @@
 import 'package:bobadex/models/feed_event.dart';
+import 'package:bobadex/ui/components/feed_event_row.dart';
 import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:bobadex/widgets/social_widgets/feed_card_options.dart';
-import 'package:bobadex/widgets/social_widgets/feed_event_card.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserFeedView extends StatefulWidget {
-  final String userId; // <- fix type
+  final String userId;
   final bool isOwner;
   final int pageSize;
 
@@ -91,52 +91,50 @@ class _UserFeedViewState extends State<UserFeedView> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading && _items.isEmpty) {
-      return Column(
-        children: List.generate(5, (_) => const FeedEventCardSkeleton()),
+      return ListView(
+        children: List.generate(5, (_) => const FeedEventRowSkeleton()),
       );
     }
 
     if (_items.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Text(
-          widget.isOwner
-              ? "You haven't posted anything yet"
-              : "No activity yet",
-          style: context.bobaText.empty,
-          textAlign: TextAlign.center,
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+          child: Text(
+            widget.isOwner
+                ? "You haven't posted anything yet"
+                : 'No activity yet',
+            style: context.bobaText.empty,
+            textAlign: TextAlign.center,
+          ),
         ),
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _items.length,
-          itemBuilder: (context, i) => FeedEventCard(
-            event: _items[i],
-            variant: FeedCardVariant.userProfile,
-          ),
-        ),
-        if (_hasMore)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: _isLoadingMore
-                ? const Center(child: CircularProgressIndicator())
-                : TextButton(
-                    onPressed: () => _fetch(initial: false),
-                    child: const Text('Load more'),
-                  ),
-          ),
-        Align(
-          alignment: Alignment.center,
-          child: TextButton.icon(
-            onPressed: () => _fetch(initial: true),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Refresh'),
+    return CustomScrollView(
+      slivers: [
+        FeedDaySliverList(
+          events: _items,
+          variant: FeedCardVariant.userProfile,
+          trailing: Column(
+            children: [
+              if (_hasMore)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: _isLoadingMore
+                      ? const Center(child: CircularProgressIndicator())
+                      : TextButton(
+                          onPressed: () => _fetch(initial: false),
+                          child: const Text('Load more'),
+                        ),
+                ),
+              TextButton.icon(
+                onPressed: () => _fetch(initial: true),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Refresh'),
+              ),
+              const SizedBox(height: 24),
+            ],
           ),
         ),
       ],

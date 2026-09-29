@@ -64,13 +64,20 @@ void main() async {
   }
 }
 
-class _BootstrapApp extends StatelessWidget {
+class _BootstrapApp extends StatefulWidget {
   const _BootstrapApp();
+
+  @override
+  State<_BootstrapApp> createState() => _BootstrapAppState();
+}
+
+class _BootstrapAppState extends State<_BootstrapApp> {
+  late final Future<void> _ready = _bootstrap();
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<void>(
-      future: _bootstrap(),
+      future: _ready,
       builder: (context, snap) {
         if (snap.connectionState != ConnectionState.done) {
           return const MaterialApp(

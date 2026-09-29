@@ -1,6 +1,8 @@
 import 'package:bobadex/state/feed_state.dart';
-import 'package:bobadex/ui/theme/boba_context.dart';
-import 'package:bobadex/widgets/social_widgets/feed_event_card.dart';
+import 'package:bobadex/ui/components/boba_button.dart';
+import 'package:bobadex/ui/components/boba_nav_bar.dart';
+import 'package:bobadex/ui/components/empty_state.dart';
+import 'package:bobadex/ui/components/feed_event_row.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -41,39 +43,45 @@ class _FeedViewState extends State<FeedView> {
   @override
   Widget build(BuildContext context) {
     final feedState = context.watch<FeedState>();
+    final bottom = BobaNavBar.clearance(context);
 
     if (feedState.isLoading && feedState.feed.isEmpty) {
       return ListView.builder(
-        padding: const EdgeInsets.only(bottom: 120),
+        padding: EdgeInsets.only(bottom: bottom),
         itemCount: 5,
-        itemBuilder: (context, i) => FeedEventCardSkeleton(),
+        itemBuilder: (context, i) => const FeedEventRowSkeleton(),
       );
     }
 
     if (feedState.feed.isEmpty) {
-      return Center(
-        child: Text("No activity yet!", style: context.bobaText.empty),
+      return EmptyState(
+        title: 'Quiet in here',
+        body: "Add friends to see what they're collecting.",
+        action: BobaButton(
+          label: 'Find friends',
+          onPressed: () {
+            DefaultTabController.maybeOf(context)?.animateTo(2);
+          },
+        ),
       );
     }
 
     return RefreshIndicator(
       onRefresh: () async => feedState.fetchFeed(refresh: true),
-      child: ListView.builder(
+      child: CustomScrollView(
         controller: _controller,
-        padding: const EdgeInsets.only(bottom: 120),
-        itemCount: feedState.feed.length + (feedState.hasMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == feedState.feed.length) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
-          final event = feedState.feed[index];
-          return FeedEventCard(event: event);
-        },
+        slivers: [
+          FeedDaySliverList(
+            events: feedState.feed,
+            trailing: feedState.hasMore
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : null,
+          ),
+          SliverToBoxAdapter(child: SizedBox(height: bottom)),
+        ],
       ),
     );
   }

@@ -6,6 +6,8 @@ import 'package:bobadex/auth/otp_auth_messages.dart';
 import 'package:bobadex/auth/phone_e164.dart';
 import 'package:bobadex/pages/auth_page.dart';
 import 'package:bobadex/pages/setting_pages/email_change_page.dart';
+import 'package:bobadex/ui/theme/boba_theme_builder.dart';
+import 'package:bobadex/ui/theme/boba_themes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:phone_numbers_parser/phone_numbers_parser.dart';
@@ -21,14 +23,18 @@ class FakeEmailAccountAuth extends EmailAccountAuth {
     required String displayName,
   }) async {
     calls.add('signup:$email:$username:$displayName');
-    if (requestResult != OtpAuthCode.otpSent && requestResult != OtpAuthCode.success) {
+    if (requestResult != OtpAuthCode.otpSent &&
+        requestResult != OtpAuthCode.success) {
       throw OtpAuthException(requestResult);
     }
     return requestResult;
   }
 
   @override
-  Future<void> verifySignup({required String email, required String code}) async {
+  Future<void> verifySignup({
+    required String email,
+    required String code,
+  }) async {
     calls.add('verify:$email:$code');
   }
 
@@ -39,16 +45,25 @@ class FakeEmailAccountAuth extends EmailAccountAuth {
   }
 
   @override
-  Future<void> verifyEmailChange({required String email, required String code}) async {
+  Future<void> verifyEmailChange({
+    required String email,
+    required String code,
+  }) async {
     calls.add('change-verify:$email:$code');
   }
 }
 
 OtpFunctionInvoker scriptedInvoker(List<OtpFunctionResponse> responses) {
   var i = 0;
-  return ({required Map<String, dynamic> body, Map<String, String>? headers}) async {
+  return ({
+    required Map<String, dynamic> body,
+    Map<String, String>? headers,
+  }) async {
     if (i >= responses.length) {
-      return const OtpFunctionResponse(status: 500, body: {'code': 'AUTH_ERROR'});
+      return const OtpFunctionResponse(
+        status: 500,
+        body: {'code': 'AUTH_ERROR'},
+      );
     }
     return responses[i++];
   };
@@ -84,42 +99,63 @@ void main() {
     test('rejects a malformed session', () {
       expect(
         () => parseOtpLoginSuccess({'code': 'SUCCESS', 'user_id': 'user-1'}),
-        throwsA(isA<OtpAuthException>().having((e) => e.code, 'code', OtpAuthCode.authError)),
+        throwsA(
+          isA<OtpAuthException>().having(
+            (e) => e.code,
+            'code',
+            OtpAuthCode.authError,
+          ),
+        ),
       );
     });
   });
 
   group('OtpAuthClient', () {
-    test('existing email can request and verify OTP then apply session', () async {
-      OtpLoginTokens? applied;
-      final client = OtpAuthClient(
-        invoke: scriptedInvoker([
-          const OtpFunctionResponse(status: 200, body: {'code': 'OTP_SENT'}),
-          OtpFunctionResponse(status: 200, body: loginSuccess(userId: 'user-1')),
-        ]),
-        applySession: (tokens) async => applied = tokens,
-      );
+    test(
+      'existing email can request and verify OTP then apply session',
+      () async {
+        OtpLoginTokens? applied;
+        final client = OtpAuthClient(
+          invoke: scriptedInvoker([
+            const OtpFunctionResponse(status: 200, body: {'code': 'OTP_SENT'}),
+            OtpFunctionResponse(
+              status: 200,
+              body: loginSuccess(userId: 'user-1'),
+            ),
+          ]),
+          applySession: (tokens) async => applied = tokens,
+        );
 
-      await client.requestEmailLoginOtp('user@example.com');
-      final tokens = await client.verifyEmailLoginOtp(email: 'user@example.com', code: '123456');
-      await client.establishLoginSession(tokens);
+        await client.requestEmailLoginOtp('user@example.com');
+        final tokens = await client.verifyEmailLoginOtp(
+          email: 'user@example.com',
+          code: '123456',
+        );
+        await client.establishLoginSession(tokens);
 
-      expect(applied?.userId, 'user-1');
-      expect(applied?.accessToken, 'access-token');
-    });
+        expect(applied?.userId, 'user-1');
+        expect(applied?.accessToken, 'access-token');
+      },
+    );
 
     test('existing linked phone can request and verify OTP', () async {
       OtpLoginTokens? applied;
       final client = OtpAuthClient(
         invoke: scriptedInvoker([
           const OtpFunctionResponse(status: 200, body: {'code': 'OTP_SENT'}),
-          OtpFunctionResponse(status: 200, body: loginSuccess(userId: 'user-2')),
+          OtpFunctionResponse(
+            status: 200,
+            body: loginSuccess(userId: 'user-2'),
+          ),
         ]),
         applySession: (tokens) async => applied = tokens,
       );
 
       await client.requestPhoneLoginOtp('+14155550123');
-      final tokens = await client.verifyPhoneLoginOtp(phone: '+14155550123', code: '654321');
+      final tokens = await client.verifyPhoneLoginOtp(
+        phone: '+14155550123',
+        code: '654321',
+      );
       await client.establishLoginSession(tokens);
       expect(applied?.userId, 'user-2');
     });
@@ -127,26 +163,44 @@ void main() {
     test('unknown email does not return a session', () async {
       final client = OtpAuthClient(
         invoke: scriptedInvoker([
-          const OtpFunctionResponse(status: 404, body: {'code': 'UNKNOWN_USER'}),
+          const OtpFunctionResponse(
+            status: 404,
+            body: {'code': 'UNKNOWN_USER'},
+          ),
         ]),
         applySession: (_) async => fail('must not establish a session'),
       );
       expect(
         () => client.requestEmailLoginOtp('missing@example.com'),
-        throwsA(isA<OtpAuthException>().having((e) => e.code, 'code', OtpAuthCode.unknownUser)),
+        throwsA(
+          isA<OtpAuthException>().having(
+            (e) => e.code,
+            'code',
+            OtpAuthCode.unknownUser,
+          ),
+        ),
       );
     });
 
     test('unlinked phone does not create an account', () async {
       final client = OtpAuthClient(
         invoke: scriptedInvoker([
-          const OtpFunctionResponse(status: 404, body: {'code': 'PHONE_NOT_LINKED'}),
+          const OtpFunctionResponse(
+            status: 404,
+            body: {'code': 'PHONE_NOT_LINKED'},
+          ),
         ]),
         applySession: (_) async => fail('must not establish a session'),
       );
       expect(
         () => client.requestPhoneLoginOtp('+14155550999'),
-        throwsA(isA<OtpAuthException>().having((e) => e.code, 'code', OtpAuthCode.phoneNotLinked)),
+        throwsA(
+          isA<OtpAuthException>().having(
+            (e) => e.code,
+            'code',
+            OtpAuthCode.phoneNotLinked,
+          ),
+        ),
       );
     });
 
@@ -158,8 +212,17 @@ void main() {
         applySession: (_) async => fail('no session'),
       );
       expect(
-        () => invalid.verifyEmailLoginOtp(email: 'user@example.com', code: '000000'),
-        throwsA(isA<OtpAuthException>().having((e) => e.code, 'code', OtpAuthCode.invalidOtp)),
+        () => invalid.verifyEmailLoginOtp(
+          email: 'user@example.com',
+          code: '000000',
+        ),
+        throwsA(
+          isA<OtpAuthException>().having(
+            (e) => e.code,
+            'code',
+            OtpAuthCode.invalidOtp,
+          ),
+        ),
       );
 
       final expired = OtpAuthClient(
@@ -169,20 +232,38 @@ void main() {
         applySession: (_) async => fail('no session'),
       );
       expect(
-        () => expired.verifyEmailLoginOtp(email: 'user@example.com', code: '000000'),
-        throwsA(isA<OtpAuthException>().having((e) => e.code, 'code', OtpAuthCode.otpExpired)),
+        () => expired.verifyEmailLoginOtp(
+          email: 'user@example.com',
+          code: '000000',
+        ),
+        throwsA(
+          isA<OtpAuthException>().having(
+            (e) => e.code,
+            'code',
+            OtpAuthCode.otpExpired,
+          ),
+        ),
       );
     });
 
     test('rate-limited request surfaces RATE_LIMITED', () async {
       final client = OtpAuthClient(
         invoke: scriptedInvoker([
-          const OtpFunctionResponse(status: 429, body: {'code': 'RATE_LIMITED'}),
+          const OtpFunctionResponse(
+            status: 429,
+            body: {'code': 'RATE_LIMITED'},
+          ),
         ]),
       );
       expect(
         () => client.requestEmailLoginOtp('user@example.com'),
-        throwsA(isA<OtpAuthException>().having((e) => e.code, 'code', OtpAuthCode.rateLimited)),
+        throwsA(
+          isA<OtpAuthException>().having(
+            (e) => e.code,
+            'code',
+            OtpAuthCode.rateLimited,
+          ),
+        ),
       );
     });
 
@@ -193,32 +274,44 @@ void main() {
       );
       expect(
         () => client.requestPhoneLink('+14155550123'),
-        throwsA(isA<OtpAuthException>().having((e) => e.code, 'code', OtpAuthCode.authRequired)),
+        throwsA(
+          isA<OtpAuthException>().having(
+            (e) => e.code,
+            'code',
+            OtpAuthCode.authRequired,
+          ),
+        ),
       );
     });
 
-    test('phone-link success keeps the same user id and sends a bearer token', () async {
-      Map<String, String>? seenHeaders;
-      final client = OtpAuthClient(
-        accessToken: () => 'user-jwt',
-        invoke: ({required body, headers}) async {
-          seenHeaders = headers;
-          expect(body['action'], 'verifyPhoneLink');
-          return OtpFunctionResponse(
-            status: 200,
-            body: {
-              'code': 'SUCCESS',
-              'user_id': 'same-user',
-              'phone': '+14155550123',
-            },
-          );
-        },
-      );
-      final result = await client.verifyPhoneLink(phone: '+14155550123', code: '123456');
-      expect(result.userId, 'same-user');
-      expect(result.phone, '+14155550123');
-      expect(seenHeaders?['Authorization'], 'Bearer user-jwt');
-    });
+    test(
+      'phone-link success keeps the same user id and sends a bearer token',
+      () async {
+        Map<String, String>? seenHeaders;
+        final client = OtpAuthClient(
+          accessToken: () => 'user-jwt',
+          invoke: ({required body, headers}) async {
+            seenHeaders = headers;
+            expect(body['action'], 'verifyPhoneLink');
+            return OtpFunctionResponse(
+              status: 200,
+              body: {
+                'code': 'SUCCESS',
+                'user_id': 'same-user',
+                'phone': '+14155550123',
+              },
+            );
+          },
+        );
+        final result = await client.verifyPhoneLink(
+          phone: '+14155550123',
+          code: '123456',
+        );
+        expect(result.userId, 'same-user');
+        expect(result.phone, '+14155550123');
+        expect(seenHeaders?['Authorization'], 'Bearer user-jwt');
+      },
+    );
 
     test('phone SMS auth errors map to CONFIG_REQUIRED', () async {
       final client = OtpAuthClient(
@@ -229,7 +322,13 @@ void main() {
       );
       expect(
         () => client.requestPhoneLink('+14155550123'),
-        throwsA(isA<OtpAuthException>().having((e) => e.code, 'code', OtpAuthCode.configRequired)),
+        throwsA(
+          isA<OtpAuthException>().having(
+            (e) => e.code,
+            'code',
+            OtpAuthCode.configRequired,
+          ),
+        ),
       );
     });
 
@@ -237,12 +336,21 @@ void main() {
       final client = OtpAuthClient(
         accessToken: () => 'user-jwt',
         invoke: scriptedInvoker([
-          const OtpFunctionResponse(status: 409, body: {'code': 'PHONE_ALREADY_IN_USE'}),
+          const OtpFunctionResponse(
+            status: 409,
+            body: {'code': 'PHONE_ALREADY_IN_USE'},
+          ),
         ]),
       );
       expect(
         () => client.requestPhoneLink('+14155550123'),
-        throwsA(isA<OtpAuthException>().having((e) => e.code, 'code', OtpAuthCode.phoneAlreadyInUse)),
+        throwsA(
+          isA<OtpAuthException>().having(
+            (e) => e.code,
+            'code',
+            OtpAuthCode.phoneAlreadyInUse,
+          ),
+        ),
       );
     });
   });
@@ -253,7 +361,10 @@ void main() {
       expect(containsAuthSecrets('refresh_token=xyz'), isTrue);
       expect(containsAuthSecrets('"code":"123456"'), isTrue);
       expect(containsAuthSecrets('shop added'), isFalse);
-      expect(OtpAuthException(OtpAuthCode.invalidOtp).toString(), isNot(contains('123456')));
+      expect(
+        OtpAuthException(OtpAuthCode.invalidOtp).toString(),
+        isNot(contains('123456')),
+      );
     });
   });
 
@@ -284,23 +395,41 @@ void main() {
         invoke: ({required body, headers}) async {
           calls.add(body);
           if (i >= responses.length) {
-            return const OtpFunctionResponse(status: 500, body: {'code': 'AUTH_ERROR'});
+            return const OtpFunctionResponse(
+              status: 500,
+              body: {'code': 'AUTH_ERROR'},
+            );
           }
           return responses[i++];
         },
       );
     }
 
-    testWidgets('email OTP request and verify apply the session', (tester) async {
+    testWidgets('email OTP request and verify apply the session', (
+      tester,
+    ) async {
       client = clientWith([
         const OtpFunctionResponse(status: 200, body: {'code': 'OTP_SENT'}),
         OtpFunctionResponse(status: 200, body: loginSuccess(userId: 'user-1')),
       ]);
-      await tester.pumpWidget(MaterialApp(home: AuthPage(otpClient: client)));
-      await tester.enterText(find.byType(TextFormField).first, 'user@example.com');
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: BobaThemeBuilder.build(
+            BobaThemes.resolve(BobaThemes.defaultSlug),
+          ),
+          home: AuthPage(otpClient: client),
+        ),
+      );
+      await tester.enterText(
+        find.byType(TextFormField).first,
+        'user@example.com',
+      );
       await tester.tap(find.text('Send code'));
       await tester.pumpAndSettle();
-      expect(find.textContaining('Enter the code sent to user@example.com'), findsOneWidget);
+      expect(
+        find.textContaining('Enter the code sent to user@example.com'),
+        findsOneWidget,
+      );
       expect(find.textContaining('Check spam'), findsOneWidget);
 
       await tester.enterText(find.byType(TextFormField), '123456');
@@ -312,12 +441,24 @@ void main() {
       expect(calls.last['code'], '123456');
     });
 
-    testWidgets('unknown email offers signup and does not create an account', (tester) async {
+    testWidgets('unknown email offers signup and does not create an account', (
+      tester,
+    ) async {
       client = clientWith([
         const OtpFunctionResponse(status: 404, body: {'code': 'UNKNOWN_USER'}),
       ]);
-      await tester.pumpWidget(MaterialApp(home: AuthPage(otpClient: client)));
-      await tester.enterText(find.byType(TextFormField).first, 'missing@example.com');
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: BobaThemeBuilder.build(
+            BobaThemes.resolve(BobaThemes.defaultSlug),
+          ),
+          home: AuthPage(otpClient: client),
+        ),
+      );
+      await tester.enterText(
+        find.byType(TextFormField).first,
+        'missing@example.com',
+      );
       await tester.tap(find.text('Send code'));
       await tester.pumpAndSettle();
       expect(find.text('Create an account'), findsOneWidget);
@@ -329,14 +470,26 @@ void main() {
       expect(find.text('Password'), findsNothing);
     });
 
-    testWidgets('invalid code and expired code stay on the verify step', (tester) async {
+    testWidgets('invalid code and expired code stay on the verify step', (
+      tester,
+    ) async {
       client = clientWith([
         const OtpFunctionResponse(status: 200, body: {'code': 'OTP_SENT'}),
         const OtpFunctionResponse(status: 400, body: {'code': 'INVALID_OTP'}),
         const OtpFunctionResponse(status: 400, body: {'code': 'OTP_EXPIRED'}),
       ]);
-      await tester.pumpWidget(MaterialApp(home: AuthPage(otpClient: client)));
-      await tester.enterText(find.byType(TextFormField).first, 'user@example.com');
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: BobaThemeBuilder.build(
+            BobaThemes.resolve(BobaThemes.defaultSlug),
+          ),
+          home: AuthPage(otpClient: client),
+        ),
+      );
+      await tester.enterText(
+        find.byType(TextFormField).first,
+        'user@example.com',
+      );
       await tester.tap(find.text('Send code'));
       await tester.pumpAndSettle();
 
@@ -354,53 +507,105 @@ void main() {
       expect(applied, isNull);
     });
 
-    testWidgets('rate-limited request stays on identifier entry', (tester) async {
+    testWidgets('rate-limited request stays on identifier entry', (
+      tester,
+    ) async {
       client = clientWith([
         const OtpFunctionResponse(status: 429, body: {'code': 'RATE_LIMITED'}),
       ]);
-      await tester.pumpWidget(MaterialApp(home: AuthPage(otpClient: client)));
-      await tester.enterText(find.byType(TextFormField).first, 'user@example.com');
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: BobaThemeBuilder.build(
+            BobaThemes.resolve(BobaThemes.defaultSlug),
+          ),
+          home: AuthPage(otpClient: client),
+        ),
+      );
+      await tester.enterText(
+        find.byType(TextFormField).first,
+        'user@example.com',
+      );
       await tester.tap(find.text('Send code'));
       await tester.pumpAndSettle();
       expect(find.textContaining('Send code'), findsOneWidget);
       expect(find.textContaining('Too many codes'), findsWidgets);
     });
 
-    testWidgets('pasting a full code fills the single OTP field', (tester) async {
+    testWidgets('pasting a full code fills the single OTP field', (
+      tester,
+    ) async {
       client = clientWith([
         const OtpFunctionResponse(status: 200, body: {'code': 'OTP_SENT'}),
       ]);
-      await tester.pumpWidget(MaterialApp(home: AuthPage(otpClient: client)));
-      await tester.enterText(find.byType(TextFormField).first, 'user@example.com');
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: BobaThemeBuilder.build(
+            BobaThemes.resolve(BobaThemes.defaultSlug),
+          ),
+          home: AuthPage(otpClient: client),
+        ),
+      );
+      await tester.enterText(
+        find.byType(TextFormField).first,
+        'user@example.com',
+      );
       await tester.tap(find.text('Send code'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField), '847291');
       expect(find.text('847291'), findsOneWidget);
     });
 
-    testWidgets('back navigation clears the code and restores identifier editing', (tester) async {
-      client = clientWith([
-        const OtpFunctionResponse(status: 200, body: {'code': 'OTP_SENT'}),
-      ]);
-      await tester.pumpWidget(MaterialApp(home: AuthPage(otpClient: client)));
-      await tester.enterText(find.byType(TextFormField).first, 'user@example.com');
-      await tester.tap(find.text('Send code'));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextFormField), '123456');
-      await tester.tap(find.byTooltip('Edit email'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('Send code'), findsOneWidget);
-      expect(find.textContaining('You can request another code in'), findsOneWidget);
-      expect(find.text('123456'), findsNothing);
-      expect(find.text('user@example.com'), findsOneWidget);
-    });
+    testWidgets(
+      'back navigation clears the code and restores identifier editing',
+      (tester) async {
+        client = clientWith([
+          const OtpFunctionResponse(status: 200, body: {'code': 'OTP_SENT'}),
+        ]);
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: BobaThemeBuilder.build(
+              BobaThemes.resolve(BobaThemes.defaultSlug),
+            ),
+            home: AuthPage(otpClient: client),
+          ),
+        );
+        await tester.enterText(
+          find.byType(TextFormField).first,
+          'user@example.com',
+        );
+        await tester.tap(find.text('Send code'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextFormField), '123456');
+        await tester.tap(find.byTooltip('Edit email'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Send code'), findsOneWidget);
+        expect(
+          find.textContaining('You can request another code in'),
+          findsOneWidget,
+        );
+        expect(find.text('123456'), findsNothing);
+        expect(find.text('user@example.com'), findsOneWidget);
+      },
+    );
 
-    testWidgets('background and resume keep the verification identifier', (tester) async {
+    testWidgets('background and resume keep the verification identifier', (
+      tester,
+    ) async {
       client = clientWith([
         const OtpFunctionResponse(status: 200, body: {'code': 'OTP_SENT'}),
       ]);
-      await tester.pumpWidget(MaterialApp(home: AuthPage(otpClient: client)));
-      await tester.enterText(find.byType(TextFormField).first, 'user@example.com');
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: BobaThemeBuilder.build(
+            BobaThemes.resolve(BobaThemes.defaultSlug),
+          ),
+          home: AuthPage(otpClient: client),
+        ),
+      );
+      await tester.enterText(
+        find.byType(TextFormField).first,
+        'user@example.com',
+      );
       await tester.tap(find.text('Send code'));
       await tester.pumpAndSettle();
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
@@ -423,10 +628,23 @@ void main() {
     testWidgets('malformed session response is rejected', (tester) async {
       client = clientWith([
         const OtpFunctionResponse(status: 200, body: {'code': 'OTP_SENT'}),
-        const OtpFunctionResponse(status: 200, body: {'code': 'SUCCESS', 'user_id': 'user-1'}),
+        const OtpFunctionResponse(
+          status: 200,
+          body: {'code': 'SUCCESS', 'user_id': 'user-1'},
+        ),
       ]);
-      await tester.pumpWidget(MaterialApp(home: AuthPage(otpClient: client)));
-      await tester.enterText(find.byType(TextFormField).first, 'user@example.com');
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: BobaThemeBuilder.build(
+            BobaThemes.resolve(BobaThemes.defaultSlug),
+          ),
+          home: AuthPage(otpClient: client),
+        ),
+      );
+      await tester.enterText(
+        find.byType(TextFormField).first,
+        'user@example.com',
+      );
       await tester.tap(find.text('Send code'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField), '123456');
@@ -436,10 +654,19 @@ void main() {
       expect(find.textContaining('try again'), findsWidgets);
     });
 
-    testWidgets('signup stays separate from login and requests an email code', (tester) async {
+    testWidgets('signup stays separate from login and requests an email code', (
+      tester,
+    ) async {
       final emailAuth = FakeEmailAccountAuth();
       client = clientWith([]);
-      await tester.pumpWidget(MaterialApp(home: AuthPage(otpClient: client, emailAuth: emailAuth)));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: BobaThemeBuilder.build(
+            BobaThemes.resolve(BobaThemes.defaultSlug),
+          ),
+          home: AuthPage(otpClient: client, emailAuth: emailAuth),
+        ),
+      );
       expect(find.text('Send code'), findsOneWidget);
       expect(find.text('Use password instead'), findsNothing);
       await tester.tap(find.text("Don't have an account? Sign up"));
@@ -447,8 +674,14 @@ void main() {
       expect(find.text('Username'), findsOneWidget);
       expect(find.text('Password'), findsNothing);
       await tester.enterText(find.widgetWithText(TextFormField, 'Name'), 'Ada');
-      await tester.enterText(find.widgetWithText(TextFormField, 'Username'), 'ada');
-      await tester.enterText(find.widgetWithText(TextFormField, 'Email'), 'ada@example.com');
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Username'),
+        'ada',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Email'),
+        'ada@example.com',
+      );
       await tester.tap(find.text('Send code'));
       await tester.pumpAndSettle();
       expect(emailAuth.calls.first, 'signup:ada@example.com:ada:Ada');
@@ -471,7 +704,9 @@ void main() {
     }
   });
 
-  testWidgets('email change confirms current inbox before the new one', (tester) async {
+  testWidgets('email change confirms current inbox before the new one', (
+    tester,
+  ) async {
     final emailAuth = FakeEmailAccountAuth();
     final otp = OtpAuthClient(
       applySession: (_) async {},
@@ -480,34 +715,42 @@ void main() {
         OtpFunctionResponse(status: 200, body: loginSuccess(userId: 'user-1')),
       ]),
     );
-    await tester.pumpWidget(MaterialApp(
-      home: Builder(
-        builder: (context) => TextButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => EmailChangePage(
-                  otpClient: otp,
-                  emailAuth: emailAuth,
-                  accountEmail: () => 'old@example.com',
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EmailChangePage(
+                    otpClient: otp,
+                    emailAuth: emailAuth,
+                    accountEmail: () => 'old@example.com',
+                  ),
                 ),
-              ),
-            );
-          },
-          child: const Text('open'),
+              );
+            },
+            child: const Text('open'),
+          ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.widgetWithText(TextFormField, 'Current email'), 'other@example.com');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Current email'),
+      'other@example.com',
+    );
     await tester.tap(find.text('Send code'));
     await tester.pumpAndSettle();
     expect(find.textContaining('currently on this account'), findsWidgets);
 
-    await tester.enterText(find.widgetWithText(TextFormField, 'Current email'), 'old@example.com');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Current email'),
+      'old@example.com',
+    );
     await tester.tap(find.text('Send code'));
     await tester.pumpAndSettle();
     expect(find.textContaining('code sent to old@example.com'), findsOneWidget);
@@ -518,7 +761,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.widgetWithText(TextFormField, 'New email'), findsOneWidget);
 
-    await tester.enterText(find.widgetWithText(TextFormField, 'New email'), 'new@example.com');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'New email'),
+      'new@example.com',
+    );
     await tester.tap(find.text('Send code'));
     await tester.pumpAndSettle();
     expect(emailAuth.calls, contains('change:new@example.com'));

@@ -13,8 +13,9 @@ class User {
   bool useIcons;
   bool useMascots;
   bool onboarded;
+  DateTime? createdAt;
 
-  User ({
+  User({
     required this.id,
     required this.username,
     required this.displayName,
@@ -25,6 +26,7 @@ class User {
     this.useIcons = Constants.useIcons,
     this.useMascots = Constants.useMascots,
     this.onboarded = false,
+    this.createdAt,
   });
 
   String get firstName {
@@ -35,17 +37,20 @@ class User {
   String get imageUrl {
     try {
       return profileImagePath != null && profileImagePath!.isNotEmpty
-        ? Supabase.instance.client.storage
-            .from('media-uploads')
-            .getPublicUrl(profileImagePath!.trim())
-        : '';
+          ? Supabase.instance.client.storage
+                .from('media-uploads')
+                .getPublicUrl(profileImagePath!.trim())
+          : '';
     } catch (e) {
       debugPrint('Error generating image URL: $e');
       return '';
     }
   }
 
-  factory User.fromMap(Map<String, dynamic> profile, Map<String, dynamic>? settings) {
+  factory User.fromMap(
+    Map<String, dynamic> profile,
+    Map<String, dynamic>? settings,
+  ) {
     return User(
       id: profile['id'],
       username: profile['username'],
@@ -57,6 +62,9 @@ class User {
       useIcons: settings?['use_icons'] ?? Constants.useIcons,
       useMascots: settings?['use_mascots'] ?? Constants.useMascots,
       onboarded: settings?['onboarded'] ?? false,
+      createdAt: profile['created_at'] != null
+          ? DateTime.tryParse(profile['created_at'].toString())
+          : null,
     );
   }
 
@@ -67,6 +75,9 @@ class User {
       displayName: json['display_name'],
       profileImagePath: json['profile_image_path'] ?? '',
       bio: json['bio'] ?? '',
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'].toString())
+          : null,
     );
   }
 
@@ -94,7 +105,7 @@ class User {
       'gridColumns': gridColumns,
       'useIcons': useIcons,
       'useMascots': useMascots,
-      'onboarded': onboarded
+      'onboarded': onboarded,
     };
   }
 
@@ -109,18 +120,20 @@ class User {
     bool? useIcons,
     bool? useMascots,
     bool? onboarded,
+    DateTime? createdAt,
   }) {
     return User(
       id: id ?? this.id,
       username: username ?? this.username,
       displayName: displayName ?? this.displayName,
-      bio:  bio ?? this.bio,
+      bio: bio ?? this.bio,
       profileImagePath: profileImagePath ?? this.profileImagePath,
       themeSlug: themeSlug ?? this.themeSlug,
       gridColumns: gridColumns ?? this.gridColumns,
       useIcons: useIcons ?? this.useIcons,
       useMascots: useMascots ?? this.useMascots,
       onboarded: onboarded ?? this.onboarded,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 }

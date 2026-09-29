@@ -1,11 +1,11 @@
 import 'package:bobadex/models/friends_shop.dart';
 import 'package:bobadex/notification_bus.dart';
-import 'package:bobadex/pages/friends_shop_details_page.dart';
-import 'package:bobadex/state/brand_state.dart';
+import 'package:bobadex/pages/shared_brand_page.dart';
+import 'package:bobadex/ui/components/boba_nav_bar.dart';
+import 'package:bobadex/ui/components/shared_brand_tile.dart';
+import 'package:bobadex/ui/components/skeleton_box.dart';
 import 'package:bobadex/ui/theme/boba_context.dart';
-import 'package:bobadex/widgets/brand_mark.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class FriendsShopGrid extends StatefulWidget {
@@ -34,7 +34,14 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
         params: {'user_id': currentUserId},
       );
       final data = response as List? ?? [];
-      shopsData = data.map((json) => FriendsShop.fromJson(json)).toList();
+      shopsData = data.map((json) => FriendsShop.fromJson(json)).toList()
+        ..sort((a, b) {
+          final byFriends = b.friendsInfo.length.compareTo(
+            a.friendsInfo.length,
+          );
+          if (byFriends != 0) return byFriends;
+          return b.avgRating.compareTo(a.avgRating);
+        });
     } catch (e) {
       debugPrint('Error loading shops $e');
       notify('Error loading shops, try again later', SnackType.error);
@@ -45,21 +52,22 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
 
   @override
   Widget build(BuildContext context) {
+    final bottom = BobaNavBar.clearance(context);
     if (_loading) {
       return CustomScrollView(
         slivers: [
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+            padding: EdgeInsets.fromLTRB(16, 16, 16, bottom),
             sliver: SliverGrid(
               delegate: SliverChildBuilderDelegate(
-                (context, i) => _buildLoadingPearl(),
-                childCount: 8,
+                (context, i) => const BobaCardSkeleton(),
+                childCount: 6,
               ),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                mainAxisSpacing: 18,
-                crossAxisSpacing: 18,
-                childAspectRatio: 0.9,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.78,
               ),
             ),
           ),
@@ -70,123 +78,57 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
     final items = shopsData ?? const <FriendsShop>[];
     if (items.isEmpty) {
       return Center(
-        child: Text('No shared shops yet', style: context.bobaText.empty),
+        child: Text('No shared brands yet', style: context.bobaText.empty),
       );
     }
 
     return CustomScrollView(
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+          padding: EdgeInsets.fromLTRB(16, 16, 16, bottom),
           sliver: SliverGrid(
-            delegate: SliverChildBuilderDelegate(
-              (context, i) => _buildShopPearl(items[i]),
-              childCount: items.length,
-            ),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            delegate: SliverChildBuilderDelegate((context, i) {
+              final shop = items[i];
+              return SharedBrandTile(
+                shop: shop,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => SharedBrandPage(
+                        shop: shop,
+                        mostDrinksUser: shop.mostDrinksUser,
+                      ),
+                    ),
+                  );
+                },
+              );
+            }, childCount: items.length),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              mainAxisSpacing: 18,
-              crossAxisSpacing: 18,
-              childAspectRatio: 0.9,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.78,
             ),
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildLoadingPearl() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+class BobaCardSkeleton extends StatelessWidget {
+  const BobaCardSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
       children: [
-        // Grayed out circle
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: context.boba.outline,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(height: 10),
-        // Grayed-out text bars
-        Container(
-          height: 16,
-          width: 70,
-          decoration: BoxDecoration(
-            color: context.boba.outline,
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        const SizedBox(height: 5),
-        Container(
-          height: 12,
-          width: 45,
-          decoration: BoxDecoration(
-            color: context.boba.surfaceAlt,
-            borderRadius: BorderRadius.circular(6),
-          ),
-        ),
+        SkeletonCircle(size: 56),
+        SizedBox(height: 12),
+        SkeletonBox(width: 80, height: 14),
+        SizedBox(height: 8),
+        SkeletonBox(width: 48, height: 12),
       ],
-    );
-  }
-
-  Widget _buildShopPearl(FriendsShop shop) {
-    final brandState = context.read<BrandState>();
-    final brand = brandState.getBrand(shop.brandSlug);
-    final iconPath = brand?.iconPath ?? shop.iconPath;
-    final displayName = brand?.display ?? shop.name;
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => FriendsShopDetailsPage(
-              shop: shop,
-              mostDrinksUser: shop.mostDrinksUser,
-            ),
-          ),
-        );
-      },
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: context.boba.accentSoft,
-              shape: BoxShape.circle,
-            ),
-            child: BrandMark(
-              name: displayName,
-              slug: shop.brandSlug,
-              iconPath: iconPath,
-              size: 64,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            displayName,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              overflow: TextOverflow.ellipsis,
-            ),
-            maxLines: 1,
-          ),
-          const SizedBox(height: 5),
-          Text(
-            'Avg: ${shop.avgRating.toStringAsFixed(1)}',
-            style: TextStyle(fontSize: 13, color: context.boba.inkMuted),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            'Ratings: ${shop.friendsInfo.length}',
-            style: TextStyle(fontSize: 13, color: context.boba.inkMuted),
-          ),
-        ],
-      ),
     );
   }
 }

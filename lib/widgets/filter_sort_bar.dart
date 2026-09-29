@@ -18,6 +18,7 @@ class FilterSortBar extends StatefulWidget {
   final ValueChanged<String> onSortSelected;
   final String initialSortKey;
   final bool initialAscending;
+  final String searchHint;
 
   const FilterSortBar({
     super.key,
@@ -27,6 +28,7 @@ class FilterSortBar extends StatefulWidget {
     required this.onSortSelected,
     this.initialSortKey = 'favorite',
     this.initialAscending = false,
+    this.searchHint = 'Search brands',
   });
 
   @override
@@ -61,7 +63,7 @@ class _FilterSortBarState extends State<FilterSortBar> {
         children: [
           BobaSearchField(
             controller: widget.controller,
-            hint: 'Search brands',
+            hint: widget.searchHint,
             onChanged: widget.onSearchChanged,
           ),
           const SizedBox(height: BobaSpace.x2),

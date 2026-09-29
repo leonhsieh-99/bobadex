@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 
 class BranchNavNotifier extends NavigatorObserver with ChangeNotifier {
   bool canPop = false;
+  bool _notifyScheduled = false;
 
   void _sync() {
     final next = navigator?.canPop() ?? false;
     if (next == canPop) return;
     canPop = next;
-    notifyListeners();
+    if (_notifyScheduled) return;
+    _notifyScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notifyScheduled = false;
+      notifyListeners();
+    });
   }
 
   @override

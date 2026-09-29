@@ -1,7 +1,8 @@
 import 'package:bobadex/models/feed_event.dart';
+import 'package:bobadex/ui/components/feed_event_row.dart';
+import 'package:bobadex/ui/components/section_header.dart';
 import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:bobadex/widgets/social_widgets/feed_card_options.dart';
-import 'package:bobadex/widgets/social_widgets/feed_event_card.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -100,7 +101,7 @@ class _BrandFeedViewState extends State<BrandFeedView> {
     if (_isLoading) {
       if (widget.hideWhenEmpty) return const SizedBox.shrink();
       return Column(
-        children: List.generate(3, (_) => const FeedEventCardSkeleton()),
+        children: List.generate(3, (_) => const FeedEventRowSkeleton()),
       );
     }
 
@@ -110,7 +111,7 @@ class _BrandFeedViewState extends State<BrandFeedView> {
         height: MediaQuery.of(context).size.height * 0.2,
         child: Center(
           child: Text(
-            "No activity yet",
+            'No activity yet',
             style: context.bobaText.empty,
             textAlign: TextAlign.center,
           ),
@@ -121,36 +122,28 @@ class _BrandFeedViewState extends State<BrandFeedView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
-          child: Text(
-            'Recent Activity',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-        ),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _items.length,
-          itemBuilder: (context, i) =>
-              FeedEventCard(event: _items[i], variant: FeedCardVariant.brand),
-        ),
-        if (_hasMore)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: _isLoadingMore
-                ? const Center(child: CircularProgressIndicator())
-                : TextButton(
-                    onPressed: () => _fetch(initial: false),
-                    child: const Text('Load more'),
-                  ),
-          ),
-        Align(
-          alignment: Alignment.center,
-          child: TextButton.icon(
-            onPressed: () => _fetch(initial: true),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Refresh'),
+        const SectionHeader(title: 'Recent activity'),
+        FeedDayColumn(
+          events: _items,
+          variant: FeedCardVariant.brand,
+          trailing: Column(
+            children: [
+              if (_hasMore)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: _isLoadingMore
+                      ? const Center(child: CircularProgressIndicator())
+                      : TextButton(
+                          onPressed: () => _fetch(initial: false),
+                          child: const Text('Load more'),
+                        ),
+                ),
+              TextButton.icon(
+                onPressed: () => _fetch(initial: true),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Refresh'),
+              ),
+            ],
           ),
         ),
       ],

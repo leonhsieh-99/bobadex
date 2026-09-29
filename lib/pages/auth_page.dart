@@ -8,8 +8,14 @@ import 'package:bobadex/auth/phone_e164.dart';
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/utils/validators.dart';
+import 'package:bobadex/ui/components/boba_button.dart';
+import 'package:bobadex/ui/components/boba_sheet.dart';
+import 'package:bobadex/ui/components/dex_backdrop.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
+import 'package:bobadex/ui/theme/boba_tokens.dart';
 import 'package:bobadex/widgets/otp_code_field.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 
 enum _AuthView { login, signup }
 
@@ -43,11 +49,6 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver {
   Timer? _resendTicker;
   bool _loading = false;
   OtpAuthCode? _inlineError;
-
-  String get _title => switch (_view) {
-    _AuthView.signup => _awaitingCode ? 'Enter code' : 'Sign Up',
-    _AuthView.login => _awaitingCode ? 'Enter code' : 'Log In',
-  };
 
   @override
   void initState() {
@@ -227,116 +228,187 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver {
     }
   }
 
+  String get _sheetTitle => switch (_view) {
+    _AuthView.signup => _awaitingCode ? 'Check your inbox' : 'Create account',
+    _AuthView.login => _awaitingCode ? 'Check your inbox' : 'Log in',
+  };
+
   @override
   Widget build(BuildContext context) {
+    final tokens = context.boba;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_title),
-        leading: _awaitingCode
-            ? IconButton(
-                tooltip: 'Edit email',
-                icon: const Icon(Icons.arrow_back),
-                onPressed: _loading
-                    ? null
-                    : () => setState(() {
-                        _otpController.clear();
-                        _awaitingCode = false;
-                        _inlineError = null;
-                      }),
-              )
-            : null,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: AutofillGroup(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Column(
+        children: [
+          Expanded(
+            flex: 9,
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                ..._fields(),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: (_loading || (!_awaitingCode && _sendOnCooldown))
-                        ? null
-                        : _primaryAction,
-                    child: _loading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(_primaryLabel),
-                  ),
-                ),
-                if (_resendSecondsLeft > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Semantics(
-                      liveRegion: true,
-                      child: Text(
-                        otpWaitCopy(
-                          _resendSecondsLeft,
-                          rateLimited: _inlineError == OtpAuthCode.rateLimited,
+                const DexBackdrop(),
+                SafeArea(
+                  bottom: false,
+                  child: Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: BobaSpace.x6,
+                          vertical: BobaSpace.x3,
                         ),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Theme.of(context).hintColor),
-                      ),
-                    ),
-                  ),
-                if (_awaitingCode)
-                  TextButton(
-                    onPressed: (_loading || _resendSecondsLeft > 0)
-                        ? null
-                        : () => _requestOtp(resend: true),
-                    child: Text(
-                      _resendSecondsLeft > 0
-                          ? 'Resend code in ${formatOtpWaitDuration(_resendSecondsLeft)}'
-                          : 'Resend code',
-                    ),
-                  ),
-                if (_inlineError == OtpAuthCode.unknownUser)
-                  TextButton(
-                    onPressed: () => _setView(_AuthView.signup),
-                    child: const Text('Create an account'),
-                  ),
-                if (_inlineError == OtpAuthCode.emailAlreadyInUse &&
-                    _view == _AuthView.signup)
-                  TextButton(
-                    onPressed: () => _setView(_AuthView.login),
-                    child: const Text('Log in instead'),
-                  ),
-                TextButton(
-                  onPressed: () => _setView(
-                    _view == _AuthView.signup
-                        ? _AuthView.login
-                        : _AuthView.signup,
-                  ),
-                  child: Text(
-                    _view == _AuthView.signup
-                        ? 'Already have an account? Log in'
-                        : "Don't have an account? Sign up",
-                  ),
-                ),
-                if (_inlineError != null)
-                  Semantics(
-                    liveRegion: true,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        messageForOtpCode(_inlineError!),
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SvgPicture.asset(
+                              'lib/assets/logo.svg',
+                              width: 140,
+                              height: 140,
+                              fit: BoxFit.contain,
+                            ),
+                            const SizedBox(height: BobaSpace.x3),
+                            Text(
+                              'Your boba collection, one cup at a time.',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: tokens.inkMuted),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
+                ),
               ],
             ),
           ),
-        ),
+          Expanded(
+            flex: 9,
+            child: BobaSheet(
+              expand: true,
+              padding: const EdgeInsets.fromLTRB(
+                BobaSpace.x6,
+                BobaSpace.x5,
+                BobaSpace.x6,
+                BobaSpace.x4,
+              ),
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: Form(
+                    key: _formKey,
+                    child: AutofillGroup(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              if (_awaitingCode)
+                                IconButton(
+                                  tooltip: 'Edit email',
+                                  icon: const Icon(Icons.arrow_back_rounded),
+                                  onPressed: _loading
+                                      ? null
+                                      : () => setState(() {
+                                          _otpController.clear();
+                                          _awaitingCode = false;
+                                          _inlineError = null;
+                                        }),
+                                ),
+                              Expanded(
+                                child: Text(
+                                  _sheetTitle,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.headlineSmall,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: BobaSpace.x4),
+                          ..._fields(),
+                          const SizedBox(height: BobaSpace.x5),
+                          BobaButton(
+                            label: _primaryLabel,
+                            expanded: true,
+                            loading: _loading,
+                            onPressed:
+                                (_loading ||
+                                    (!_awaitingCode && _sendOnCooldown))
+                                ? null
+                                : _primaryAction,
+                          ),
+                          if (_resendSecondsLeft > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Semantics(
+                                liveRegion: true,
+                                child: Text(
+                                  otpWaitCopy(
+                                    _resendSecondsLeft,
+                                    rateLimited:
+                                        _inlineError == OtpAuthCode.rateLimited,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: tokens.inkMuted),
+                                ),
+                              ),
+                            ),
+                          if (_awaitingCode)
+                            BobaButton(
+                              variant: BobaButtonVariant.tertiary,
+                              label: _resendSecondsLeft > 0
+                                  ? 'Resend code in ${formatOtpWaitDuration(_resendSecondsLeft)}'
+                                  : 'Resend code',
+                              onPressed: (_loading || _resendSecondsLeft > 0)
+                                  ? null
+                                  : () => _requestOtp(resend: true),
+                            ),
+                          if (_inlineError == OtpAuthCode.unknownUser)
+                            BobaButton(
+                              variant: BobaButtonVariant.tertiary,
+                              label: 'Create an account',
+                              onPressed: () => _setView(_AuthView.signup),
+                            ),
+                          if (_inlineError == OtpAuthCode.emailAlreadyInUse &&
+                              _view == _AuthView.signup)
+                            BobaButton(
+                              variant: BobaButtonVariant.tertiary,
+                              label: 'Log in instead',
+                              onPressed: () => _setView(_AuthView.login),
+                            ),
+                          const SizedBox(height: BobaSpace.x2),
+                          BobaButton(
+                            variant: BobaButtonVariant.tertiary,
+                            label: _view == _AuthView.signup
+                                ? 'Already have an account? Log in'
+                                : "Don't have an account? Sign up",
+                            onPressed: () => _setView(
+                              _view == _AuthView.signup
+                                  ? _AuthView.login
+                                  : _AuthView.signup,
+                            ),
+                          ),
+                          if (_inlineError != null)
+                            Semantics(
+                              liveRegion: true,
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  messageForOtpCode(_inlineError!),
+                                  style: TextStyle(color: tokens.danger),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

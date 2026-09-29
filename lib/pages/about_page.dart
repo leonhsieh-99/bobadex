@@ -107,11 +107,9 @@ class AboutPage extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   child: Text(
                     'Bobadex is your personal boba shop and drink tracker. '
-                    ' I made this mostly for fun and because I drink an unhealthy amount'
-                    ' of milk tea. '
-                    'If anyone has any suggestions or feedback you can get my email in the contacts below. '
-                    'Anyways I don\'t have much to say. Hope everyone has a '
-                    'lovely time using this app',
+                    'I made this mostly for fun and because I drink an unhealthy amount of milk tea. '
+                    'This app is a one-person project, so if you find bugs or missing features, be patient and write through the contact below. '
+                    'Hope everyone has a lovely time using this app.',
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),

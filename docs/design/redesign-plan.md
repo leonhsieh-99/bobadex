@@ -1,6 +1,6 @@
 # Bobadex visual system + UX redesign plan
 
-Status: Phase 0 and Phase 1 implemented; Phases 2–4 remain proposals.
+Status: Phases 0–3 implemented; Phase 4 remains a proposal.
 Scope: Flutter app in `lib/`. Backend asks are listed separately in §11 and are not blocking for Phases 0–3.
 
 This document is written so another model can execute it with minimal ambiguity. Where a value is given (hex, dp, ms) treat it as the spec. Where a choice is left open it is marked **[decision]**.
@@ -501,24 +501,27 @@ Done when: app runs with every theme, zero forbidden color references outside `l
 Done.
 1. `StatefulShellRoute.indexedStack` with Dex / Friends / You. Collect remains behind `FeatureFlags.collection` (`false`). `BobaNavBar` is the persistent floating pill; `+` pushes `AddShopSearchPage` on the root navigator. Branch `NavigatorObserver`s hide the bar when a tab can pop. Drawer and Home pill nav are gone. `/home` redirects to `/dex`.
 2. Dex (`HomePage`) is a `CustomScrollView` with `DexHeader`, pinned `FilterSortBar` (search + chips, tap selected chip to flip direction), and `EntryTile`. Default sort is favorite-desc; favorite-asc puts favorites last. Empty dex replaces `FirstRunCard`.
-3. Friends hub segments: Feed, Shared, People. Leaderboard lives on You (not Friends). You app bar has a Settings gear; Achievements / Leaderboard / Settings / About remain in the list. CollectorCard is Phase 2.
+3. Friends hub segments: Feed, Shared, People. Leaderboard lives on You (not Friends). You app bar has a Settings gear; Achievements / Leaderboard / Settings / About remain in the list.
 4. Settings grouped: Appearance, Account, Privacy & data (lock icon, export moved here), Session (sign out), About (version). Layout page has a live 2/3-column preview. Theme cards are name + swatches (no fake Gong Cha entry).
 5. `BobaNavBar`: equal tab columns with a reserved plus gap (Dex · Friends · + · You), always-on labels, sliding selected bubble. Island hides on scroll-down and on keyboard/branch push.
 6. Brand lettering: pastel paper palettes on light themes, chrome palettes on dark. Same seed maps to the same slot in both catalogs.
 
 ### Phase 2 — First impression + Profile
-1. Splash re-skin; Auth page presentation rework (`BobaSheet`, `DexBackdrop`); onboarding 3 steps; `AddShopSearchPage(embedded)`.
-2. `CollectorCard` full/compact; `AccountViewPage` restructure; `UserActivityPage`; `users.created_at` in profile select; badge slots; achievements pin mode.
-3. `AchievementsPage` grouping; `RankingsPage` restyle.
+Done.
+1. Splash re-skin (logo + `BobaCard` fun-fact). Auth presentation uses `DexBackdrop` + `BobaSheet(expand)`; OTP send/verify/edit-email logic and strings stay the same. Tests wrap `AuthPage` in `BobaThemeBuilder`.
+2. Onboarding is three steps: Welcome, theme swatches, first brand via `AddShopSearchPage(embedded)` plus Skip. Layout toggles stay in Settings.
+3. `CollectorCard` full (tile-band, avatar, stats, three badge slots, favorite) and compact. “Collector since” lives in the footer. Badge labels wrap to two lines. You page uses the full card; activity is `UserActivityPage`. Profile select includes `created_at` (optional). Empty badge slots open pin mode.
+4. `AchievementsPage` groups by unlock type so last-tier names (Connoisseur, Big Back, …) stay with their series; `pinMode` lets the owner fill slots. Rankings uses compact collector rows and `BrandMark` + `RatingText` for brands.
+5. Shop detail drink list sits in one `BobaCard` with `Search drinks`; per-row Cards have no elevation. About page copy is a short personal note.
 
 ### Phase 3 — Social relevance
-1. `FeedEventRow` + `DayHeader` + day grouping in `FeedView`, `UserFeedView`, `BrandFeedView`; "In your dex ✓ / Add to dex" chip; `drink_add` rendering.
-2. `SharedBrandTile` grid; `SharedBrandPage` with `RatingComparisonBar`, `FriendEntryRow`, photos strip (if backend provides paths).
-3. `BrandDetailsPage` collected chip; `AddShopSearchPage` rows.
+Done.
+1. `FeedEventRow` + `DayHeader` + day grouping in Friends feed, profile activity, and brand feed. Friends `shop_add` rows show In your dex ✓ / Add to dex. `drink_add` uses `drink_name` when present.
+2. `SharedBrandTile` grid sorted by friend count then avg; `SharedBrandPage` with status card, rating comparison bar, friends’ entries, optional photos. `FriendsShopDetailsPage` is a typedef to `SharedBrandPage`.
+3. Brand details collected chip under the name. Add-brand search rows use `BrandMark` and an In dex ✓ chip.
 
 ### Phase 4 — Collection
-4a (no backend): `CollectionRepository` + mock, `RegionSeal`, `RegionCard`, `CollectionPage`, `RegionDetailPage`, home-region picker (client pref), `CelebrationOverlay`; ship behind `FeatureFlags.collection` for internal testing.
-4b (backend ready): `SupabaseCollectionRepository`, silhouette paths, `home_region_id` setting, `region_complete` achievement, flag on.
+In progress on dev. Collect lists only tracked counties (`get_user_tracked_county_collections`). Empty state browses `get_available_county_collections` and calls `track_county_collection`. Detail uses `get_county_collection_detail` (All / Collected / Missing, name or storefronts). The flag is on when `SUPABASE_URL` is the dev project. Location suggestion, silhouettes, and the completion overlay are still open.
 4c (optional polish): profile share export, theme unlocks as rewards (e.g., "Brown Sugar" unlocked at 25 brands — a real collection hook; keep all v1 themes free), system light/dark pairing.
 
 ---

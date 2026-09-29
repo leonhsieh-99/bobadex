@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:bobadex/widgets/add_edit_shop_dialog.dart';
+import 'package:bobadex/ui/components/boba_chip.dart';
 import 'package:bobadex/ui/theme/boba_context.dart';
 
 class BrandDetailsPage extends StatefulWidget {
@@ -279,7 +280,12 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                     context,
                     widget.brand,
                     _globalGalleryFuture,
-                    buildBannerContent(context, widget.brand, _statsFuture),
+                    buildBannerContent(
+                      context,
+                      widget.brand,
+                      _statsFuture,
+                      userShop,
+                    ),
                     (medias) => viewAllPhotos(medias),
                   ),
                   // back button
@@ -556,7 +562,30 @@ Widget buildBannerContent(
   BuildContext context,
   Brand brand,
   Future<BrandStats> statsFuture,
+  Shop? userShop,
 ) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  String collectedLabel = 'Not collected';
+  if (userShop != null) {
+    final created = userShop.createdAt;
+    final hasDate = created.millisecondsSinceEpoch > 0;
+    collectedLabel = hasDate
+        ? 'In your dex ✓ since ${months[created.month - 1]} ${created.year}'
+        : 'In your dex ✓';
+  }
   return IntrinsicHeight(
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.end, // bottom align children
@@ -591,7 +620,16 @@ Widget buildBannerContent(
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 0),
+              const SizedBox(height: 6),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: BobaChip(
+                  label: collectedLabel,
+                  selected: userShop != null,
+                ),
+              ),
+              const SizedBox(height: 4),
               _buildGlobalRatings(brand, statsFuture),
             ],
           ),

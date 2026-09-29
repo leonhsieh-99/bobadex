@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:bobadex/analytics_service.dart';
 import 'package:bobadex/models/account_stats.dart';
 import 'package:bobadex/models/achievement.dart';
@@ -13,18 +11,16 @@ import 'package:bobadex/pages/home_page.dart';
 import 'package:bobadex/pages/rankings_page.dart';
 import 'package:bobadex/pages/settings_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_account_page.dart';
+import 'package:bobadex/pages/user_activity_page.dart';
 import 'package:bobadex/ui/components/boba_nav_bar.dart';
+import 'package:bobadex/ui/components/collector_card.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/user_stats_cache.dart';
-import 'package:bobadex/widgets/badge_picker_dialog.dart';
 import 'package:bobadex/widgets/brand_mark.dart';
-import 'package:bobadex/widgets/profile_summary_card.dart';
 import 'package:bobadex/widgets/report_widget.dart';
-import 'package:bobadex/widgets/stat_box.dart';
-import 'package:bobadex/widgets/social_widgets/user_feed_view.dart';
 import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -100,7 +96,9 @@ class _AccountViewPageState extends State<AccountViewPage> {
 
       final row = await Supabase.instance.client
           .from('users')
-          .select('id, username, display_name, profile_image_path, bio')
+          .select(
+            'id, username, display_name, profile_image_path, bio, created_at',
+          )
           .eq('id', widget.userId)
           .single();
 
@@ -433,107 +431,48 @@ class _AccountViewPageState extends State<AccountViewPage> {
           ),
           child: Column(
             children: [
-              ProfileSummaryCard(
+              CollectorCard(
                 displayName: user.displayName,
                 username: user.username,
                 bio: user.bio,
                 profileImagePath: user.profileImagePath,
-                leadingAction: friendBtn,
-                trailingAction: viewBtn,
-                favoriteShopTile: favTile,
-              ),
-              SizedBox(height: 12),
-              _BadgesSection(
-                badges: pinnedBadges,
-                isOwner: isCurrentUser,
-                onTapManage: isCurrentUser
-                    ? () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => BadgePickerDialog(
-                            badges: unlockedBadges,
-                            pinnedBadges: pinnedBadges,
-                            onSave: (selected) async {
-                              try {
-                                for (final a in unlockedBadges) {
-                                  final shouldPin = selected.contains(a.id);
-                                  if (achievementState
-                                          .progressMap[a.id]
-                                          ?.pinned !=
-                                      shouldPin) {
-                                    await achievementState.setPinned(a.id);
-                                  }
-                                }
-                                if (context.mounted)
-                                  Navigator.of(context).pop();
-                              } catch (e) {
-                                if (context.mounted) {
-                                  notify(
-                                    'Error pinning badges',
-                                    SnackType.error,
-                                  );
-                                }
-                              }
-                            },
-                          ),
-                        );
-                      }
-                    : null,
-                isLoading: _isLoading,
-              ),
-              SizedBox(height: 16),
-
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  const gap = 20.0;
-                  const totalItems = 3;
-                  final maxW = constraints.maxWidth;
-                  final itemW = (maxW - (gap * (totalItems - 1))) / totalItems;
-
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: _isLoading
-                        ? [
-                            StatCardSkeleton(size: itemW),
-                            StatCardSkeleton(size: itemW),
-                            StatCardSkeleton(size: itemW),
-                          ]
-                        : [
-                            StatCard(
-                              label: 'Shops',
-                              size: itemW,
-                              value: stats.shopCount,
-                              emoji: '⭐',
-                            ),
-                            StatCard(
-                              label: 'Drinks',
-                              size: itemW,
-                              value: stats.drinkCount,
-                              emoji: '🧋',
-                            ),
-                            StatCard(
-                              label: 'Badges',
-                              size: itemW,
-                              value: stats.badgeCount,
-                              emoji: '🏆',
-                            ),
-                          ],
-                  );
+                createdAt: user.createdAt,
+                brandCount: stats.shopCount,
+                drinkCount: stats.drinkCount,
+                badgeCount: stats.badgeCount,
+                badges: pinnedBadges.take(3).toList(),
+                favorite: _isLoading ? const ShopTileSkeleton() : favTile,
+                onBadgeTap: (_) {
+                  if (isCurrentUser) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => AchievementsPage(
+                          userId: widget.userId,
+                          pinMode: true,
+                        ),
+                      ),
+                    );
+                  }
                 },
               ),
-              const Divider(height: 32),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Recent Activity',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [?friendBtn, viewBtn],
               ),
               const SizedBox(height: 8),
-              UserFeedView(
-                userId: widget.userId,
-                isOwner: isCurrentUser,
-                pageSize: 10,
+              ListTile(
+                leading: const Icon(Icons.history_rounded),
+                title: const Text('Recent activity'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => UserActivityPage(
+                      userId: widget.userId,
+                      isOwner: isCurrentUser,
+                    ),
+                  ),
+                ),
               ),
               if (isCurrentUser) ...[
                 const SizedBox(height: 16),
@@ -599,201 +538,6 @@ class ShopTileSkeleton extends StatelessWidget {
         height: 10,
         color: context.boba.surfaceAlt,
         margin: EdgeInsets.only(top: 4),
-      ),
-    );
-  }
-}
-
-class BadgeRowSkeleton extends StatelessWidget {
-  const BadgeRowSkeleton({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        3, // Show 3 fake badges
-        (i) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: CircleAvatar(
-            backgroundColor: context.boba.outline,
-            radius: 22,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BadgesSection extends StatelessWidget {
-  const _BadgesSection({
-    required this.badges,
-    required this.isOwner,
-    required this.onTapManage,
-    required this.isLoading,
-  });
-
-  final List<Achievement> badges;
-  final bool isOwner;
-  final VoidCallback? onTapManage;
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // header row
-          Row(
-            children: [
-              const Icon(Icons.emoji_events_rounded, size: 18),
-              const SizedBox(width: 8),
-              Text(
-                'Badges',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: cs.onSurface,
-                ),
-              ),
-              const Spacer(),
-              if (isOwner)
-                TextButton.icon(
-                  icon: Icon(Icons.push_pin, size: 16, color: context.boba.ink),
-                  label: Text('Pin', style: TextStyle(color: context.boba.ink)),
-                  onPressed: onTapManage,
-                  style: ButtonStyle(
-                    padding: const WidgetStatePropertyAll(
-                      EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    ),
-                    backgroundColor: WidgetStatePropertyAll(Colors.transparent),
-                    shape: WidgetStatePropertyAll(
-                      RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-
-          // content
-          if (isLoading)
-            const _BadgeRowSkeleton()
-          else if (badges.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Text(
-                isOwner ? 'No badges yet, tap Pin to choose.' : 'No badges yet',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: cs.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-            )
-          else
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final cs = Theme.of(context).colorScheme;
-                final count = badges.length;
-                if (count == 0) return const SizedBox.shrink();
-
-                const gap = 10.0;
-                final totalGaps = gap * (count - 1);
-                final maxW = (constraints.maxWidth - totalGaps) / 3;
-                final slotW = min(
-                  (constraints.maxWidth - totalGaps) / count,
-                  maxW,
-                );
-
-                final avatarR = slotW * 0.38; // radius
-                final labelFS = (slotW * 0.1).clamp(8.0, 11.0); // font size
-                final labelHPad = (slotW * 0.14).clamp(6.0, 10.0);
-                final labelVPad = (slotW * 0.07).clamp(3.0, 6.0);
-
-                final children = <Widget>[];
-                for (int i = 0; i < count; i++) {
-                  final a = badges[i];
-                  final img = (a.iconPath != null && a.iconPath!.isNotEmpty)
-                      ? AssetImage(a.iconPath!)
-                      : const AssetImage('lib/assets/badges/default_badge.png');
-
-                  children.add(
-                    SizedBox(
-                      width: slotW,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CircleAvatar(
-                            radius: avatarR,
-                            backgroundColor: context.boba.surfaceAlt,
-                            backgroundImage: img,
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: labelHPad,
-                              vertical: labelVPad,
-                            ),
-                            decoration: BoxDecoration(
-                              color: cs.surface.withValues(alpha: 0.8),
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(
-                                color: cs.outlineVariant.withValues(alpha: 0.4),
-                              ),
-                            ),
-                            child: Text(
-                              a.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: labelFS,
-                                fontWeight: FontWeight.w600,
-                                height: 1,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-
-                  if (i != count - 1) {
-                    children.add(const SizedBox(width: gap));
-                  }
-                }
-
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: children,
-                );
-              },
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BadgeRowSkeleton extends StatelessWidget {
-  const _BadgeRowSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Wrap(
-      spacing: 16,
-      runSpacing: 8,
-      children: List.generate(
-        3,
-        (_) => CircleAvatar(radius: 22, backgroundColor: cs.surfaceVariant),
       ),
     );
   }

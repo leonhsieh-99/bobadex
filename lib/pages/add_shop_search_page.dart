@@ -5,6 +5,8 @@ import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/widgets/add_new_brand_dialog.dart';
+import 'package:bobadex/ui/components/boba_chip.dart';
+import 'package:bobadex/widgets/brand_mark.dart';
 import 'package:bobadex/widgets/custom_search_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,8 +16,14 @@ import '../models/brand.dart';
 class AddShopSearchPage extends StatefulWidget {
   final void Function(Brand)? onBrandSelected;
   final String? existingShopId;
+  final bool embedded;
 
-  const AddShopSearchPage({super.key, this.onBrandSelected, this.existingShopId});
+  const AddShopSearchPage({
+    super.key,
+    this.onBrandSelected,
+    this.existingShopId,
+    this.embedded = false,
+  });
 
   @override
   State<AddShopSearchPage> createState() => _AddShopSearchPageState();
@@ -31,7 +39,6 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
     super.initState();
     _searchController.addListener(_onSearchChanged);
   }
-
 
   void _onSearchChanged() {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
@@ -57,9 +64,10 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
       widget.onBrandSelected!(brand);
       Navigator.pop(context);
     } else {
-      Navigator.push(context, MaterialPageRoute(
-        builder: (_) => BrandDetailsPage(brand: brand)
-      ));
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => BrandDetailsPage(brand: brand)),
+      );
     }
   }
 
@@ -90,8 +98,8 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
       }
 
       final statusStr = details?['status'] as String?;
-      final message   = details?['message'] as String?;
-      final dupsNum   = (details?['duplicates'] as num?)?.toInt();
+      final message = details?['message'] as String?;
+      final dupsNum = (details?['duplicates'] as num?)?.toInt();
 
       if (e.status == 401) return 'Please sign in to request a brand.';
       if (e.status == 403) return 'You don’t have permission to do that.';
@@ -143,12 +151,14 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
       (s) => s.shopsForCurrentUser().map((shop) => shop.brandSlug).toSet(),
     );
     return Scaffold(
-      appBar: AppBar(title: Text('Select Shop Brand')),
+      appBar: widget.embedded
+          ? null
+          : AppBar(title: const Text('Select Shop Brand')),
       body: Column(
         children: [
           CustomSearchBar(
             controller: _searchController,
-            hintText: 'Search for a boba shop or brand'
+            hintText: 'Search for a boba shop or brand',
           ),
           Expanded(
             child: ListView.builder(
@@ -157,26 +167,38 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
                 if (i == 0) {
                   return ListTile(
                     leading: const Icon(Icons.outlined_flag),
-                    title: const Text('Request a new brand', style: TextStyle(fontWeight: FontWeight.bold)),
+                    title: const Text(
+                      'Request a new brand',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     subtitle: const Text('Not in the list? Send a request.'),
                     onTap: _handleAddNewBrand,
                   );
                 }
                 final brand = _filteredBrands[i - 1];
-                final aliasLabel = brand.matchingAliasLabel(_searchController.text);
+                final aliasLabel = brand.matchingAliasLabel(
+                  _searchController.text,
+                );
+                final owned = ownedSlugs.contains(brand.slug);
                 return ListTile(
-                  title: Text(brand.display),
-                  subtitle: aliasLabel == null ? null : Text('Also known as $aliasLabel'),
-                  trailing: CircleAvatar(
-                    child: ownedSlugs.contains(brand.slug)
-                      ? Icon(Icons.check)
-                      : Icon(Icons.add)
+                  leading: BrandMark(
+                    name: brand.display,
+                    slug: brand.slug,
+                    iconPath: brand.iconPath,
+                    size: 40,
                   ),
-                  onTap: () => _handleBrandTap(brand)
+                  title: Text(brand.display),
+                  subtitle: aliasLabel == null
+                      ? null
+                      : Text('Also known as $aliasLabel'),
+                  trailing: owned
+                      ? const BobaChip(label: 'In dex ✓', selected: true)
+                      : const Icon(Icons.add),
+                  onTap: () => _handleBrandTap(brand),
                 );
               },
             ),
-          )
+          ),
         ],
       ),
     );

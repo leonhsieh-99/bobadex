@@ -62,28 +62,26 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: Listenable.merge(widget.branchNotifiers),
-      builder: (context, _) {
-        final friendsBadge = context.select<FriendState, int>(
-          (s) => s.incomingRequests.length,
-        );
-        final hide = _forceHide;
-        final visible = !hide && !_collapsed;
-
-        return Scaffold(
-          extendBody: true,
-          body: Stack(
-            children: [
-              NotificationListener<ScrollNotification>(
-                onNotification: _onScroll,
-                child: widget.navigationShell,
-              ),
-              Positioned(
-                left: BobaSpace.x4,
-                right: BobaSpace.x4,
-                bottom: BobaSpace.x4 + MediaQuery.paddingOf(context).bottom,
-                child: IgnorePointer(
+    return Scaffold(
+      extendBody: true,
+      body: Stack(
+        children: [
+          NotificationListener<ScrollNotification>(
+            onNotification: _onScroll,
+            child: widget.navigationShell,
+          ),
+          Positioned(
+            left: BobaSpace.x4,
+            right: BobaSpace.x4,
+            bottom: BobaSpace.x4 + MediaQuery.paddingOf(context).bottom,
+            child: ListenableBuilder(
+              listenable: Listenable.merge(widget.branchNotifiers),
+              builder: (context, _) {
+                final friendsBadge = context.select<FriendState, int>(
+                  (s) => s.incomingRequests.length,
+                );
+                final visible = !_forceHide && !_collapsed;
+                return IgnorePointer(
                   ignoring: !visible,
                   child: AnimatedSlide(
                     duration: BobaMotion.normal,
@@ -106,12 +104,12 @@ class _AppShellState extends State<AppShell> {
                       ),
                     ),
                   ),
-                ),
-              ),
-            ],
+                );
+              },
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

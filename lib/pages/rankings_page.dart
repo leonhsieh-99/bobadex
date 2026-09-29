@@ -4,10 +4,11 @@ import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/ui/components/boba_nav_bar.dart';
+import 'package:bobadex/ui/components/collector_card.dart';
+import 'package:bobadex/ui/components/rating_text.dart';
 import 'package:bobadex/ui/theme/boba_context.dart';
-import 'package:bobadex/widgets/thumb_pic.dart';
+import 'package:bobadex/widgets/brand_mark.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RankingsPage extends StatefulWidget {
@@ -66,23 +67,21 @@ class _RankingsPageState extends State<RankingsPage> {
               itemCount: userRankings.length,
               itemBuilder: (context, index) {
                 final user = userRankings[index];
-                return ListTile(
-                  minTileHeight: 60,
-                  title: Text(user.displayName),
-                  leading: ThumbPic(path: user.profileImagePath),
-                  subtitle: Text('@${user.username}'),
-                  trailing: Text(
-                    user.shopCount.toString(),
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                return CollectorCard(
+                  variant: CollectorCardVariant.compact,
+                  displayName: user.displayName,
+                  username: user.username,
+                  profileImagePath: user.profileImagePath,
+                  brandCount: user.shopCount,
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) =>
                           AccountViewPage(userId: user.id, user: user),
                     ),
+                  ),
+                  trailing: Text(
+                    user.shopCount.toString(),
+                    style: context.bobaText.numeral(fontSize: 20),
                   ),
                 );
               },
@@ -105,40 +104,18 @@ class _RankingsPageState extends State<RankingsPage> {
                           horizontal: 16,
                           vertical: 6,
                         ),
-                        title: Row(
-                          children: [
-                            Expanded(
-                              flex: 6,
-                              child: Text(
-                                brand.display,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  brand.avgRating.toStringAsFixed(1),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                SvgPicture.asset(
-                                  'lib/assets/icons/star.svg',
-                                  width: 18,
-                                  height: 18,
-                                ),
-                              ],
-                            ),
-                          ],
+                        leading: BrandMark(
+                          name: brand.display,
+                          slug: brand.slug,
+                          iconPath: brand.iconPath,
+                          size: 40,
                         ),
+                        title: Text(
+                          brand.display,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: RatingText(value: brand.avgRating),
                         subtitle: Padding(
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(
