@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
+import 'package:bobadex/brand/brand_search.dart';
+import 'package:bobadex/brand/brand_request.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/state/brand_state.dart';
@@ -9,6 +10,7 @@ import 'package:bobadex/ui/components/boba_chip.dart';
 import 'package:bobadex/widgets/brand_mark.dart';
 import 'package:bobadex/widgets/custom_search_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/brand.dart';
@@ -31,24 +33,63 @@ class AddShopSearchPage extends StatefulWidget {
 
 class _AddShopSearchPageState extends State<AddShopSearchPage> {
   final _searchController = SearchController();
-  List<Brand> _filteredBrands = [];
+  List<BrandSearchResult> _results = [];
   Timer? _debounce;
+  double? _latitude;
+  double? _longitude;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _loadOrigin();
   }
 
-  void _onSearchChanged() {
+  Future<void> _loadOrigin() async {
+    try {
+      final enabled = await Geolocator.isLocationServiceEnabled();
+      if (!enabled) return;
+      final permission = await Geolocator.checkPermission();
+      if (permission != LocationPermission.always &&
+          permission != LocationPermission.whileInUse) {
+        return;
+      }
+      final position =
+          await Geolocator.getLastKnownPosition() ??
+          await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.low,
+              timeLimit: Duration(seconds: 8),
+            ),
+          );
+      if (!mounted) return;
+      setState(() {
+        _latitude = position.latitude;
+        _longitude = position.longitude;
+      });
+      _onSearchChanged(immediate: true);
+    } catch (_) {}
+  }
+
+  void _onSearchChanged({bool immediate = false}) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () async {
+    void run() {
       if (!mounted) return;
       final query = _searchController.text;
       setState(() {
-        _filteredBrands = context.read<BrandState>().search(query);
+        _results = context.read<BrandState>().search(
+          query,
+          latitude: _latitude,
+          longitude: _longitude,
+        );
       });
-    });
+    }
+
+    if (immediate) {
+      run();
+      return;
+    }
+    _debounce = Timer(const Duration(milliseconds: 300), run);
   }
 
   @override
@@ -71,75 +112,39 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
     }
   }
 
-  Future<String?> requestBrand(String name, String city, String state) async {
-    try {
-      final res = await Supabase.instance.client.functions.invoke(
-        'request-brand',
-        body: {'name': name, 'city': city, 'state': state},
-      );
-
-      // Only 2xx reaches here. Treat anything not explicit "ok" as unexpected.
-      final data = res.data;
-      if (data is Map<String, dynamic> && data['status'] == 'ok') {
-        return null; // success
-      }
-      return 'Unexpected server response.';
-    } on FunctionException catch (e) {
-      // Non-2xx landed here. Try to parse the JSON payload for details.
-      Map<String, dynamic>? details;
-      final raw = e.details;
-      if (raw is Map<String, dynamic>) {
-        details = raw;
-      } else if (raw is String) {
+  Future<String?> requestBrand(BrandRequestDraft draft) {
+    final signedIn = Supabase.instance.client.auth.currentSession != null;
+    return submitBrandRequest(
+      draft: draft,
+      signedIn: signedIn,
+      invoke: (body) async {
         try {
-          final decoded = json.decode(raw);
-          if (decoded is Map<String, dynamic>) details = decoded;
-        } catch (_) {}
-      }
-
-      final statusStr = details?['status'] as String?;
-      final message = details?['message'] as String?;
-      final dupsNum = (details?['duplicates'] as num?)?.toInt();
-
-      if (e.status == 401) return 'Please sign in to request a brand.';
-      if (e.status == 403) return 'You don’t have permission to do that.';
-
-      if (e.status == 409) {
-        if (statusStr == 'duplicate') {
-          return message ?? 'Brand already exists.';
+          final res = await Supabase.instance.client.functions.invoke(
+            'request-brand',
+            body: body,
+          );
+          return BrandRequestHttp(
+            status: res.status,
+            body: brandRequestBodyFromUnknown(res.data),
+          );
+        } on FunctionException catch (e) {
+          return BrandRequestHttp(
+            status: e.status,
+            body: brandRequestBodyFromUnknown(e.details),
+          );
         }
-        if (statusStr == 'pending') {
-          if (dupsNum != null) {
-            return message != null
-                ? '$message ($dupsNum requests)'
-                : 'A similar brand is already pending review ($dupsNum requests).';
-          }
-          return message ?? 'A similar brand is already pending review.';
-        }
-        return message ?? 'Brand already requested or exists.';
-      }
-
-      if (e.status == 422) {
-        return message ?? 'Invalid request.';
-      }
-
-      // Fallback
-      return message ?? 'Request failed (${e.status}).';
-    } catch (_) {
-      return 'Failed to request brand';
-    }
+      },
+    );
   }
 
   void _handleAddNewBrand() async {
     final result = await showDialog<String?>(
       context: context,
-      builder: (_) => AddNewBrandDialog(
-        onSubmit: (name, city) => requestBrand(name, city.name, city.state),
-      ),
+      builder: (_) => AddNewBrandDialog(onSubmit: requestBrand),
     );
     if (!mounted) return;
     if (result == 'success') {
-      notify('Brand pending for review', SnackType.info);
+      notify(brandRequestPendingMessage, SnackType.info);
     } else if (result != null) {
       notify(result, SnackType.error); // error message
     }
@@ -162,7 +167,7 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
           ),
           Expanded(
             child: ListView.builder(
-              itemCount: _filteredBrands.length + 1,
+              itemCount: _results.length + 1,
               itemBuilder: (context, i) {
                 if (i == 0) {
                   return ListTile(
@@ -175,10 +180,13 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
                     onTap: _handleAddNewBrand,
                   );
                 }
-                final brand = _filteredBrands[i - 1];
-                final aliasLabel = brand.matchingAliasLabel(
-                  _searchController.text,
-                );
+                final result = _results[i - 1];
+                final brand = result.brand;
+                final lines = [
+                  if (result.placeLine != null) result.placeLine!,
+                  if (result.aliasLine != null)
+                    'Also known as ${result.aliasLine}',
+                ];
                 final owned = ownedSlugs.contains(brand.slug);
                 return ListTile(
                   leading: BrandMark(
@@ -188,9 +196,10 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
                     size: 40,
                   ),
                   title: Text(brand.display),
-                  subtitle: aliasLabel == null
+                  isThreeLine: lines.length > 1,
+                  subtitle: lines.isEmpty
                       ? null
-                      : Text('Also known as $aliasLabel'),
+                      : Text(lines.join('\n'), maxLines: 2),
                   trailing: owned
                       ? const BobaChip(label: 'In dex ✓', selected: true)
                       : const Icon(Icons.add),

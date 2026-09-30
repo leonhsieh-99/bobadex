@@ -19,6 +19,8 @@ class FilterSortBar extends StatefulWidget {
   final String initialSortKey;
   final bool initialAscending;
   final String searchHint;
+  final EdgeInsetsGeometry padding;
+  final double? searchHeight;
 
   const FilterSortBar({
     super.key,
@@ -29,6 +31,13 @@ class FilterSortBar extends StatefulWidget {
     this.initialSortKey = 'favorite',
     this.initialAscending = false,
     this.searchHint = 'Search brands',
+    this.searchHeight,
+    this.padding = const EdgeInsets.fromLTRB(
+      BobaSpace.x4,
+      BobaSpace.x2,
+      BobaSpace.x4,
+      BobaSpace.x2,
+    ),
   });
 
   @override
@@ -53,20 +62,18 @@ class _FilterSortBarState extends State<FilterSortBar> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        BobaSpace.x4,
-        BobaSpace.x2,
-        BobaSpace.x4,
-        BobaSpace.x2,
-      ),
+      padding: widget.padding,
       child: Column(
         children: [
           BobaSearchField(
             controller: widget.controller,
             hint: widget.searchHint,
+            height: widget.searchHeight,
             onChanged: widget.onSearchChanged,
           ),
-          const SizedBox(height: BobaSpace.x2),
+          SizedBox(
+            height: widget.searchHeight == null ? BobaSpace.x2 : BobaSpace.x1,
+          ),
           Align(
             alignment: Alignment.centerLeft,
             child: SingleChildScrollView(

@@ -50,6 +50,18 @@ class CollectionRepository {
     );
   }
 
+  Future<String?> countyPlaceIdAt({
+    required double lat,
+    required double lon,
+  }) async {
+    final id = await _client.rpc(
+      'county_collection_at_point',
+      params: {'p_lat': lat, 'p_lon': lon},
+    );
+    if (id is String && id.isNotEmpty) return id;
+    return null;
+  }
+
   Future<void> untrack(String countyPlaceId) async {
     await _client.rpc(
       'untrack_county_collection',

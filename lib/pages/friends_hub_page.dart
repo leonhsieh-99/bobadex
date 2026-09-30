@@ -40,7 +40,7 @@ class FriendsHubPage extends StatelessWidget {
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Feed'),
-              Tab(text: 'Shared'),
+              Tab(text: 'In common'),
               Tab(text: 'People'),
             ],
           ),

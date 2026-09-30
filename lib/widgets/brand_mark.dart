@@ -144,7 +144,41 @@ class BrandMark extends StatelessWidget {
     final hasIcon = iconPath != null && iconPath!.isNotEmpty;
 
     Widget mark;
-    if (silhouette) {
+    if (silhouette && useMascots && hasIcon) {
+      mark = Opacity(
+        opacity: 0.45,
+        child: ColorFiltered(
+          colorFilter: const ColorFilter.matrix(<double>[
+            0.2126,
+            0.7152,
+            0.0722,
+            0,
+            0,
+            0.2126,
+            0.7152,
+            0.0722,
+            0,
+            0,
+            0.2126,
+            0.7152,
+            0.0722,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+          ]),
+          child: IconPic(
+            path: iconPath,
+            size: size,
+            circular: circular,
+            fit: fit,
+          ),
+        ),
+      );
+    } else if (silhouette) {
       final tokens = context.boba;
       mark = Container(
         width: size,

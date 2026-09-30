@@ -353,63 +353,63 @@ class _CountyBrandTile extends StatelessWidget {
     final stores = item.localStorefronts == 1
         ? '1 storefront'
         : '${item.localStorefronts} known storefronts';
+    const mascotSize = 52.0;
     return BobaCard(
       onTap: onTap,
+      padding: EdgeInsets.zero,
       variant: item.discovered ? BobaCardVariant.flat : BobaCardVariant.inset,
-      child: Stack(
-        children: [
-          // Mascot at true card center
-          Center(
-            child: Opacity(
-              opacity: item.discovered ? 1 : 0.45,
-              child: BrandMark(
-                name: item.display,
-                slug: item.brandSlug,
-                iconPath: item.iconPath,
-                size: 52,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final mascotTop = constraints.maxHeight * 0.40 - mascotSize / 2;
+          return Stack(
+            children: [
+              Positioned(
+                top: mascotTop,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: BrandMark(
+                    name: item.display,
+                    slug: item.brandSlug,
+                    iconPath: item.iconPath,
+                    size: mascotSize,
+                    silhouette: !item.discovered,
+                  ),
+                ),
               ),
-            ),
-          ),
-
-          // Text anchored below the mascot
-          Align(
-            alignment: const Alignment(0, 0.55),
-            child: SizedBox(
-              width: double.infinity,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    item.display,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                  const SizedBox(height: 4),
-                  SizedBox(
-                    height: 20,
-                    child: item.discovered
-                        ? RatingText(
-                            value: rating,
-                            size: RatingTextSize.small,
-                          )
-                        : null,
-                  ),
-                  Text(
-                    stores,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelSmall
-                        ?.copyWith(color: tokens.inkMuted),
-                  ),
-                ],
+              Positioned(
+                top: mascotTop + mascotSize + 8,
+                left: 12,
+                right: 12,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      item.display,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: item.discovered ? null : tokens.inkMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    if (item.discovered)
+                      RatingText(value: rating, size: RatingTextSize.small),
+                    Text(
+                      stores,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelSmall?.copyWith(color: tokens.inkMuted),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }

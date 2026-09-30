@@ -97,6 +97,17 @@ int _asInt(dynamic value) {
   return int.tryParse('$value') ?? 0;
 }
 
+CountySummary? untrackedCountyById(
+  List<CountySummary> counties,
+  String? placeId,
+) {
+  if (placeId == null || placeId.isEmpty) return null;
+  for (final county in counties) {
+    if (county.countyPlaceId == placeId && !county.isTracked) return county;
+  }
+  return null;
+}
+
 String countyAbbreviation(String name) {
   final words = name
       .replaceAll(RegExp(r'\bcounty\b', caseSensitive: false), ' ')

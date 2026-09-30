@@ -15,6 +15,7 @@ import 'package:bobadex/ui/theme/boba_theme_builder.dart';
 import 'package:bobadex/ui/theme/boba_themes.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'app_initializer.dart';
 import 'package:provider/provider.dart';
 
@@ -28,6 +29,8 @@ class _BobadexAppState extends State<BobadexApp> {
   late final FirebaseAnalytics _fa;
   late final AnalyticsService _analytics;
   late final FirebaseAnalyticsObserver _observer;
+  late final AuthState _auth;
+  late final GoRouter _router;
 
   @override
   void initState() {
@@ -35,12 +38,19 @@ class _BobadexAppState extends State<BobadexApp> {
     _fa = FirebaseAnalytics.instance;
     _analytics = AnalyticsService(_fa);
     _observer = FirebaseAnalyticsObserver(analytics: _fa);
+    _auth = AuthState();
+    _router = buildRouter(auth: _auth, observers: [_observer]);
+  }
+
+  @override
+  void dispose() {
+    _router.dispose();
+    _auth.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = AuthState();
-    final router = buildRouter(auth: auth, observers: [_observer]);
     return MultiProvider(
       providers: [
         Provider<AnalyticsService>.value(value: _analytics),
@@ -63,7 +73,7 @@ class _BobadexAppState extends State<BobadexApp> {
           final theme = BobaThemes.resolve(themeSlug);
           return MaterialApp.router(
             title: 'Bobadex',
-            routerConfig: router,
+            routerConfig: _router,
             debugShowCheckedModeBanner: false,
             locale: Locale('en'),
             theme: BobaThemeBuilder.build(theme),

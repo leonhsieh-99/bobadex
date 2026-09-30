@@ -78,7 +78,7 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
     final items = shopsData ?? const <FriendsShop>[];
     if (items.isEmpty) {
       return Center(
-        child: Text('No shared brands yet', style: context.bobaText.empty),
+        child: Text('Nothing in common yet', style: context.bobaText.empty),
       );
     }
 

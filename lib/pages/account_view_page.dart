@@ -8,12 +8,12 @@ import 'package:bobadex/pages/brand_details_page.dart';
 import 'package:bobadex/pages/about_page.dart';
 import 'package:bobadex/pages/achievements_page.dart';
 import 'package:bobadex/pages/home_page.dart';
-import 'package:bobadex/pages/rankings_page.dart';
 import 'package:bobadex/pages/settings_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_account_page.dart';
 import 'package:bobadex/pages/user_activity_page.dart';
 import 'package:bobadex/ui/components/boba_nav_bar.dart';
 import 'package:bobadex/ui/components/collector_card.dart';
+import 'package:bobadex/ui/components/leaderboard_preview.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
 import 'package:bobadex/state/friend_state.dart';
@@ -257,31 +257,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
               ),
             ),
           )
-        : Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: TextButton.icon(
-              icon: Icon(
-                Icons.edit_rounded,
-                size: 18,
-                color: context.boba.onAccent,
-              ),
-              label: const Text('Edit Profile'),
-              onPressed: () => Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => SettingsAccountPage())),
-              style: ButtonStyle(
-                backgroundColor: WidgetStatePropertyAll(context.boba.accent),
-                padding: const WidgetStatePropertyAll(
-                  EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                ),
-                shape: WidgetStatePropertyAll(
-                  RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-            ),
-          );
+        : null;
 
     final favTile = _isLoading
         ? const ShopTileSkeleton()
@@ -442,6 +418,13 @@ class _AccountViewPageState extends State<AccountViewPage> {
                 badgeCount: stats.badgeCount,
                 badges: pinnedBadges.take(3).toList(),
                 favorite: _isLoading ? const ShopTileSkeleton() : favTile,
+                onEdit: isCurrentUser
+                    ? () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SettingsAccountPage(),
+                        ),
+                      )
+                    : null,
                 onBadgeTap: (_) {
                   if (isCurrentUser) {
                     Navigator.of(context).push(
@@ -456,11 +439,17 @@ class _AccountViewPageState extends State<AccountViewPage> {
                 },
               ),
               const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [?friendBtn, viewBtn],
-              ),
+              if (friendBtn != null || viewBtn != null)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [?friendBtn, ?viewBtn],
+                ),
               const SizedBox(height: 8),
+              if (isCurrentUser) ...[
+                const SizedBox(height: 8),
+                LeaderboardPreview(userId: widget.userId),
+                const SizedBox(height: 8),
+              ],
               ListTile(
                 leading: const Icon(Icons.history_rounded),
                 title: const Text('Recent activity'),
@@ -476,14 +465,6 @@ class _AccountViewPageState extends State<AccountViewPage> {
               ),
               if (isCurrentUser) ...[
                 const SizedBox(height: 16),
-                ListTile(
-                  leading: const Icon(Icons.leaderboard_rounded),
-                  title: const Text('Leaderboard'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const RankingsPage()),
-                  ),
-                ),
                 ListTile(
                   leading: const Icon(Icons.emoji_events_rounded),
                   title: const Text('Achievements'),

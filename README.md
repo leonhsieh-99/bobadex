@@ -91,7 +91,7 @@ iOS uses Swift Package Manager. CocoaPods is not required.
 
 Shipped on iOS as **1.0.2**. Recent work in this tree:
 
-- Brand search reads `brand_aliases` (cache v2), not a column on `brands`
+- Brand search stays on the cached catalog (cache v3). `brand_search_places` adds active storefront cities at sync time; typing still filters on device
 - Hive removed; brand catalog is a JSON file cache so Swift Package Manager can build
 - Provider rebuilds narrowed: `context.select` instead of watching whole notifiers, shop tiles subscribe per shop, theme listens to `themeSlug` only, loads no longer notify at start
 

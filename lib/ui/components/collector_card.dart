@@ -24,7 +24,9 @@ class CollectorCard extends StatelessWidget {
     this.favorite,
     this.onBadgeTap,
     this.onFavoriteTap,
+    this.onEdit,
     this.trailing,
+    this.caption,
     this.onTap,
   });
 
@@ -41,7 +43,9 @@ class CollectorCard extends StatelessWidget {
   final Widget? favorite;
   final ValueChanged<Achievement>? onBadgeTap;
   final VoidCallback? onFavoriteTap;
+  final VoidCallback? onEdit;
   final Widget? trailing;
+  final String? caption;
   final VoidCallback? onTap;
 
   static const _months = [
@@ -78,7 +82,7 @@ class CollectorCard extends StatelessWidget {
       ),
       title: Text(displayName),
       subtitle: Text(
-        '@$username · $brandCount brands',
+        caption ?? '@$username · $brandCount brands',
         style: Theme.of(
           context,
         ).textTheme.bodySmall?.copyWith(color: tokens.inkMuted),
@@ -130,16 +134,50 @@ class CollectorCard extends StatelessWidget {
             offset: const Offset(0, -44),
             child: Column(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    color: tokens.surface,
-                    shape: BoxShape.circle,
-                  ),
-                  child: ThumbPic(
-                    path: profileImagePath,
-                    initials: displayName,
-                    size: 88,
+                SizedBox(
+                  width: 94,
+                  height: 94,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: tokens.surface,
+                          shape: BoxShape.circle,
+                        ),
+                        child: ThumbPic(
+                          path: profileImagePath,
+                          initials: displayName,
+                          size: 88,
+                        ),
+                      ),
+                      if (onEdit != null)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Material(
+                            color: tokens.accent,
+                            shape: const CircleBorder(),
+                            child: Tooltip(
+                              message: 'Edit profile',
+                              child: InkWell(
+                                customBorder: const CircleBorder(),
+                                onTap: onEdit,
+                                child: SizedBox(
+                                  width: 28,
+                                  height: 28,
+                                  child: Icon(
+                                    Icons.edit_rounded,
+                                    size: 15,
+                                    color: tokens.onAccent,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: BobaSpace.x3),

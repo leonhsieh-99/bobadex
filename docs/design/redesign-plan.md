@@ -1,6 +1,6 @@
 # Bobadex visual system + UX redesign plan
 
-Status: Phases 0–3 implemented; Phase 4 remains a proposal.
+Status: Phases 0–4 implemented on dev. Collect stays off in production until the county RPCs are deployed there. Shop drink styling and leaderboard placement are parked.
 Scope: Flutter app in `lib/`. Backend asks are listed separately in §11 and are not blocking for Phases 0–3.
 
 This document is written so another model can execute it with minimal ambiguity. Where a value is given (hex, dp, ms) treat it as the spec. Where a choice is left open it is marked **[decision]**.
@@ -521,7 +521,7 @@ Done.
 3. Brand details collected chip under the name. Add-brand search rows use `BrandMark` and an In dex ✓ chip.
 
 ### Phase 4 — Collection
-In progress on dev. Collect lists only tracked counties (`get_user_tracked_county_collections`). Empty state browses `get_available_county_collections` and calls `track_county_collection`. Detail uses `get_county_collection_detail` (All / Collected / Missing, name or storefronts). The flag is on when `SUPABASE_URL` is the dev project. Location suggestion, silhouettes, and the completion overlay are still open.
+Done on dev. Collect lists only tracked counties. Browse searches available counties. Location, asked once, suggests the active collection county containing the user; dismissing it remembers that county. Missing brands are desaturated mascot silhouettes. There is no completion celebration, because the eligible set can change as brands are added or removed. The flag is on when `SUPABASE_URL` is the dev project. Production rollout waits until the county RPCs, including `county_collection_at_point`, are on production. Shop drink styling and leaderboard placement remain parked.
 4c (optional polish): profile share export, theme unlocks as rewards (e.g., "Brown Sugar" unlocked at 25 brands — a real collection hook; keep all v1 themes free), system light/dark pairing.
 
 ---
