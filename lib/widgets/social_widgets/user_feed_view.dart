@@ -22,11 +22,10 @@ class UserFeedView extends StatefulWidget {
 }
 
 class _UserFeedViewState extends State<UserFeedView> {
-  final _supabase = Supabase.instance.client;
-
   bool _isLoading = true;
   bool _isLoadingMore = false;
   bool _hasMore = true;
+  bool _failed = false;
 
   DateTime? _cursorTs;
   int? _cursorSeq;
@@ -43,6 +42,7 @@ class _UserFeedViewState extends State<UserFeedView> {
       setState(() {
         _isLoading = true;
         _isLoadingMore = false;
+        _failed = false;
         _hasMore = true;
         _cursorTs = null;
         _cursorSeq = null;
@@ -61,7 +61,10 @@ class _UserFeedViewState extends State<UserFeedView> {
         '_before_seq': _cursorSeq,
       };
 
-      final resp = await _supabase.rpc('get_user_feed', params: params);
+      final resp = await Supabase.instance.client.rpc(
+        'get_user_feed',
+        params: params,
+      );
       final items = (resp as List)
           .map((j) => FeedEvent.fromJson(j as Map<String, dynamic>))
           .toList();
@@ -77,6 +80,7 @@ class _UserFeedViewState extends State<UserFeedView> {
         _hasMore = items.length == widget.pageSize;
         _isLoading = false;
         _isLoadingMore = false;
+        _failed = false;
       });
     } catch (e) {
       debugPrint('UserFeedView fetch error: $e');
@@ -84,6 +88,7 @@ class _UserFeedViewState extends State<UserFeedView> {
         _isLoading = false;
         _isLoadingMore = false;
         _hasMore = false;
+        _failed = _items.isEmpty;
       });
     }
   }
@@ -101,7 +106,9 @@ class _UserFeedViewState extends State<UserFeedView> {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
           child: Text(
-            widget.isOwner
+            _failed
+                ? 'Could not load activity'
+                : widget.isOwner
                 ? "You haven't posted anything yet"
                 : 'No activity yet',
             style: context.bobaText.empty,

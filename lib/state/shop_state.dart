@@ -45,7 +45,13 @@ class ShopState extends ChangeNotifier {
 
   //----------DB QUERIES------------
 
-  String? get _currentUserId => Supabase.instance.client.auth.currentUser?.id;
+  String? get _currentUserId {
+    try {
+      return Supabase.instance.client.auth.currentUser?.id;
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<void> loadForUser(String userId, {bool force = false}) async {
     if (userId.isEmpty) return;

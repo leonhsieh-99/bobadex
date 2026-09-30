@@ -2,10 +2,11 @@ import 'package:bobadex/collection/collection_models.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CollectionRepository {
-  CollectionRepository([SupabaseClient? client])
-    : _client = client ?? Supabase.instance.client;
+  CollectionRepository([SupabaseClient? client]) : _clientOverride = client;
 
-  final SupabaseClient _client;
+  final SupabaseClient? _clientOverride;
+
+  SupabaseClient get _client => _clientOverride ?? Supabase.instance.client;
 
   static const pageSize = 50;
 

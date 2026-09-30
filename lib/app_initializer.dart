@@ -172,24 +172,33 @@ class _AppInitializerState extends State<AppInitializer> {
 
     await userState.loadCurrent();
 
-    final user = userState.current;
-    if (user.id.isEmpty) {
+    var profile = userState.current;
+    if (profile.id.isEmpty) {
       debugPrint('No valid user loaded — retrying with delay');
-
       await Future.delayed(const Duration(milliseconds: 1000));
       await userState.loadCurrent(force: true);
-
-      final retryUser = userState.current;
-      if (retryUser.id.isEmpty) {
-        debugPrint('No valid user loaded after retry — skipping rest');
-        return false;
-      }
-      this.user = retryUser;
-    } else {
-      this.user = user;
+      profile = userState.current;
     }
 
-    final drinkCount = await drinkState.fetchDrinkCount(this.user.id);
+    if (profile.id.isEmpty) {
+      debugPrint(
+        'Profile unavailable. Opening the dex with the saved session.',
+      );
+    }
+    user = profile.id.isNotEmpty
+        ? profile
+        : u.User.empty().copyWith(
+            id: session.user.id,
+            displayName: 'You',
+            onboarded: true,
+          );
+
+    var drinkCount = Constants.maxDrinkCountForFetchAll;
+    try {
+      drinkCount = await drinkState.fetchDrinkCount(user.id);
+    } catch (e) {
+      debugPrint('Drink count unavailable: $e');
+    }
     final futures = [
       brandState.loadFromSupabase(),
       shopState.loadCurrentUser(force: true),
@@ -200,7 +209,7 @@ class _AppInitializerState extends State<AppInitializer> {
     ];
 
     if (drinkCount < Constants.maxDrinkCountForFetchAll) {
-      futures.add(drinkState.loadAllForUser(this.user.id));
+      futures.add(drinkState.loadAllForUser(user.id));
     }
 
     await Future.wait(futures);

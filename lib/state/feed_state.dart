@@ -10,23 +10,25 @@ class FeedState extends ChangeNotifier {
   final Set<String> _seenIds = {};
   bool _hasMore = true;
   bool _isFetchingMore = false;
+  bool _failed = false;
   final int _limit = Constants.defaultFeedLimit;
 
   List<FeedEvent> get feed => _feed;
   bool get hasMore => _hasMore;
   bool get isLoading => _isFetchingMore;
+  bool get failed => _failed;
 
   DateTime? cursorTs;
   int? cursorSeq;
 
   Future<void> fetchFeed({bool refresh = false}) async {
-    final supabase = Supabase.instance.client;
     if (_isFetchingMore) return;
 
     if (refresh) {
       _feed.clear();
       _seenIds.clear();
       _hasMore = true;
+      _failed = false;
       cursorTs = null;
       cursorSeq = null;
     }
@@ -36,18 +38,23 @@ class FeedState extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await RetryHelper.retry(() => supabase
-        .rpc('get_feed', params: {
-          '_user_id': supabase.auth.currentUser!.id,
-          '_limit': _limit,
-          '_before_ts': cursorTs?.toIso8601String(),
-          '_before_seq': cursorSeq,
-        }));
+      final supabase = Supabase.instance.client;
+      final response = await RetryHelper.retry(
+        () => supabase.rpc(
+          'get_feed',
+          params: {
+            '_user_id': supabase.auth.currentUser!.id,
+            '_limit': _limit,
+            '_before_ts': cursorTs?.toIso8601String(),
+            '_before_seq': cursorSeq,
+          },
+        ),
+      );
 
       final list = (response is List) ? response : <dynamic>[];
       final newFeed = list
-        .map((j) => FeedEvent.fromJson(j as Map<String, dynamic>))
-        .toList();
+          .map((j) => FeedEvent.fromJson(j as Map<String, dynamic>))
+          .toList();
 
       if (newFeed.isNotEmpty) {
         final last = newFeed.last;
@@ -55,9 +62,13 @@ class FeedState extends ChangeNotifier {
         cursorSeq = last.seq;
       }
 
-      _feed.addAll(newFeed);
+      for (final event in newFeed) {
+        if (_seenIds.add(event.id)) _feed.add(event);
+      }
       _hasMore = newFeed.length == _limit;
+      _failed = false;
     } catch (e) {
+      _failed = true;
       debugPrint('Error fetching feed: $e');
     } finally {
       _isFetchingMore = false;
@@ -71,11 +82,11 @@ class FeedState extends ChangeNotifier {
   }) async {
     try {
       final row = await Supabase.instance.client
-        .rpc('finalize_shop_add_event', params: {
-          '_shop_id': shopId,
-          '_user_id': currentUser.id,
-        })
-        .single();
+          .rpc(
+            'finalize_shop_add_event',
+            params: {'_shop_id': shopId, '_user_id': currentUser.id},
+          )
+          .single();
 
       final event = FeedEvent.fromJson(row);
 
@@ -117,7 +128,9 @@ class FeedState extends ChangeNotifier {
   }
 
   void removeImageCache(String id) {
-    _feed.removeWhere((fe) => fe.eventType == 'shop_add' && fe.payload['images'].contains(id));
+    _feed.removeWhere(
+      (fe) => fe.eventType == 'shop_add' && fe.payload['images'].contains(id),
+    );
     notifyListeners();
   }
 
@@ -126,6 +139,7 @@ class FeedState extends ChangeNotifier {
     _seenIds.clear();
     _hasMore = true;
     _isFetchingMore = false;
+    _failed = false;
     cursorTs = null;
     cursorSeq = null;
     notifyListeners();

@@ -18,14 +18,16 @@ import 'package:bobadex/ui/theme/boba_tokens.dart';
 import 'package:flutter/material.dart';
 
 class CollectionPage extends StatefulWidget {
-  const CollectionPage({super.key});
+  const CollectionPage({super.key, this.repository});
+
+  final CollectionRepository? repository;
 
   @override
   State<CollectionPage> createState() => _CollectionPageState();
 }
 
 class _CollectionPageState extends State<CollectionPage> {
-  final _repo = CollectionRepository();
+  late final CollectionRepository _repo;
   final _locator = CountyLocator();
   late Future<List<CountySummary>> _tracked;
   CountySummary? _nearby;
@@ -35,6 +37,7 @@ class _CollectionPageState extends State<CollectionPage> {
   @override
   void initState() {
     super.initState();
+    _repo = widget.repository ?? CollectionRepository();
     _tracked = _repo.trackedCounties();
     unawaited(_refreshNearby());
   }

@@ -8,10 +8,10 @@ import 'package:bobadex/ui/components/boba_nav_bar.dart';
 import 'package:bobadex/ui/components/collector_card.dart';
 import 'package:bobadex/ui/components/rating_text.dart';
 import 'package:bobadex/ui/theme/boba_context.dart';
+import 'package:bobadex/state/rankings_cache.dart';
 import 'package:bobadex/ui/theme/boba_tokens.dart';
 import 'package:bobadex/widgets/brand_mark.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RankingsPage extends StatefulWidget {
   const RankingsPage({super.key, this.embedded = false});
@@ -28,7 +28,7 @@ class _RankingsPageState extends State<RankingsPage>
   String _userMetric = 'brands';
   String _brandMetric = 'locations';
   late Future<List<UserStats>> _users;
-  late Future<List<BrandStats>> _brands;
+  Future<List<BrandStats>>? _brands;
 
   static const _userMetrics = [
     ('brands', 'Brands'),
@@ -48,10 +48,12 @@ class _RankingsPageState extends State<RankingsPage>
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
     _tabs.addListener(() {
+      if (_tabs.index == 1) {
+        _brands ??= RankingsCache.brandRankings(_brandMetric);
+      }
       if (!_tabs.indexIsChanging && mounted) setState(() {});
     });
     _users = _loadUsers();
-    _brands = _loadBrands();
   }
 
   @override
@@ -62,13 +64,7 @@ class _RankingsPageState extends State<RankingsPage>
 
   Future<List<UserStats>> _loadUsers() async {
     try {
-      final rows = await Supabase.instance.client.rpc(
-        'get_user_rankings',
-        params: {'p_metric': _userMetric},
-      );
-      return (rows as List)
-          .map((json) => UserStats.fromJson(Map<String, dynamic>.from(json)))
-          .toList();
+      return await RankingsCache.userRankings(_userMetric);
     } catch (e) {
       debugPrint('Error loading user rankings: $e');
       notify('Error loading rankings', SnackType.error);
@@ -78,13 +74,7 @@ class _RankingsPageState extends State<RankingsPage>
 
   Future<List<BrandStats>> _loadBrands() async {
     try {
-      final rows = await Supabase.instance.client.rpc(
-        'get_brand_rankings',
-        params: {'p_metric': _brandMetric},
-      );
-      return (rows as List)
-          .map((json) => BrandStats.fromJson(Map<String, dynamic>.from(json)))
-          .toList();
+      return await RankingsCache.brandRankings(_brandMetric);
     } catch (e) {
       debugPrint('Error loading brand rankings: $e');
       notify('Error loading rankings', SnackType.error);

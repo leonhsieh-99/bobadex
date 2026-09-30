@@ -32,7 +32,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late final String _uid;
   late final bool _isCurrentUser;
-  late Future<void> _ready = Future.value();
+  Future<void>? _ready;
   String _searchQuery = '';
   String _selectedSort = 'favorite-desc';
   final _searchController = TextEditingController();
@@ -40,12 +40,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    final authId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    final authId = _signedInUserId() ?? '';
     _uid = (widget.userId?.isNotEmpty == true) ? widget.userId! : authId;
     _isCurrentUser = _uid == authId;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _ready = _prime();
-      setState(() {});
+      if (!mounted) return;
+      _startLoad();
     });
   }
 
@@ -58,9 +58,30 @@ class _HomePageState extends State<HomePage> {
       shopState.loadForUser(_uid),
       shopMediaState.loadBannersForUserViaRpc(_uid),
     ];
-    if (_isCurrentUser) unawaited(_showOnboardingIfNeeded(_uid));
     await Future.wait(futures);
+    if (!mounted || !_isCurrentUser) return;
+    final loaded = userState.getUser(_uid);
+    if (loaded != null && !userState.hasError) {
+      unawaited(_showOnboardingIfNeeded(_uid));
+    }
   }
+
+  String? _signedInUserId() {
+    try {
+      return Supabase.instance.client.auth.currentUser?.id;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _startLoad() {
+    final next = _prime();
+    setState(() {
+      _ready = next;
+    });
+  }
+
+  void _retry() => _startLoad();
 
   @override
   void dispose() {
@@ -122,6 +143,7 @@ class _HomePageState extends State<HomePage> {
     final shops = context.select<ShopState, List<Shop>>(
       (s) => s.shopsFor(_uid),
     );
+    final shopsFailed = context.select<ShopState, bool>((s) => s.hasError);
     final drinkCount = context.select<ShopState, int>((s) {
       return shops.fold<int>(0, (sum, shop) {
         final id = shop.id;
@@ -133,14 +155,23 @@ class _HomePageState extends State<HomePage> {
     return FutureBuilder(
       future: _ready,
       builder: (context, snap) {
-        final loading = snap.connectionState == ConnectionState.waiting;
+        final loading =
+            _ready == null || snap.connectionState != ConnectionState.done;
 
         if (loading && (user == null || shops.isEmpty)) {
           return const HomePageSkeleton();
         }
 
-        if (user == null) {
-          return const HomePageSkeleton();
+        if (user == null || (shops.isEmpty && shopsFailed)) {
+          return Scaffold(
+            body: EmptyState(
+              title: _isCurrentUser
+                  ? 'Could not load your dex'
+                  : 'Could not load this dex',
+              body: 'Check your connection and try again.',
+              action: BobaButton(label: 'Retry', onPressed: _retry),
+            ),
+          );
         }
 
         final visibleShops = getVisibleShops(shops);

@@ -1,11 +1,11 @@
 import 'package:bobadex/models/user_stats.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/rankings_page.dart';
+import 'package:bobadex/state/rankings_cache.dart';
 import 'package:bobadex/ui/components/boba_button.dart';
 import 'package:bobadex/ui/components/boba_card.dart';
 import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LeaderboardPreview extends StatefulWidget {
   const LeaderboardPreview({super.key, required this.userId});
@@ -27,13 +27,7 @@ class _LeaderboardPreviewState extends State<LeaderboardPreview> {
 
   Future<List<UserStats>> _load() async {
     try {
-      final rows = await Supabase.instance.client.rpc(
-        'get_user_rankings',
-        params: {'p_metric': 'brands'},
-      );
-      return (rows as List)
-          .map((json) => UserStats.fromJson(Map<String, dynamic>.from(json)))
-          .toList();
+      return await RankingsCache.userRankings('brands');
     } catch (e) {
       debugPrint('leaderboard preview failed: $e');
       return [];

@@ -1,7 +1,8 @@
 import 'package:bobadex/models/friends_shop.dart';
-import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/shared_brand_page.dart';
+import 'package:bobadex/ui/components/boba_button.dart';
 import 'package:bobadex/ui/components/boba_nav_bar.dart';
+import 'package:bobadex/ui/components/empty_state.dart';
 import 'package:bobadex/ui/components/shared_brand_tile.dart';
 import 'package:bobadex/ui/components/skeleton_box.dart';
 import 'package:bobadex/ui/theme/boba_context.dart';
@@ -17,6 +18,7 @@ class FriendsShopGrid extends StatefulWidget {
 
 class _FriendsShopGridState extends State<FriendsShopGrid> {
   bool _loading = true;
+  bool _failed = false;
   List<FriendsShop>? shopsData;
 
   @override
@@ -26,9 +28,14 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
   }
 
   Future<void> _loadShops() async {
-    final supabase = Supabase.instance.client;
-    final currentUserId = supabase.auth.currentUser!.id;
     try {
+      final supabase = Supabase.instance.client;
+      final currentUserId = supabase.auth.currentUser?.id;
+      if (currentUserId == null) {
+        _failed = true;
+        shopsData = [];
+        return;
+      }
       final response = await supabase.rpc(
         'get_friends_shops',
         params: {'user_id': currentUserId},
@@ -42,12 +49,14 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
           if (byFriends != 0) return byFriends;
           return b.avgRating.compareTo(a.avgRating);
         });
+      _failed = false;
     } catch (e) {
       debugPrint('Error loading shops $e');
-      notify('Error loading shops, try again later', SnackType.error);
+      _failed = true;
+      shopsData = [];
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
-    shopsData ??= [];
-    if (mounted) setState(() => _loading = false);
   }
 
   @override
@@ -76,6 +85,19 @@ class _FriendsShopGridState extends State<FriendsShopGrid> {
     }
 
     final items = shopsData ?? const <FriendsShop>[];
+    if (_failed) {
+      return EmptyState(
+        title: 'Could not load shared brands',
+        body: 'Check your connection and try again.',
+        action: BobaButton(
+          label: 'Retry',
+          onPressed: () {
+            setState(() => _loading = true);
+            _loadShops();
+          },
+        ),
+      );
+    }
     if (items.isEmpty) {
       return Center(
         child: Text('Nothing in common yet', style: context.bobaText.empty),

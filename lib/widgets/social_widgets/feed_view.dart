@@ -53,6 +53,17 @@ class _FeedViewState extends State<FeedView> {
       );
     }
 
+    if (feedState.feed.isEmpty && feedState.failed) {
+      return EmptyState(
+        title: 'Could not load the feed',
+        body: 'Check your connection and try again.',
+        action: BobaButton(
+          label: 'Retry',
+          onPressed: () => feedState.fetchFeed(refresh: true),
+        ),
+      );
+    }
+
     if (feedState.feed.isEmpty) {
       return EmptyState(
         title: 'Quiet in here',

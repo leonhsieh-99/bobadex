@@ -1,13 +1,13 @@
 import 'package:bobadex/brand/brand_search.dart';
 import 'package:bobadex/helpers/brand_cache_store.dart';
 import 'package:bobadex/helpers/retry_helper.dart';
-import 'package:collection/collection.dart';
 import '../models/brand.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 
 class BrandState extends ChangeNotifier {
   final List<Brand> _brands = [];
+  final Map<String, Brand> _bySlug = {};
   Map<String, String> nameLookup = {};
   bool _hasError = false;
 
@@ -20,7 +20,7 @@ class BrandState extends ChangeNotifier {
 
   Brand? getBrand(String? slug) {
     if (slug == null || slug.isEmpty) return null;
-    return _brands.firstWhereOrNull((b) => b.slug == slug);
+    return _bySlug[slug];
   }
 
   String getName(String slug) {
@@ -43,12 +43,26 @@ class BrandState extends ChangeNotifier {
 
   void addBrand(Brand brand) {
     _brands.add(brand);
+    _bySlug[brand.slug] = brand;
+    nameLookup[brand.slug] = brand.display;
     notifyListeners();
   }
 
   void reset() {
     _brands.clear();
+    _bySlug.clear();
+    nameLookup = {};
     notifyListeners();
+  }
+
+  void _replaceBrands(Iterable<Brand> brands) {
+    _brands
+      ..clear()
+      ..addAll(brands);
+    _bySlug
+      ..clear()
+      ..addEntries(_brands.map((brand) => MapEntry(brand.slug, brand)));
+    _updateNameLookup();
   }
 
   Future<void> loadFromSupabase({bool forceRefresh = false}) async {
@@ -73,10 +87,7 @@ class BrandState extends ChangeNotifier {
       final cachedBrands = (cachedData as List)
           .map((json) => Brand.fromJson(Map<String, dynamic>.from(json)))
           .toList();
-      _brands
-        ..clear()
-        ..addAll(cachedBrands.where((b) => b.status.isActive));
-      _updateNameLookup();
+      _replaceBrands(cachedBrands.where((b) => b.status.isActive));
       notifyListeners();
       debugPrint('Loaded ${_brands.length} brands from cache [$dataKey]');
     }
@@ -129,15 +140,12 @@ class BrandState extends ChangeNotifier {
         debugPrint('brand_search_places unavailable: $e');
       }
 
-      final freshBrands = (rows as List)
-          .map<Brand>((json) => Brand.fromJson(json))
-          .map((brand) => _withPlaceSummary(brand, placeRows))
-          .toList();
+      final freshBrands = withPlaceSummaries(
+        (rows as List).map<Brand>((json) => Brand.fromJson(json)).toList(),
+        placeRows,
+      );
 
-      _brands
-        ..clear()
-        ..addAll(freshBrands.where((b) => b.status.isActive));
-      _updateNameLookup();
+      _replaceBrands(freshBrands.where((b) => b.status.isActive));
       notifyListeners();
       debugPrint(
         'Loaded ${_brands.length} brands from Supabase [scope=$dataKey]',
@@ -162,26 +170,35 @@ class BrandState extends ChangeNotifier {
   void _updateNameLookup() {
     nameLookup = {for (var brand in _brands) brand.slug: brand.display};
   }
+}
 
-  Brand _withPlaceSummary(Brand brand, dynamic rows) {
-    if (rows is! List) return brand;
-    for (final row in rows) {
-      if (row is! Map) continue;
-      final map = Map<String, dynamic>.from(row);
-      if (map['brand_slug'] != brand.slug) continue;
-      final places = (map['places'] is List)
-          ? (map['places'] as List)
-                .whereType<Map>()
-                .map(
-                  (item) =>
-                      BrandPlace.fromJson(Map<String, dynamic>.from(item)),
-                )
-                .where((place) => place.city.isNotEmpty)
-                .toList()
-          : const <BrandPlace>[];
-      final count = (map['location_count'] as num?)?.toInt() ?? places.length;
-      return brand.withPlaces(places, count);
-    }
-    return brand;
+/// Attaches `brand_search_places()` rows by slug. Brands with no row stay as they are.
+List<Brand> withPlaceSummaries(List<Brand> brands, dynamic rows) {
+  if (rows is! List || rows.isEmpty) return brands;
+  final bySlug = <String, ({List<BrandPlace> places, int count})>{};
+  for (final row in rows) {
+    if (row is! Map) continue;
+    final map = Map<String, dynamic>.from(row);
+    final slug = map['brand_slug'];
+    if (slug is! String || slug.isEmpty) continue;
+    final places = (map['places'] is List)
+        ? (map['places'] as List)
+              .whereType<Map>()
+              .map(
+                (item) => BrandPlace.fromJson(Map<String, dynamic>.from(item)),
+              )
+              .where((place) => place.city.isNotEmpty)
+              .toList()
+        : const <BrandPlace>[];
+    final count = (map['location_count'] as num?)?.toInt() ?? places.length;
+    bySlug[slug] = (places: places, count: count);
   }
+  if (bySlug.isEmpty) return brands;
+  return [
+    for (final brand in brands)
+      if (bySlug[brand.slug] case final place?)
+        brand.withPlaces(place.places, place.count)
+      else
+        brand,
+  ];
 }

@@ -1,37 +1,41 @@
+import 'package:bobadex/helpers/ttl_cache.dart';
 import 'package:bobadex/models/account_stats.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserStatsCache {
-  final _cache = <String, AccountStats> {};
+  final _cache = TtlCache<AccountStats>();
 
-  Future<Map<String, dynamic>> fetchStatsFromServer(userId) async {
-    final response = await Supabase.instance.client
-      .rpc('get_user_stats', params: {'uid': userId});
+  Future<Map<String, dynamic>> fetchStatsFromServer(String userId) async {
+    final response = await Supabase.instance.client.rpc(
+      'get_user_stats',
+      params: {'uid': userId},
+    );
     if (response is List && response.isNotEmpty) {
       return response.first;
     }
     return {};
   }
 
-  Future<Map<String, dynamic>> fetchTopShopFromServer(userId) async {
-    final response = await Supabase.instance.client
-      .rpc('get_user_top_shop_info', params: {'user_id': userId});
+  Future<Map<String, dynamic>> fetchTopShopFromServer(String userId) async {
+    final response = await Supabase.instance.client.rpc(
+      'get_user_top_shop_info',
+      params: {'user_id': userId},
+    );
     if (response is List && response.isNotEmpty) {
       return response.first;
     }
     return {};
   }
 
-  Future<AccountStats> getStats(String userId) async {
-    if (_cache.containsKey(userId)) {
-      return _cache[userId]!;
-    }
-    final stats = await fetchStatsFromServer(userId);
-    final topShop = await fetchTopShopFromServer(userId);
-    final accountStats = AccountStats.fromJson(stats, topShop);
-    _cache[userId] = accountStats;
-    return accountStats;
+  Future<AccountStats> getStats(String userId) {
+    return _cache.get(userId, () async {
+      final results = await Future.wait([
+        fetchStatsFromServer(userId),
+        fetchTopShopFromServer(userId),
+      ]);
+      return AccountStats.fromJson(results[0], results[1]);
+    });
   }
 
-  void clearCache() => _cache.clear();
+  void clearCache() => _cache.invalidate();
 }
