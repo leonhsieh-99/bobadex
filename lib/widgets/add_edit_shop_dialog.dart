@@ -171,7 +171,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
             );
 
             await shopMediaState.addMedia(realMedia, replacePendingId: tempId);
-            await analytics.mediaUploaded(shopId: shopId, count: 1);
+            await analytics.mediaUploaded(count: 1);
           } catch (e) {
             debugPrint('Error uploading images: $e');
             shopMediaState.removePendingForShop(shopId, tempId);
@@ -192,7 +192,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
 
           try {
             await drinkState.add(drink.toDrink(shopId: shopId), shopId);
-            await analytics.drinkAdded(rating: drink.rating, name: drink.name);
+            await analytics.drinkAdded(rating: drink.rating);
             await achievementState.checkAndUnlockDrinkAchievement(drinkState);
             await achievementState.checkAndUnlockNotesAchievement(drinkState);
           } catch (e) {

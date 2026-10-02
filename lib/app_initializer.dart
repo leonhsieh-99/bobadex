@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:bobadex/analytics_service.dart';
+import 'package:bobadex/push/push_registration.dart';
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/media_realtime_service.dart';
 import 'package:bobadex/navigation.dart';
@@ -268,6 +269,8 @@ class _AppInitializerState extends State<AppInitializer> {
     } catch (e) {
       debugPrint('Error loading feed state: $e');
     }
+
+    unawaited(PushRegistration.sync());
 
     _mediaRT.start(
       onDeleteById: (deletedId) async {

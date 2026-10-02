@@ -88,6 +88,10 @@
 			<string>_dartVmService._tcp</string>
 			<string>_package_config._tcp</string>
 		</array>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>remote-notification</string>
+		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
 	</dict>

@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:bobadex/pages/account_view_page.dart';
+import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/widgets/compact_text_row.dart';
-import 'package:bobadex/widgets/report_widget.dart';
+import 'package:bobadex/widgets/report_dialog.dart';
 import 'package:bobadex/widgets/thumb_pic.dart';
+import 'package:provider/provider.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -157,8 +159,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
 
     return ExtendedImageSlidePage(
       slideAxis: SlideAxis.vertical,
-      slidePageBackgroundHandler: (offset, pageSize) =>
-          context.boba.imageScrim,
+      slidePageBackgroundHandler: (offset, pageSize) => context.boba.imageScrim,
       child: ExtendedImageGesturePageView.builder(
         itemCount: widget.images.length,
         controller: _pageController,
@@ -303,8 +304,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                           horizontal: 8,
                         ),
                         decoration: BoxDecoration(
-                          color:
-                              context.boba.onImage.withValues(alpha: 0.18),
+                          color: context.boba.onImage.withValues(alpha: 0.18),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -340,6 +340,10 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
     final editMode = widget.mode == FullscreenImageMode.edit;
     final canEdit = widget.isCurrentUser && (editMode || uploadMode);
     final showForm = uploadMode || (editMode && isEditing);
+    final currentUserId = context.select<UserState, String>(
+      (state) => state.current.id,
+    );
+    final photoId = img.id;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -364,30 +368,19 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer> {
                         onPressed: () => Navigator.pop(context),
                       ),
                       const Spacer(),
-                      if (!uploadMode && (img.id?.isNotEmpty ?? false))
-                        PopupMenuButton<String>(
-                          icon: Icon(
-                            Icons.more_horiz,
-                            color: context.boba.onImage,
+                      if (!canEdit &&
+                          photoId != null &&
+                          photoId.isNotEmpty &&
+                          img.userId != currentUserId)
+                        _ChromeIconButton(
+                          icon: Icons.flag_outlined,
+                          onPressed: () => showReportDialog(
+                            context: context,
+                            contentType: 'photo',
+                            contentId: photoId,
+                            reportedUserId: img.userId,
+                            title: 'Report this photo',
                           ),
-                          onSelected: (value) {
-                            if (value == 'report') {
-                              showDialog(
-                                context: context,
-                                builder: (_) => ReportDialog(
-                                  contentType: 'photo',
-                                  contentId: img.id ?? '',
-                                  reportedUserId: img.userId,
-                                ),
-                              );
-                            }
-                          },
-                          itemBuilder: (_) => const [
-                            PopupMenuItem(
-                              value: 'report',
-                              child: Text('Report'),
-                            ),
-                          ],
                         ),
                     ],
                   ),
@@ -576,8 +569,9 @@ class VisibilityToggleButton extends StatelessWidget {
     final isPublic = value == 'public';
     return TextButton.icon(
       style: TextButton.styleFrom(
-        foregroundColor:
-            isPublic ? context.boba.success : context.boba.inkMuted,
+        foregroundColor: isPublic
+            ? context.boba.success
+            : context.boba.inkMuted,
         backgroundColor: Colors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),

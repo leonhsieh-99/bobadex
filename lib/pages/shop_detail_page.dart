@@ -184,7 +184,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
         onSubmit: (drink) async {
           try {
             await drinkState.add(drink.toDrink(shopId: shop.id), shop.id!);
-            await analytics.drinkAdded(rating: drink.rating, name: drink.name);
+            await analytics.drinkAdded(rating: drink.rating);
             await achievementState.checkAndUnlockDrinkAchievement(drinkState);
             await achievementState.checkAndUnlockNotesAchievement(drinkState);
             notify('Drink added.', SnackType.success);

@@ -2,6 +2,7 @@ import 'package:bobadex/config/ai_disclosure.dart';
 import 'package:bobadex/helpers/export_data.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/setting_pages/settings_account_page.dart';
+import 'package:bobadex/push/push_registration.dart';
 import 'package:bobadex/pages/setting_pages/settings_ai_data_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_layout_page.dart';
 import 'package:bobadex/pages/setting_pages/settings_privacy_page.dart';
@@ -120,6 +121,7 @@ class SettingsPage extends StatelessWidget {
                     confirmColor: context.boba.accent,
                   );
                   if (confirmed) {
+                    await PushRegistration.removeCurrent();
                     await Supabase.instance.client.auth.signOut();
                   }
                 },

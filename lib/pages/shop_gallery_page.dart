@@ -160,7 +160,7 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
 
           await achievementState.checkAndUnlockMediaUploadAchievement();
           await shopMediaState.addMedia(realMedia, replacePendingId: tempId);
-          await analytics.mediaUploaded(shopId: realMedia.id, count: 1);
+          await analytics.mediaUploaded(count: 1);
         } catch (e) {
           debugPrint('Error uploading image $idx: $e');
           shopMediaState.removePendingForShop(widget.shopId!, tempId);

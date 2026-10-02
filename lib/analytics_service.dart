@@ -8,7 +8,10 @@ class AnalyticsService {
     await _fa.setUserId(id: userId);
   }
 
-  Future<void> setUserProps({required String theme, required int gridCols}) async {
+  Future<void> setUserProps({
+    required String theme,
+    required int gridCols,
+  }) async {
     await _fa.setUserProperty(name: 'theme_slug', value: theme);
     await _fa.setUserProperty(name: 'grid_columns', value: '$gridCols');
   }
@@ -23,26 +26,15 @@ class AnalyticsService {
     );
   }
 
-  Future<void> drinkAdded({required double rating, required String name}) {
-    return _fa.logEvent(
-      name: 'drink_added',
-      parameters: {
-        'name': name,
-        'rating': rating,
-      }
-    );
+  Future<void> drinkAdded({required double rating}) {
+    return _fa.logEvent(name: 'drink_added', parameters: {'rating': rating});
   }
 
-  Future<void> mediaUploaded({required String shopId, required int count}) {
-    return _fa.logEvent(
-      name: 'media_upload',
-      parameters: {
-        'shop_id': shopId,
-        'count': count, // log once per submit
-      },
-    );
+  Future<void> mediaUploaded({required int count}) {
+    return _fa.logEvent(name: 'media_upload', parameters: {'count': count});
   }
 
   Future<void> friendRequestSent() => _fa.logEvent(name: 'friend_request_sent');
-  Future<void> friendRequestAccepted() => _fa.logEvent(name: 'friend_request_accepted');
+  Future<void> friendRequestAccepted() =>
+      _fa.logEvent(name: 'friend_request_accepted');
 }

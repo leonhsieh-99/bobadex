@@ -1,4 +1,5 @@
 import 'package:bobadex/collection/collection_models.dart';
+import 'package:bobadex/collection/collection_suggestion.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CollectionRepository {
@@ -61,6 +62,53 @@ class CollectionRepository {
     );
     if (id is String && id.isNotEmpty) return id;
     return null;
+  }
+
+  Future<List<CollectionSuggestion>> mySuggestions(
+    String countyPlaceId, {
+    int limit = 50,
+  }) async {
+    final rows = await _client.rpc(
+      'get_my_collection_suggestions',
+      params: {'p_county_place_id': countyPlaceId, 'p_limit': limit},
+    );
+    if (rows is! List) return const [];
+    return rows
+        .whereType<Map>()
+        .map(
+          (row) =>
+              CollectionSuggestion.fromJson(Map<String, dynamic>.from(row)),
+        )
+        .toList();
+  }
+
+  Future<CollectionSuggestionResult> submitSuggestion({
+    required String countyPlaceId,
+    required String brandSlug,
+    required String action,
+    String? note,
+  }) async {
+    if (_client.auth.currentSession == null) {
+      return const CollectionSuggestionResult(
+        status: 'authentication_required',
+      );
+    }
+    try {
+      final row = await _client.rpc(
+        'submit_collection_suggestion',
+        params: {
+          'p_county_place_id': countyPlaceId,
+          'p_brand_slug': brandSlug,
+          'p_action': action,
+          'p_note': note,
+        },
+      );
+      return CollectionSuggestionResult.parse(row);
+    } on PostgrestException catch (e) {
+      return CollectionSuggestionResult(
+        status: collectionSuggestionErrorCode(e.message, e.code),
+      );
+    }
   }
 
   Future<void> untrack(String countyPlaceId) async {

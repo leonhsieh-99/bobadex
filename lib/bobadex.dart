@@ -1,4 +1,5 @@
 import 'package:bobadex/analytics_service.dart';
+import 'package:bobadex/push/push_registration.dart';
 import 'package:bobadex/helpers/go_router.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/brand_state.dart';
@@ -40,6 +41,7 @@ class _BobadexAppState extends State<BobadexApp> {
     _observer = FirebaseAnalyticsObserver(analytics: _fa);
     _auth = AuthState();
     _router = buildRouter(auth: _auth, observers: [_observer]);
+    PushRegistration.listen();
   }
 
   @override

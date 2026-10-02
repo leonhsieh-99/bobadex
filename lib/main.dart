@@ -3,12 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:bobadex/auth/auth_redaction.dart';
 import 'package:bobadex/bobadex.dart';
 import 'firebase_options.dart';
 import 'helpers/app_prefs.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
 
 void _runBootstrapApp() => runApp(const _BootstrapApp());
 
@@ -24,8 +28,11 @@ Future<void> _bootstrap() async {
   }
 
   if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   }
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   await Supabase.initialize(
     url: supabaseUrl,
@@ -37,7 +44,9 @@ Future<void> _bootstrap() async {
   );
 
   final analyticsEnabled = await AppPrefs.analyticsEnabled();
-  await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(analyticsEnabled);
+  await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(
+    analyticsEnabled,
+  );
 }
 
 void main() async {
@@ -45,20 +54,17 @@ void main() async {
   const dsn = String.fromEnvironment('SENTRY_DSN');
 
   if (dsn.isNotEmpty) {
-    await SentryFlutter.init(
-      (o) {
-        o.dsn = dsn;
-        o.tracesSampleRate = 0.1;
-        o.beforeBreadcrumb = (breadcrumb, hint) {
-          if (containsAuthSecrets(breadcrumb?.message) ||
-              containsAuthSecrets(breadcrumb?.data?.toString())) {
-            return null;
-          }
-          return breadcrumb;
-        };
-      },
-      appRunner: _runBootstrapApp,
-    );
+    await SentryFlutter.init((o) {
+      o.dsn = dsn;
+      o.tracesSampleRate = 0.1;
+      o.beforeBreadcrumb = (breadcrumb, hint) {
+        if (containsAuthSecrets(breadcrumb?.message) ||
+            containsAuthSecrets(breadcrumb?.data?.toString())) {
+          return null;
+        }
+        return breadcrumb;
+      };
+    }, appRunner: _runBootstrapApp);
   } else {
     _runBootstrapApp();
   }

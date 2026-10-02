@@ -19,12 +19,16 @@ class AddShopSearchPage extends StatefulWidget {
   final void Function(Brand)? onBrandSelected;
   final String? existingShopId;
   final bool embedded;
+  final bool pickOnly;
+  final bool showAddBrand;
 
   const AddShopSearchPage({
     super.key,
     this.onBrandSelected,
     this.existingShopId,
     this.embedded = false,
+    this.pickOnly = false,
+    this.showAddBrand = true,
   });
 
   @override
@@ -101,6 +105,10 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
   }
 
   void _handleBrandTap(Brand brand) {
+    if (widget.pickOnly) {
+      Navigator.pop(context, brand);
+      return;
+    }
     if (widget.onBrandSelected != null) {
       widget.onBrandSelected!(brand);
       Navigator.pop(context);
@@ -158,7 +166,11 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
     return Scaffold(
       appBar: widget.embedded
           ? null
-          : AppBar(title: const Text('Select Shop Brand')),
+          : AppBar(
+              title: Text(
+                widget.pickOnly ? 'Find a brand' : 'Select Shop Brand',
+              ),
+            ),
       body: Column(
         children: [
           CustomSearchBar(
@@ -167,20 +179,22 @@ class _AddShopSearchPageState extends State<AddShopSearchPage> {
           ),
           Expanded(
             child: ListView.builder(
-              itemCount: _results.length + 1,
+              itemCount: _results.length + (widget.showAddBrand ? 1 : 0),
               itemBuilder: (context, i) {
-                if (i == 0) {
+                if (widget.showAddBrand && i == 0) {
                   return ListTile(
                     leading: const Icon(Icons.outlined_flag),
                     title: const Text(
-                      'Request a new brand',
+                      'Add a brand',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    subtitle: const Text('Not in the list? Send a request.'),
+                    subtitle: const Text(
+                      'Not in the catalog? Send it for review.',
+                    ),
                     onTap: _handleAddNewBrand,
                   );
                 }
-                final result = _results[i - 1];
+                final result = _results[i - (widget.showAddBrand ? 1 : 0)];
                 final brand = result.brand;
                 final lines = [
                   if (result.placeLine != null) result.placeLine!,

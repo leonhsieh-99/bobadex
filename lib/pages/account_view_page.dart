@@ -20,7 +20,7 @@ import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/user_stats_cache.dart';
 import 'package:bobadex/widgets/brand_mark.dart';
-import 'package:bobadex/widgets/report_widget.dart';
+import 'package:bobadex/widgets/report_dialog.dart';
 import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
@@ -231,11 +231,7 @@ class _AccountViewPageState extends State<AccountViewPage> {
         ? Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: TextButton.icon(
-              icon: Icon(
-                Icons.menu_book_rounded,
-                size: 18,
-                color: context.boba.onAccent,
-              ),
+              icon: const Icon(Icons.menu_book_rounded, size: 18),
               label: const Text('View Bobadex'),
               onPressed: (_user != null)
                   ? () => Navigator.of(context).push(
@@ -246,6 +242,11 @@ class _AccountViewPageState extends State<AccountViewPage> {
                   : null,
               style: ButtonStyle(
                 backgroundColor: WidgetStatePropertyAll(context.boba.accent),
+                foregroundColor: WidgetStateProperty.resolveWith((states) {
+                  return states.contains(WidgetState.disabled)
+                      ? context.boba.inkFaint
+                      : context.boba.onAccent;
+                }),
                 padding: const WidgetStatePropertyAll(
                   EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 ),
@@ -352,13 +353,12 @@ class _AccountViewPageState extends State<AccountViewPage> {
                     break;
 
                   case 'report':
-                    showDialog(
+                    await showReportDialog(
                       context: context,
-                      builder: (_) => ReportDialog(
-                        contentType: 'user',
-                        contentId: widget.userId,
-                        reportedUserId: widget.userId,
-                      ),
+                      contentType: 'user',
+                      contentId: widget.userId,
+                      reportedUserId: widget.userId,
+                      title: 'Report this person',
                     );
                     break;
                 }
@@ -390,7 +390,6 @@ class _AccountViewPageState extends State<AccountViewPage> {
                     );
                   }
                 }
-
                 items.add(
                   const PopupMenuItem(value: 'report', child: Text('Report')),
                 );
