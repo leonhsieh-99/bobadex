@@ -92,40 +92,52 @@ class DrinkRow extends StatelessWidget {
                   ],
                 ),
               ),
-              GestureDetector(
-                onTap: isOwner ? onFavorite : null,
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 2, 4, 2),
-                  child: SvgPicture.asset(
-                    drink.isFavorite
-                        ? 'lib/assets/icons/heart.svg'
-                        : 'lib/assets/icons/heart_outlined.svg',
-                    width: 16,
-                    height: 16,
-                  ),
-                ),
-              ),
-              if (isOwner)
-                PopupMenuButton<String>(
-                  padding: EdgeInsets.zero,
-                  icon: Icon(
-                    Icons.more_horiz_rounded,
-                    size: 18,
-                    color: tokens.inkMuted,
-                  ),
-                  onSelected: onMenuSelected,
-                  itemBuilder: (_) => [
-                    PopupMenuItem(
-                      value: 'pin',
-                      child: Text(isPinned ? 'Unpin' : 'Pin'),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    onTap: isOwner ? onFavorite : null,
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 2, 4, 2),
+                      child: SvgPicture.asset(
+                        drink.isFavorite
+                            ? 'lib/assets/icons/heart.svg'
+                            : 'lib/assets/icons/heart_outlined.svg',
+                        width: 16,
+                        height: 16,
+                      ),
                     ),
-                    const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                    const PopupMenuItem(value: 'remove', child: Text('Remove')),
-                  ],
-                )
-              else
-                const SizedBox(width: 8),
+                  ),
+                  if (isOwner)
+                    PopupMenuButton<String>(
+                      padding: EdgeInsets.zero,
+                      icon: Icon(
+                        Icons.more_horiz_rounded,
+                        size: 18,
+                        color: tokens.inkMuted,
+                      ),
+                      onSelected: onMenuSelected,
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'pin',
+                          child: Text(isPinned ? 'Unpin' : 'Pin'),
+                        ),
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Text('Edit'),
+                        ),
+                        const PopupMenuItem(
+                          value: 'remove',
+                          child: Text('Remove'),
+                        ),
+                      ],
+                    )
+                  else
+                    const SizedBox(width: 8),
+                ],
+              ),
             ],
           ),
         ),
