@@ -53,7 +53,8 @@ class EntryTile extends StatelessWidget {
     final screenWidth = MediaQuery.sizeOf(context).width;
     const spacing = 8.0;
     final itemWidth = (screenWidth - (spacing * (columns + 1))) / columns;
-    final scale = (itemWidth / 120).clamp(0.75, 1.4);
+    final scale = (itemWidth / 130).clamp(0.85, 1.45);
+    final markSize = (itemWidth * 0.58).clamp(52.0, 160.0);
     final brandIconPath = brand?.iconPath;
     final hasBanner = bannerPath != null && bannerPath.isNotEmpty;
     final hasBrandIcon = brandIconPath != null && brandIconPath.isNotEmpty;
@@ -72,7 +73,7 @@ class EntryTile extends StatelessWidget {
             brandIconPath: brandIconPath,
             count: count,
             scale: scale,
-            columns: columns,
+            markSize: markSize,
             onTap: onTap,
           )
         : _PhotoEntry(
@@ -94,7 +95,7 @@ class _IconEntry extends StatelessWidget {
     required this.brandIconPath,
     required this.count,
     required this.scale,
-    required this.columns,
+    required this.markSize,
     required this.onTap,
   });
 
@@ -103,7 +104,7 @@ class _IconEntry extends StatelessWidget {
   final String? brandIconPath;
   final int count;
   final double scale;
-  final int columns;
+  final double markSize;
   final VoidCallback onTap;
 
   @override
@@ -153,7 +154,7 @@ class _IconEntry extends StatelessWidget {
               name: brandLabel,
               slug: shop.brandSlug,
               iconPath: brandIconPath,
-              size: (columns == 2 ? 78 : 46) * scale,
+              size: markSize,
               fit: BoxFit.contain,
             ),
           ),

@@ -44,7 +44,7 @@ class _SettingsLayoutPageState extends State<SettingsLayoutPage> {
           children: [
             ListTile(
               title: const Text('Compact Layout'),
-              subtitle: const Text('3 brands per row'),
+              subtitle: const Text('Smaller cards'),
               trailing: Switch(
                 value: userState.current.gridColumns == 3,
                 onChanged: (val) {

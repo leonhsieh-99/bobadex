@@ -5,6 +5,7 @@ import 'package:bobadex/pages/shop_detail_page.dart';
 import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/ui/components/boba_button.dart';
 import 'package:bobadex/ui/components/boba_nav_bar.dart';
+import 'package:bobadex/ui/dex_layout.dart';
 import 'package:bobadex/ui/components/dex_header.dart';
 import 'package:bobadex/ui/components/empty_state.dart';
 import 'package:bobadex/ui/components/entry_tile.dart';
@@ -228,6 +229,10 @@ class _HomePageState extends State<HomePage> {
         }
 
         final visibleShops = getVisibleShops(shops);
+        final columns = dexColumnCount(
+          MediaQuery.sizeOf(context).width,
+          preference: user.gridColumns,
+        );
         final spotlightIndex = spotlightId == null
             ? -1
             : visibleShops.indexWhere((shop) => shop.id == spotlightId);
@@ -235,7 +240,7 @@ class _HomePageState extends State<HomePage> {
           _scheduleSpotlight(
             spotlightId!,
             index: spotlightIndex,
-            columns: user.gridColumns,
+            columns: columns,
           );
         }
         final bottomInset = _isCurrentUser
@@ -334,7 +339,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     sliver: SliverGrid(
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: user.gridColumns,
+                        crossAxisCount: columns,
                         crossAxisSpacing: BobaSpace.x2,
                         mainAxisSpacing: BobaSpace.x2,
                         childAspectRatio: 1,
@@ -349,7 +354,7 @@ class _HomePageState extends State<HomePage> {
                             active: spotlight,
                             child: EntryTile(
                               shop: shop,
-                              columns: user.gridColumns,
+                              columns: columns,
                               useIcons: user.useIcons == true,
                               onTap: () async =>
                                   _navigateToShop(shop.id!, user.id),
@@ -426,7 +431,10 @@ class HomePageSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const columns = Constants.defaultGridColumns;
+    final columns = dexColumnCount(
+      MediaQuery.sizeOf(context).width,
+      preference: Constants.defaultGridColumns,
+    );
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -438,7 +446,7 @@ class HomePageSkeleton extends StatelessWidget {
         child: GridView.builder(
           padding: const EdgeInsets.only(bottom: 120),
           itemCount: 8,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
             crossAxisSpacing: BobaSpace.x2,
             mainAxisSpacing: BobaSpace.x2,

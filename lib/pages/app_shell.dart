@@ -71,42 +71,56 @@ class _AppShellState extends State<AppShell> {
             child: widget.navigationShell,
           ),
           Positioned(
-            left: BobaSpace.x4,
-            right: BobaSpace.x4,
+            left: 0,
+            right: 0,
             bottom: BobaNavBar.bottomOffset(context),
-            child: ListenableBuilder(
-              listenable: Listenable.merge(widget.branchNotifiers),
-              builder: (context, _) {
-                final friendsBadge = context.select<FriendState, int>(
-                  (s) => s.incomingRequests.length,
-                );
-                final visible = !_forceHide && !_collapsed;
-                return IgnorePointer(
-                  ignoring: !visible,
-                  child: AnimatedSlide(
-                    duration: BobaMotion.normal,
-                    curve: Curves.easeOutCubic,
-                    offset: visible ? Offset.zero : const Offset(0, 1.4),
-                    child: AnimatedOpacity(
-                      duration: BobaMotion.fast,
-                      opacity: visible ? 1 : 0,
-                      child: BobaNavBar(
-                        selectedIndex: widget.navigationShell.currentIndex,
-                        friendsBadgeCount: friendsBadge,
-                        onDestinationSelected: _onTabSelected,
-                        onAddPressed: () {
-                          Navigator.of(context, rootNavigator: true).push(
-                            MaterialPageRoute(
-                              fullscreenDialog: true,
-                              builder: (_) => const AddShopSearchPage(),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: BobaSpace.x4,
                   ),
-                );
-              },
+                  child: ListenableBuilder(
+                    listenable: Listenable.merge(widget.branchNotifiers),
+                    builder: (context, _) {
+                      final friendsBadge = context.select<FriendState, int>(
+                        (s) => s.incomingRequests.length,
+                      );
+                      final visible = !_forceHide && !_collapsed;
+                      return IgnorePointer(
+                        ignoring: !visible,
+                        child: AnimatedSlide(
+                          duration: BobaMotion.normal,
+                          curve: Curves.easeOutCubic,
+                          offset: visible ? Offset.zero : const Offset(0, 1.4),
+                          child: AnimatedOpacity(
+                            duration: BobaMotion.fast,
+                            opacity: visible ? 1 : 0,
+                            child: BobaNavBar(
+                              selectedIndex:
+                                  widget.navigationShell.currentIndex,
+                              friendsBadgeCount: friendsBadge,
+                              onDestinationSelected: _onTabSelected,
+                              onAddPressed: () {
+                                Navigator.of(context, rootNavigator: true)
+                                    .push(
+                                      MaterialPageRoute(
+                                        fullscreenDialog: true,
+                                        builder: (_) =>
+                                            const AddShopSearchPage(),
+                                      ),
+                                    );
+                              },
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
             ),
           ),
         ],
