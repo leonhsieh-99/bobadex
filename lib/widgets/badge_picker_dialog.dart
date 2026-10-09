@@ -84,7 +84,7 @@ class _BadgePickerDialogState extends State<BadgePickerDialog> {
                         backgroundImage: AssetImage(
                           (a.iconPath != null && a.iconPath!.isNotEmpty)
                               ? a.iconPath!
-                              : 'lib/assets/badges/default_badge.png',
+                              : 'lib/assets/badges/first_sip.png',
                         ),
                         radius: 36,
                         child: isSelected

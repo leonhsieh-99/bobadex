@@ -14,7 +14,7 @@ class AchievementsState extends ChangeNotifier {
   final List<Achievement> _pendingAchievements = [];
 
   final StreamController<Achievement> _unlockedCtrl =
-    StreamController<Achievement>.broadcast();
+      StreamController<Achievement>.broadcast();
 
   bool _hasError = false;
 
@@ -26,9 +26,9 @@ class AchievementsState extends ChangeNotifier {
 
   String normalizer(String name) {
     return name
-      .toLowerCase()
-      .replaceAll('_', '')
-      .replaceAll(RegExp(r'\s+'), '');
+        .toLowerCase()
+        .replaceAll('_', '')
+        .replaceAll(RegExp(r'\s+'), '');
   }
 
   void _emitUnlocked(Achievement a) {
@@ -52,7 +52,7 @@ class AchievementsState extends ChangeNotifier {
 
   String getBadgeAssetPath(String? path) {
     if (path == null || path.isEmpty || path == '/icons/' || path == 'null') {
-      return 'lib/assets/default_badge.png';
+      return 'lib/assets/badges/first_sip.png';
     }
     return path.startsWith('/') ? 'lib/assets$path' : path;
   }
@@ -69,10 +69,10 @@ class AchievementsState extends ChangeNotifier {
       notifyListeners();
       try {
         await Supabase.instance.client
-          .from('user_achievements')
-          .update({'pinned': newPin})
-          .eq('achievement_id', ua.achievementId)
-          .eq('user_id', Supabase.instance.client.auth.currentUser!.id);
+            .from('user_achievements')
+            .update({'pinned': newPin})
+            .eq('achievement_id', ua.achievementId)
+            .eq('user_id', Supabase.instance.client.auth.currentUser!.id);
       } catch (e) {
         debugPrint('Error updating pin: $e');
         ua.pinned = !newPin;
@@ -96,21 +96,24 @@ class AchievementsState extends ChangeNotifier {
   Future<void> checkAndUnlock(int count, int min, Achievement a) async {
     final alreadyUnlocked = _progressMap[a.id]?.unlocked == true;
     if (count >= min && !alreadyUnlocked) {
-      final newAchievement = UserAchievement(achievementId: a.id, unlocked: true, progress: count, pinned: false);
+      final newAchievement = UserAchievement(
+        achievementId: a.id,
+        unlocked: true,
+        progress: count,
+        pinned: false,
+      );
       _progressMap[a.id] = newAchievement;
       notifyListeners();
       _emitUnlocked(a);
       try {
-        await Supabase.instance.client
-          .from('user_achievements')
-          .insert({
-            'achievement_id': a.id,
-            'user_id': Supabase.instance.client.auth.currentUser!.id,
-            'unlocked': true,
-            'unlocked_at': DateTime.now().toIso8601String(),
-            'pinned': false,
-            'progress': count,
-          });
+        await Supabase.instance.client.from('user_achievements').insert({
+          'achievement_id': a.id,
+          'user_id': Supabase.instance.client.auth.currentUser!.id,
+          'unlocked': true,
+          'unlocked_at': DateTime.now().toIso8601String(),
+          'pinned': false,
+          'progress': count,
+        });
       } catch (e) {
         debugPrint('Error inserting achievement: $e');
         _progressMap.remove(a.id);
@@ -139,9 +142,9 @@ class AchievementsState extends ChangeNotifier {
       await checkAndUnlock(c.total, min, a);
     }
 
-    // matcha count for performative achievement
-    final a = _achievements.firstWhere((x) => x.dependsOn['type'] == 'matcha_drink_count');
-    await checkAndUnlock(c.matcha, a.dependsOn['min'] as int, a);
+    for (final a in getAllType('matcha_drink_count')) {
+      await checkAndUnlock(c.matcha, a.dependsOn['min'] as int, a);
+    }
 
     notifyListeners();
   }
@@ -163,7 +166,9 @@ class AchievementsState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> checkAndUnlockMaxDrinksShopAchievement(DrinkState drinkState) async {
+  Future<void> checkAndUnlockMaxDrinksShopAchievement(
+    DrinkState drinkState,
+  ) async {
     final c = await fetchDrinkCounts();
     for (final a in getAllType('max_drinks_single_shop')) {
       await checkAndUnlock(c.maxInShop, a.dependsOn['min'] as int, a);
@@ -183,25 +188,37 @@ class AchievementsState extends ChangeNotifier {
   Future<void> checkAndUnlockBrandAchievement(ShopState shopState) async {
     for (final a in getAllType('visited_brands')) {
       final brands = a.dependsOn['brands'];
-      int count = 0;
-      final allShops = shopState.shopsForCurrentUser().map((s) => normalizer(s.name));
-      for (var brand in brands) {
-        if (allShops.contains(normalizer(brand))) {
-          count += 1;
-        }
+      var count = 0;
+      final shops = shopState.shopsForCurrentUser();
+      for (final brand in brands) {
+        final needle = normalizer(brand.toString());
+        final visited = shops.any((shop) {
+          final slug = shop.brandSlug;
+          return normalizer(shop.name) == needle ||
+              (slug != null && normalizer(slug) == needle);
+        });
+        if (visited) count += 1;
       }
-      int min = brands.length;
+      final min = a.dependsOn['match'] == 'any' ? 1 : brands.length as int;
       await checkAndUnlock(count, min, a);
     }
     notifyListeners();
   }
 
   Future<void> checkAndUpdateAllAchievement() async {
-    final a = _achievements.firstWhere((a) => a.dependsOn['type'] == 'all_achievements');
+    final completion = getAllType('all_achievements');
+    if (completion.isEmpty) return;
+    final a = completion.first;
     // Only count regular achievements as unlocked (not 'all_achievements' itself)
-    final regularAchievements = _achievements.where((ach) => ach.dependsOn['type'] != 'all_achievements').toList();
+    final regularAchievements = _achievements
+        .where((ach) => ach.dependsOn['type'] != 'all_achievements')
+        .toList();
     final unlockedCount = _progressMap.values
-        .where((ua) => ua.unlocked && regularAchievements.any((ach) => ach.id == ua.achievementId))
+        .where(
+          (ua) =>
+              ua.unlocked &&
+              regularAchievements.any((ach) => ach.id == ua.achievementId),
+        )
         .length;
     final shouldUnlock = unlockedCount == regularAchievements.length;
     final alreadyUnlocked = _progressMap[a.id]?.unlocked == true;
@@ -216,16 +233,14 @@ class AchievementsState extends ChangeNotifier {
       _progressMap[a.id] = newAchievement;
       notifyListeners();
       try {
-        await Supabase.instance.client
-          .from('user_achievements')
-          .insert({
-            'achievement_id': a.id,
-            'user_id': Supabase.instance.client.auth.currentUser!.id,
-            'unlocked': true,
-            'unlocked_at': DateTime.now().toIso8601String(),
-            'pinned': false,
-            'progress': unlockedCount,
-          });
+        await Supabase.instance.client.from('user_achievements').insert({
+          'achievement_id': a.id,
+          'user_id': Supabase.instance.client.auth.currentUser!.id,
+          'unlocked': true,
+          'unlocked_at': DateTime.now().toIso8601String(),
+          'pinned': false,
+          'progress': unlockedCount,
+        });
       } catch (e) {
         debugPrint('Error inserting all achievement: $e');
         _progressMap.remove(a.id);
@@ -262,22 +277,26 @@ class AchievementsState extends ChangeNotifier {
 
       final supabase = Supabase.instance.client;
 
-      final achievements = await RetryHelper.retry(() => supabase
-        .from('achievements')
-        .select()
-        .order('display_order')
+      final achievements = await RetryHelper.retry(
+        () => supabase.from('achievements').select().order('display_order'),
       );
-      final userAchievements = await RetryHelper.retry(() => supabase
-        .from('user_achievements')
-        .select()
-        .eq('user_id', supabase.auth.currentUser!.id)
+      final userAchievements = await RetryHelper.retry(
+        () => supabase
+            .from('user_achievements')
+            .select()
+            .eq('user_id', supabase.auth.currentUser!.id),
       );
 
       _achievements.addAll(
-        (achievements as List).map((json) => Achievement.fromJson(json)).toList().reversed
+        (achievements as List)
+            .map((json) => Achievement.fromJson(json))
+            .toList()
+            .reversed,
       );
       _userAchievements.addAll(
-        (userAchievements as List).map((json) => UserAchievement.fromJson(json))
+        (userAchievements as List).map(
+          (json) => UserAchievement.fromJson(json),
+        ),
       );
       for (final ua in _userAchievements) {
         _progressMap[ua.achievementId] = ua;
@@ -297,7 +316,12 @@ class AchievementsState extends ChangeNotifier {
 // helper drink count class
 class DrinkCounts {
   final int total, matcha, notes, maxInShop;
-  DrinkCounts({required this.total, required this.matcha, required this.notes, required this.maxInShop});
+  DrinkCounts({
+    required this.total,
+    required this.matcha,
+    required this.notes,
+    required this.maxInShop,
+  });
   factory DrinkCounts.fromMap(Map<String, dynamic> m) => DrinkCounts(
     total: (m['total'] ?? 0) as int,
     matcha: (m['matcha'] ?? 0) as int,

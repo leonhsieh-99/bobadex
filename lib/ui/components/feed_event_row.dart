@@ -250,10 +250,15 @@ class FeedEventRow extends StatelessWidget {
                 CircleAvatar(
                   radius: 36,
                   backgroundColor: ctx.boba.surfaceAlt,
-                  backgroundImage: AssetImage(
-                    icon.isNotEmpty
-                        ? icon
-                        : 'lib/assets/badges/default_badge.png',
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Image.asset(
+                      icon.isNotEmpty
+                          ? icon
+                          : 'lib/assets/badges/first_sip.png',
+                      errorBuilder: (_, _, _) =>
+                          Image.asset('lib/assets/badges/first_sip.png'),
+                    ),
                   ),
                 ),
                 const SizedBox(height: BobaSpace.x3),
@@ -325,7 +330,9 @@ class FeedEventRow extends StatelessWidget {
                   ((payload['achievement_badge_path'] ?? '') as String)
                           .isNotEmpty
                       ? payload['achievement_badge_path'] as String
-                      : 'lib/assets/badges/default_badge.png',
+                      : 'lib/assets/badges/first_sip.png',
+                  errorBuilder: (_, _, _) =>
+                      Image.asset('lib/assets/badges/first_sip.png'),
                 ),
               ),
       );

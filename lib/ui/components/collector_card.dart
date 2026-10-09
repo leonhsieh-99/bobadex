@@ -337,7 +337,7 @@ class _BadgeSlot extends StatelessWidget {
                     child: Image.asset(
                       (badge!.iconPath != null && badge!.iconPath!.isNotEmpty)
                           ? badge!.iconPath!
-                          : 'lib/assets/badges/default_badge.png',
+                          : 'lib/assets/badges/first_sip.png',
                     ),
                   )
                 : Icon(Icons.shield_outlined, color: tokens.inkFaint),

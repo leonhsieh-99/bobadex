@@ -91,7 +91,7 @@ class _WelcomeStep extends StatelessWidget {
     return Column(
       children: [
         const Spacer(),
-        Image.asset('lib/assets/badges/where_it_began.png', width: 120),
+        Image.asset('lib/assets/badges/first_sip.png', width: 120),
         const SizedBox(height: BobaSpace.x6),
         Text(
           'Welcome to Bobadex',

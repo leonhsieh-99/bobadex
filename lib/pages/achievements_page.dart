@@ -47,10 +47,14 @@ class _AchievementsPageState extends State<AchievementsPage> {
     final mediaCount = await _mediaUploadCount();
 
     // visited brands
-    final normalizedShopNames = shopState
-        .shopsForCurrentUser()
-        .map((s) => _normalize(s.name))
-        .toSet();
+    final normalizedShopNames = <String>{};
+    for (final shop in shopState.shopsForCurrentUser()) {
+      normalizedShopNames.add(_normalize(shop.name));
+      final slug = shop.brandSlug;
+      if (slug != null && slug.isNotEmpty) {
+        normalizedShopNames.add(_normalize(slug));
+      }
+    }
 
     // all achievements (unlocked count)
     final unlockedCount = ach.progressMap.values
@@ -136,7 +140,7 @@ class _AchievementsPageState extends State<AchievementsPage> {
                     .map(_normalize)
                     .where(counts.normalizedShopNames.contains)
                     .length;
-                need = brands.length;
+                need = dep['match'] == 'any' ? 1 : brands.length;
               case 'all_achievements':
                 have = counts.unlockedCount;
                 need = counts.totalRegularAchievements;
@@ -173,8 +177,7 @@ class _AchievementsPageState extends State<AchievementsPage> {
 }
 
 String _familyOf(Achievement a) {
-  // Last tiers use quirky names/icons (Connoisseur, Big Back, Yapper, …).
-  // Group by the shared unlock type so the full series stays together.
+  // Group by unlock type so a series stays together, including its last tier.
   switch (a.dependsOn['type']) {
     case 'shop_count':
       return 'Boba Explorer';
@@ -228,7 +231,7 @@ class _AchievementTile extends StatelessWidget {
               backgroundImage: AssetImage(
                 (a.iconPath != null && a.iconPath!.isNotEmpty)
                     ? a.iconPath!
-                    : 'lib/assets/badges/default_badge.png',
+                    : 'lib/assets/badges/first_sip.png',
               ),
               backgroundColor: unlocked
                   ? context.boba.star
