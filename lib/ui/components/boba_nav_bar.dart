@@ -21,8 +21,14 @@ class BobaNavBar extends StatelessWidget {
   static const double plusGap = 56;
   static const double extent = 72;
 
+  /// Space from the bottom of the screen to the bar. The home-indicator
+  /// inset already clears the gesture area, so only a small gap is added.
+  static double bottomOffset(BuildContext context) {
+    return BobaSpace.x2 + MediaQuery.paddingOf(context).bottom;
+  }
+
   static double clearance(BuildContext context) {
-    return extent + BobaSpace.x4 + MediaQuery.paddingOf(context).bottom;
+    return extent + bottomOffset(context);
   }
 
   const BobaNavBar({

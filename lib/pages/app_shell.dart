@@ -73,7 +73,7 @@ class _AppShellState extends State<AppShell> {
           Positioned(
             left: BobaSpace.x4,
             right: BobaSpace.x4,
-            bottom: BobaSpace.x4 + MediaQuery.paddingOf(context).bottom,
+            bottom: BobaNavBar.bottomOffset(context),
             child: ListenableBuilder(
               listenable: Listenable.merge(widget.branchNotifiers),
               builder: (context, _) {

@@ -2,10 +2,12 @@ import 'package:bobadex/models/user_stats.dart';
 import 'package:bobadex/pages/account_view_page.dart';
 import 'package:bobadex/pages/rankings_page.dart';
 import 'package:bobadex/state/rankings_cache.dart';
+import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/ui/components/boba_button.dart';
 import 'package:bobadex/ui/components/boba_card.dart';
 import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class LeaderboardPreview extends StatefulWidget {
   const LeaderboardPreview({super.key, required this.userId});
@@ -50,6 +52,9 @@ class _LeaderboardPreviewState extends State<LeaderboardPreview> {
         }
         final rows = snapshot.data ?? const <UserStats>[];
         if (rows.isEmpty || snapshot.hasError) return const SizedBox.shrink();
+        final liveName = context.select<UserState, String>(
+          (state) => state.current.displayName,
+        );
         final top = rows.where((row) => row.rank <= 3).take(3).toList();
         UserStats? me;
         for (final row in rows) {
@@ -87,7 +92,9 @@ class _LeaderboardPreviewState extends State<LeaderboardPreview> {
               for (final row in top)
                 _RankLine(
                   rank: row.rank,
-                  name: row.displayName,
+                  name: row.id == widget.userId && liveName.isNotEmpty
+                      ? liveName
+                      : row.displayName,
                   value: row.metricValue,
                   onTap: row.id == widget.userId
                       ? null
