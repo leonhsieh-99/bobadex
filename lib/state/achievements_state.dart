@@ -47,7 +47,14 @@ class AchievementsState extends ChangeNotifier {
     if (res is List && res.isNotEmpty && res.first is Map<String, dynamic>) {
       return DrinkCounts.fromMap(res.first as Map<String, dynamic>);
     }
-    return DrinkCounts(total: 0, matcha: 0, notes: 0, maxInShop: 0);
+    return DrinkCounts(
+      total: 0,
+      matcha: 0,
+      notes: 0,
+      maxInShop: 0,
+      fiveStar: 0,
+      lowRating: 0,
+    );
   }
 
   String getBadgeAssetPath(String? path) {
@@ -61,10 +68,18 @@ class AchievementsState extends ChangeNotifier {
     return _achievements.where((a) => a.dependsOn['type'] == type).toList();
   }
 
-  Future<void> setPinned(String achievementId) async {
+  /// Pins or unpins an unlocked badge. At most three stay pinned.
+  /// Returns false when a fourth pin is refused.
+  Future<bool> setPinned(String achievementId) async {
     final ua = _progressMap[achievementId];
     if (ua?.unlocked == true) {
       final newPin = !ua!.pinned;
+      if (newPin) {
+        final pinnedCount = _progressMap.values
+            .where((row) => row.pinned)
+            .length;
+        if (pinnedCount >= 3) return false;
+      }
       ua.pinned = newPin;
       notifyListeners();
       try {
@@ -79,7 +94,9 @@ class AchievementsState extends ChangeNotifier {
         notifyListeners();
         rethrow;
       }
+      return true;
     }
+    return false;
   }
 
   void queueAchievement(Achievement a) {
@@ -146,7 +163,40 @@ class AchievementsState extends ChangeNotifier {
       await checkAndUnlock(c.matcha, a.dependsOn['min'] as int, a);
     }
 
+    for (final a in getAllType('five_star_count')) {
+      await checkAndUnlock(c.fiveStar, a.dependsOn['min'] as int, a);
+    }
+
+    for (final a in getAllType('low_rating_count')) {
+      await checkAndUnlock(c.lowRating, a.dependsOn['min'] as int, a);
+    }
+
+    // name-token achievements (e.g. coffee, brown sugar, cheese foam)
+    for (final a in getAllType('drink_name_count')) {
+      final count = await countDrinksByNameTokens(tokensOf(a));
+      await checkAndUnlock(count, a.dependsOn['min'] as int, a);
+    }
+
     notifyListeners();
+  }
+
+  /// Tokens for a `drink_name_count` achievement, lower-cased.
+  static List<String> tokensOf(Achievement a) {
+    final raw = a.dependsOn['tokens'];
+    if (raw is! List) return const [];
+    return raw.map((t) => t.toString().toLowerCase()).toList();
+  }
+
+  /// Number of the current user's drinks whose name contains any token.
+  Future<int> countDrinksByNameTokens(List<String> tokens) async {
+    if (tokens.isEmpty) return 0;
+    final res = await Supabase.instance.client.rpc(
+      'drink_count_by_name_tokens',
+      params: {'tokens': tokens},
+    );
+    if (res is int) return res;
+    if (res is num) return res.toInt();
+    return 0;
   }
 
   Future<void> checkAndUnlockFriendAchievement(FriendState friendState) async {
@@ -209,7 +259,7 @@ class AchievementsState extends ChangeNotifier {
     final completion = getAllType('all_achievements');
     if (completion.isEmpty) return;
     final a = completion.first;
-    // Only count regular achievements as unlocked (not 'all_achievements' itself)
+    // Every badge except BOBA itself counts, including hidden ones.
     final regularAchievements = _achievements
         .where((ach) => ach.dependsOn['type'] != 'all_achievements')
         .toList();
@@ -315,29 +365,24 @@ class AchievementsState extends ChangeNotifier {
 
 // helper drink count class
 class DrinkCounts {
-  final int total, matcha, notes, maxInShop;
+  final int total, matcha, notes, maxInShop, fiveStar, lowRating;
   DrinkCounts({
     required this.total,
     required this.matcha,
     required this.notes,
     required this.maxInShop,
+    required this.fiveStar,
+    required this.lowRating,
   });
   factory DrinkCounts.fromMap(Map<String, dynamic> m) => DrinkCounts(
     total: (m['total'] ?? 0) as int,
     matcha: (m['matcha'] ?? 0) as int,
     notes: (m['notes'] ?? 0) as int,
     maxInShop: (m['max_in_shop'] ?? 0) as int,
+    fiveStar: (m['five_star'] ?? 0) as int,
+    lowRating: (m['low_rating'] ?? 0) as int,
   );
 }
-
-// generic token count, uncomment if need to use in future
-// Future<int> _countByToken(String token) async {
-//   final supabase = Supabase.instance.client;
-//   final res = await supabase.rpc('drink_count_by_name_token', params: {'token': token});
-//   if (res is int) return res;
-//   if (res is num) return res.toInt();
-//   return 0;
-// }
 
 Future<int> _mediaUploadCount() async {
   final res = await Supabase.instance.client.rpc('media_upload_count');

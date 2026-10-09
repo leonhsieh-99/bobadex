@@ -16,7 +16,7 @@ class BadgePickerDialog extends StatefulWidget {
     required this.badges,
     required this.pinnedBadges,
     required this.onSave,
-    this.maxSelect = 4,
+    this.maxSelect = 3,
   });
 
   @override

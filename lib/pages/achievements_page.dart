@@ -1,4 +1,5 @@
 import 'package:bobadex/models/achievement.dart';
+import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/state/achievements_state.dart';
 import 'package:bobadex/state/friend_state.dart';
 import 'package:bobadex/state/shop_state.dart';
@@ -56,23 +57,36 @@ class _AchievementsPageState extends State<AchievementsPage> {
       }
     }
 
-    // all achievements (unlocked count)
-    final unlockedCount = ach.progressMap.values
-        .where((ua) => ua.unlocked)
-        .length;
-    final totalRegular = ach.achievements
+    // name-token achievements: one RPC per achievement, keyed by id
+    final tokenCounts = <String, int>{};
+    for (final a in ach.getAllType('drink_name_count')) {
+      tokenCounts[a.id] = await ach.countDrinksByNameTokens(
+        AchievementsState.tokensOf(a),
+      );
+    }
+
+    // BOBA progress counts every badge except itself, including hidden ones.
+    final visibleIds = ach.achievements
         .where((a) => a.dependsOn['type'] != 'all_achievements')
+        .map((a) => a.id)
+        .toSet();
+    final unlockedCount = ach.progressMap.values
+        .where((ua) => ua.unlocked && visibleIds.contains(ua.achievementId))
         .length;
+    final totalRegular = visibleIds.length;
 
     return _UiCounts(
       shopCount: shopCount,
       drinkTotal: dc.total,
       drinkNotes: dc.notes,
       drinkMatcha: dc.matcha,
+      drinkFiveStar: dc.fiveStar,
+      drinkLowRating: dc.lowRating,
       maxInSingleShop: dc.maxInShop,
       friendCount: friendCount,
       mediaCount: mediaCount,
       normalizedShopNames: normalizedShopNames,
+      tokenCounts: tokenCounts,
       unlockedCount: unlockedCount,
       totalRegularAchievements: totalRegular,
     );
@@ -134,6 +148,15 @@ class _AchievementsPageState extends State<AchievementsPage> {
               case 'matcha_drink_count':
                 have = counts.drinkMatcha;
                 need = dep['min'] as int;
+              case 'five_star_count':
+                have = counts.drinkFiveStar;
+                need = dep['min'] as int;
+              case 'low_rating_count':
+                have = counts.drinkLowRating;
+                need = dep['min'] as int;
+              case 'drink_name_count':
+                have = counts.tokenCounts[a.id] ?? 0;
+                need = dep['min'] as int;
               case 'visited_brands':
                 final brands = (dep['brands'] as List).cast<String>();
                 have = brands
@@ -192,7 +215,9 @@ String _familyOf(Achievement a) {
     case 'media_upload_count':
       return 'Photographer';
     case 'matcha_drink_count':
-      return 'Matcha';
+    case 'five_star_count':
+    case 'low_rating_count':
+    case 'drink_name_count':
     case 'visited_brands':
       return 'Special';
     case 'all_achievements':
@@ -218,6 +243,10 @@ class _AchievementTile extends StatelessWidget {
     final unlocked = have == need;
     final achievementState = context.watch<AchievementsState>();
     final pinned = achievementState.progressMap[a.id]?.pinned == true;
+    final pinnedCount = achievementState.progressMap.values
+        .where((row) => row.pinned)
+        .length;
+    final pinFull = !pinned && pinnedCount >= 3;
 
     return ListTile(
       leading: locked
@@ -241,8 +270,17 @@ class _AchievementTile extends StatelessWidget {
       subtitle: Text(locked ? '? ? ?' : a.description),
       trailing: pinMode && unlocked
           ? IconButton(
-              tooltip: pinned ? 'Unpin' : 'Pin',
-              onPressed: () => achievementState.setPinned(a.id),
+              tooltip: pinned
+                  ? 'Unpin'
+                  : pinFull
+                  ? 'Unpin one to pin another'
+                  : 'Pin',
+              onPressed: () async {
+                final pinnedNow = await achievementState.setPinned(a.id);
+                if (!pinnedNow && context.mounted) {
+                  notify('Unpin one to pin another', SnackType.info);
+                }
+              },
               icon: Icon(
                 pinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
                 color: pinned ? context.boba.accent : context.boba.inkMuted,
@@ -263,10 +301,13 @@ class _UiCounts {
   final int drinkTotal;
   final int drinkNotes;
   final int drinkMatcha;
+  final int drinkFiveStar;
+  final int drinkLowRating;
   final int maxInSingleShop;
   final int friendCount;
   final int mediaCount;
   final Set<String> normalizedShopNames;
+  final Map<String, int> tokenCounts;
   final int unlockedCount;
   final int totalRegularAchievements;
 
@@ -275,10 +316,13 @@ class _UiCounts {
     required this.drinkTotal,
     required this.drinkNotes,
     required this.drinkMatcha,
+    required this.drinkFiveStar,
+    required this.drinkLowRating,
     required this.maxInSingleShop,
     required this.friendCount,
     required this.mediaCount,
     required this.normalizedShopNames,
+    required this.tokenCounts,
     required this.unlockedCount,
     required this.totalRegularAchievements,
   });

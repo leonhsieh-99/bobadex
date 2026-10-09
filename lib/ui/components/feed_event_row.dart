@@ -250,16 +250,22 @@ class FeedEventRow extends StatelessWidget {
                 CircleAvatar(
                   radius: 36,
                   backgroundColor: ctx.boba.surfaceAlt,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Image.asset(
-                      icon.isNotEmpty
-                          ? icon
-                          : 'lib/assets/badges/first_sip.png',
-                      errorBuilder: (_, _, _) =>
-                          Image.asset('lib/assets/badges/first_sip.png'),
-                    ),
-                  ),
+                  child: hidden
+                      ? Icon(
+                          Icons.lock_outline_rounded,
+                          color: ctx.boba.inkFaint,
+                          size: 32,
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Image.asset(
+                            icon.isNotEmpty
+                                ? icon
+                                : 'lib/assets/badges/first_sip.png',
+                            errorBuilder: (_, _, _) =>
+                                Image.asset('lib/assets/badges/first_sip.png'),
+                          ),
+                        ),
                 ),
                 const SizedBox(height: BobaSpace.x3),
                 Text(name, style: Theme.of(ctx).textTheme.titleMedium),
