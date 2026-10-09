@@ -82,7 +82,6 @@ class _GalleryGridState extends State<GalleryGrid> {
                         comment,
                         visibility,
                       );
-                      notify('Updated photo', SnackType.success);
                     } catch (e) {
                       notify('Error updating comment: $e', SnackType.error);
                     }

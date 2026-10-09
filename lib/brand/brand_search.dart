@@ -38,6 +38,38 @@ List<BrandSearchResult> searchBrands(
   return _withPlaceLines(matches, query, latitude, longitude);
 }
 
+const nearbyBrandRadiusKm = 80.0;
+
+/// Active brands with a place inside [radiusKm], nearest first.
+List<BrandSearchResult> nearbyBrands(
+  List<Brand> brands, {
+  required double latitude,
+  required double longitude,
+  double radiusKm = nearbyBrandRadiusKm,
+  int limit = 12,
+}) {
+  final ranked = <({Brand brand, double km})>[];
+  for (final brand in brands) {
+    if (!brand.status.isActive) continue;
+    final km = _nearestKm(brand, latitude, longitude);
+    if (km == null || km > radiusKm) continue;
+    ranked.add((brand: brand, km: km));
+  }
+  ranked.sort((a, b) {
+    final distance = a.km.compareTo(b.km);
+    if (distance != 0) return distance;
+    return a.brand.display.toLowerCase().compareTo(
+      b.brand.display.toLowerCase(),
+    );
+  });
+  return _withPlaceLines(
+    [for (final entry in ranked.take(limit)) entry.brand],
+    '',
+    latitude,
+    longitude,
+  );
+}
+
 bool brandMatchesSearch(Brand brand, String query) {
   if (brand.matchesQuery(query)) return true;
   final place = mentionedPlace(brand, query);

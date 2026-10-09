@@ -235,7 +235,6 @@ class _EmailChangePageState extends State<EmailChangePage> {
       } else {
         await _emailAuth.verifyEmailChange(email: email, code: code);
         if (!mounted) return;
-        notify('Email updated.', SnackType.success);
         Navigator.pop(context, true);
       }
     } on OtpAuthException catch (e) {

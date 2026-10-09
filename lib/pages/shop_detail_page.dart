@@ -24,7 +24,6 @@ import 'package:provider/provider.dart';
 import '../models/drink.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../widgets/add_edit_shop_dialog.dart';
-import '../widgets/filter_sort_bar.dart';
 import 'package:bobadex/ui/components/boba_button.dart';
 import 'package:bobadex/ui/components/boba_card.dart';
 import 'package:bobadex/ui/components/drink_row.dart';
@@ -55,9 +54,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   late Future<void> _ready = Future.value();
 
   final _expandedDrinkIds = <String>{};
-  String _selectedSort = 'favorite-desc';
-  String _searchQuery = '';
-  final _searchController = TextEditingController();
   bool _shopNotesExpanded = false;
 
   Widget _removedPill(BuildContext ctx) => Container(
@@ -83,20 +79,9 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   }
 
   List<Drink> getVisibleDrinks(List<Drink> drinks) {
-    List<Drink> filtered = [...drinks];
-
-    if (_searchQuery.isNotEmpty && drinks.length > 5) {
-      filtered = filtered
-          .where(
-            (d) => d.name.toLowerCase().contains(_searchQuery.toLowerCase()),
-          )
-          .toList();
-    }
-
-    List options = _selectedSort.split('-');
-    sortEntries(filtered, by: options[0], ascending: options[1] == 'asc');
-
-    return filtered;
+    final sorted = [...drinks];
+    sortEntries(sorted, by: 'favorite', ascending: false);
+    return sorted;
   }
 
   @override
@@ -140,15 +125,7 @@ class _ShopDetailPage extends State<ShopDetailPage> {
       });
       _hasShownContentOnce = false; // optional reset for a different shop
       _expandedDrinkIds.clear();
-      _searchController.clear();
-      _searchQuery = '';
     }
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   String _collectedCaption(Shop shop, int drinkCount) {
@@ -172,6 +149,16 @@ class _ShopDetailPage extends State<ShopDetailPage> {
     return 'Collected ${months[created.month - 1]} ${created.year} · $drinks';
   }
 
+  Widget _addDrinkButton({required VoidCallback onPressed}) {
+    return IconButton(
+      tooltip: 'Add drink',
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+      onPressed: onPressed,
+      icon: const Icon(Icons.add_rounded),
+    );
+  }
+
   Future<void> _promptAddDrink({
     required DrinkState drinkState,
     required AchievementsState achievementState,
@@ -187,7 +174,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
             await analytics.drinkAdded(rating: drink.rating);
             await achievementState.checkAndUnlockDrinkAchievement(drinkState);
             await achievementState.checkAndUnlockNotesAchievement(drinkState);
-            notify('Drink added.', SnackType.success);
           } catch (e) {
             debugPrint('Error adding drink: $e');
             notify('Error adding drink.', SnackType.error);
@@ -212,7 +198,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
           await shopState.update(
             shop.copyWith(pinnedDrinkId: isPinned ? '' : drink.id),
           );
-          notify('Pinned drink updated', SnackType.success);
         } catch (_) {
           notify('Error pinning drink', SnackType.error);
         }
@@ -238,7 +223,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                 await achievementState.checkAndUnlockNotesAchievement(
                   drinkState,
                 );
-                notify('Drink updated.', SnackType.success);
               } catch (_) {
                 notify('Error updating drink.', SnackType.error);
               }
@@ -268,7 +252,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
           try {
             await drinkState.remove(drink.id!);
             shopState.nullifyPinnedForDrink(drink.id!);
-            notify('Drink deleted', SnackType.success);
           } catch (_) {
             notify('Error deleting drink', SnackType.error);
           }
@@ -292,7 +275,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
   }) {
     final tokens = context.boba;
     final shopNotes = shop.notes?.trim() ?? '';
-    final showFilters = drinks.length > 5;
     final pinned = drinks.where((d) => d.id == shop.pinnedDrinkId).firstOrNull;
 
     return Column(
@@ -397,14 +379,13 @@ class _ShopDetailPage extends State<ShopDetailPage> {
             ),
           ),
         ],
+        const SizedBox(height: 16),
+        Divider(height: 1, thickness: 1, color: tokens.outline),
         SectionHeader(
-          title: drinks.isEmpty ? 'Drinks' : 'Drinks (${drinks.length})',
-          padding: const EdgeInsets.only(top: 0, bottom: 4),
-          trailing: _isCurrentUser
-              ? BobaButton(
-                  label: '+ Drink',
-                  size: BobaButtonSize.small,
-                  variant: BobaButtonVariant.secondary,
+          title: 'Drinks',
+          padding: const EdgeInsets.only(top: 8, bottom: 4),
+          trailing: _isCurrentUser && drinks.isNotEmpty
+              ? _addDrinkButton(
                   onPressed: () => _promptAddDrink(
                     drinkState: drinkState,
                     achievementState: achievementState,
@@ -414,22 +395,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                 )
               : null,
         ),
-        if (showFilters)
-          FilterSortBar(
-            controller: _searchController,
-            searchHint: 'Search drinks',
-            searchHeight: 40,
-            padding: const EdgeInsets.only(bottom: 4),
-            sortOptions: [
-              SortOption('favorite', Icons.favorite, label: 'Favorites'),
-              SortOption('rating', Icons.star, label: 'Rating'),
-              SortOption('name', Icons.sort_by_alpha, label: 'Name'),
-              SortOption('createdAt', Icons.access_time, label: 'Recent'),
-            ],
-            onSearchChanged: (query) => setState(() => _searchQuery = query),
-            onSortSelected: (sortKey) =>
-                setState(() => _selectedSort = sortKey),
-          ),
         Expanded(
           child: drinks.isEmpty
               ? EmptyState(
@@ -448,13 +413,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                           ),
                         )
                       : null,
-                )
-              : visibleDrinks.isEmpty
-              ? Center(
-                  child: Text(
-                    'Nothing matches that search',
-                    style: context.bobaText.empty,
-                  ),
                 )
               : ListView.separated(
                   padding: const EdgeInsets.only(bottom: 24),
@@ -484,12 +442,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                         );
                         try {
                           await drinkState.update(updated);
-                          notify(
-                            updated.isFavorite
-                                ? 'Drink favorited.'
-                                : 'Drink unfavorited',
-                            SnackType.success,
-                          );
                         } catch (_) {
                           notify(
                             'Error updating favorite status.',
@@ -597,7 +549,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                 shopRead.id!,
                                 mediaId,
                               );
-                              notify('New banner set', SnackType.success);
                             } catch (e) {
                               notify('Banner update failed', SnackType.error);
                             }
@@ -785,12 +736,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                   );
                                   try {
                                     await shopState.update(updated);
-                                    notify(
-                                      updated.isFavorite
-                                          ? 'Shop favorited.'
-                                          : 'Shop unfavorited.',
-                                      SnackType.success,
-                                    );
                                   } catch (_) {
                                     notify(
                                       'Error updating shop favorite status.',
@@ -858,31 +803,25 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                       }
                                       break;
                                     case 'edit':
-                                      await showDialog(
-                                        context: context,
-                                        builder: (_) => AddOrEditShopDialog(
-                                          shop: shopRead,
-                                          brand: brand,
-                                          onSubmit: (submittedShop) async {
-                                            try {
-                                              final persistedShop =
-                                                  await shopState.update(
-                                                    submittedShop,
-                                                  );
-                                              notify(
-                                                'Shop updated.',
-                                                SnackType.success,
-                                              );
-                                              return persistedShop;
-                                            } catch (e) {
-                                              notify(
-                                                'Error updating shop.',
-                                                SnackType.error,
-                                              );
-                                              rethrow;
-                                            }
-                                          },
-                                        ),
+                                      await AddOrEditShopDialog.show(
+                                        context,
+                                        shop: shopRead,
+                                        brand: brand,
+                                        onSubmit: (submittedShop) async {
+                                          try {
+                                            final persistedShop =
+                                                await shopState.update(
+                                                  submittedShop,
+                                                );
+                                            return persistedShop;
+                                          } catch (e) {
+                                            notify(
+                                              'Error updating shop.',
+                                              SnackType.error,
+                                            );
+                                            rethrow;
+                                          }
+                                        },
                                       );
                                       break;
                                     case 'delete':
@@ -919,10 +858,6 @@ class _ShopDetailPage extends State<ShopDetailPage> {
                                           await shopState.remove(widget.shopId);
                                           await feedState.removeFeedEvent(
                                             widget.shopId,
-                                          );
-                                          notify(
-                                            'Shop deleted',
-                                            SnackType.success,
                                           );
                                           if (context.mounted) {
                                             Navigator.pop(context);

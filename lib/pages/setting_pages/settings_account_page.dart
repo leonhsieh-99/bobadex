@@ -76,8 +76,6 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
         }
 
         userState.setProfileImagePath(path);
-
-        notify('Image uploaded', SnackType.success);
       }
       if (_removeExistingImage &&
           oldImagePath != null &&
@@ -298,7 +296,6 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                         if (newName != null && newName != user.displayName) {
                           try {
                             await userState.setDisplayName(newName);
-                            notify('Name updated', SnackType.success);
                           } catch (e) {
                             notify('Error updating name.', SnackType.error);
                           }
@@ -340,7 +337,6 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                             newUsername != user.username) {
                           try {
                             await userState.setUsername(newUsername);
-                            notify('Username updated', SnackType.success);
                           } catch (e) {
                             notify('Error updating username.', SnackType.error);
                           }
@@ -410,7 +406,6 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                         if (newBio != null && newBio != user.bio) {
                           try {
                             await userState.setBio(newBio);
-                            notify('Bio updated', SnackType.success);
                           } catch (e) {
                             notify('Error updating bio.', SnackType.error);
                           }

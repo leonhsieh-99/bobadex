@@ -85,7 +85,6 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
         _selecting = false;
         _selected = [];
       });
-      notify('Photos deleted', SnackType.success);
     } catch (e) {
       notify('Error deleting photos', SnackType.error);
     } finally {
@@ -170,7 +169,6 @@ class _ShopGalleryPageState extends State<ShopGalleryPage> {
     );
 
     setState(() => _isLoading = false);
-    notify('Images uploaded', SnackType.success);
   }
 
   @override

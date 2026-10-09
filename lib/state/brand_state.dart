@@ -41,6 +41,13 @@ class BrandState extends ChangeNotifier {
     );
   }
 
+  List<BrandSearchResult> nearby({
+    required double latitude,
+    required double longitude,
+  }) {
+    return nearbyBrands(_brands, latitude: latitude, longitude: longitude);
+  }
+
   void addBrand(Brand brand) {
     _brands.add(brand);
     _bySlug[brand.slug] = brand;

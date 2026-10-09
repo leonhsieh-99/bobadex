@@ -78,7 +78,7 @@ cd bobadex
 flutter pub get
 ```
 
-Keys come from `.env.dev` / `.env.prod` at compile time (not bundled as assets). Needed: `SUPABASE_URL`, `SUPABASE_ANON_KEY`. Optional: `SENTRY_DSN`.
+Keys come from `.env.dev` / `.env.prod` at compile time (not bundled as assets). Needed: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`. Optional: `SENTRY_DSN`.
 
 ```bash
 flutter run --dart-define-from-file=.env.dev

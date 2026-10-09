@@ -120,6 +120,8 @@ class BrandMark extends StatelessWidget {
     this.showAccentRing = false,
   });
 
+  static String heroTag(String slug) => 'brand-mark-$slug';
+
   static const _accentPalette = <Color>[
     Color(0xFF9B6847),
     Color(0xFF5F8067),
@@ -142,6 +144,8 @@ class BrandMark extends StatelessWidget {
       (s) => s.current.useMascots,
     );
     final hasIcon = iconPath != null && iconPath!.isNotEmpty;
+    // Mascot files are square. A circle crops the corners.
+    final round = circular && !(useMascots && hasIcon);
 
     Widget mark;
     if (silhouette && useMascots && hasIcon) {
@@ -170,12 +174,7 @@ class BrandMark extends StatelessWidget {
             1,
             0,
           ]),
-          child: IconPic(
-            path: iconPath,
-            size: size,
-            circular: circular,
-            fit: fit,
-          ),
+          child: IconPic(path: iconPath, size: size, circular: round, fit: fit),
         ),
       );
     } else if (silhouette) {
@@ -186,8 +185,8 @@ class BrandMark extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: tokens.surfaceAlt,
-          shape: circular ? BoxShape.circle : BoxShape.rectangle,
-          borderRadius: circular ? null : BorderRadius.circular(BobaRadius.sm),
+          shape: round ? BoxShape.circle : BoxShape.rectangle,
+          borderRadius: round ? null : BorderRadius.circular(BobaRadius.sm),
         ),
         child: Text(
           brandLettering(name),
@@ -199,13 +198,13 @@ class BrandMark extends StatelessWidget {
         ),
       );
     } else if (useMascots && hasIcon) {
-      mark = IconPic(path: iconPath, size: size, circular: circular, fit: fit);
+      mark = IconPic(path: iconPath, size: size, circular: round, fit: fit);
     } else {
       mark = BrandLettering(
         name: name,
         seed: (slug != null && slug!.isNotEmpty) ? slug! : name,
         size: size,
-        circular: circular,
+        circular: round,
       );
     }
 
@@ -213,8 +212,8 @@ class BrandMark extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        shape: circular ? BoxShape.circle : BoxShape.rectangle,
-        borderRadius: circular ? null : BorderRadius.circular(BobaRadius.md),
+        shape: round ? BoxShape.circle : BoxShape.rectangle,
+        borderRadius: round ? null : BorderRadius.circular(BobaRadius.md),
         border: Border.all(
           color: accentFor((slug?.isNotEmpty ?? false) ? slug! : name),
           width: BobaStroke.focus,

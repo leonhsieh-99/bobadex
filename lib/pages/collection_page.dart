@@ -95,7 +95,6 @@ class _CollectionPageState extends State<CollectionPage> {
     try {
       await _repo.track(county.countyPlaceId);
       if (!mounted) return;
-      notify('${county.countyName} added', SnackType.success);
       setState(() {
         _nearby = null;
         _addingNearby = false;
@@ -283,7 +282,6 @@ class _BrowseCountiesSheetState extends State<_BrowseCountiesSheet> {
     try {
       await widget.repo.track(county.countyPlaceId);
       if (!mounted) return;
-      notify('${county.countyName} added', SnackType.success);
       Navigator.of(context).pop(
         CountySummary(
           countyPlaceId: county.countyPlaceId,

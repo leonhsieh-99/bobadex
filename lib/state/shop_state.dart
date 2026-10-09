@@ -9,24 +9,39 @@ class ShopState extends ChangeNotifier {
   final _byUser = <String, List<Shop>>{}; // userId -> shops
   final _loading = <String, bool>{}; // userId -> loading state
   final _lastLoadedAt = <String, DateTime>{}; // userId -> last load
-  final _shopToUser = <String, String>{}; // shopId -> userId (fast reverse index)
+  final _shopToUser =
+      <String, String>{}; // shopId -> userId (fast reverse index)
   final _byId = <String, Shop>{}; // shopId -> Shop (fast lookup)
 
   bool _hasError = false;
+  String? _spotlightShopId;
   Duration cacheTtl = const Duration(minutes: 2);
 
   final _drinkCounts = <String, ShopDrinkCounts>{};
   Map<String, ShopDrinkCounts> get drinkCounts => _drinkCounts;
 
-//----------GETTERS------------
+  //----------GETTERS------------
 
   ShopDrinkCounts countsForShop(String shopId) =>
       _drinkCounts[shopId] ?? const ShopDrinkCounts();
 
   bool get hasError => _hasError;
+  String? get spotlightShopId => _spotlightShopId;
+
+  void spotlightShop(String id) {
+    _spotlightShopId = id;
+    notifyListeners();
+  }
+
+  void clearSpotlight() {
+    if (_spotlightShopId == null) return;
+    _spotlightShopId = null;
+    notifyListeners();
+  }
+
   List<Shop> shopsFor(String userId) => _byUser[userId] ?? const [];
   bool isLoading(String userId) => _loading[userId] ?? false;
-  
+
   Shop? getShop(String? shopId) => shopId == null ? null : _byId[shopId];
 
   Shop? getShopByBrand(String userId, String? slug) {
@@ -60,11 +75,13 @@ class ShopState extends ChangeNotifier {
 
     _loading[userId] = true;
     try {
-      final rows = await RetryHelper.retry(() => Supabase.instance.client
-        .from('shops')
-        .select()
-        .eq('user_id', userId)
-        .order('created_at', ascending: false));
+      final rows = await RetryHelper.retry(
+        () => Supabase.instance.client
+            .from('shops')
+            .select()
+            .eq('user_id', userId)
+            .order('created_at', ascending: false),
+      );
 
       final list = rows.map(Shop.fromJson).toList();
       _byUser[userId] = list;
@@ -95,13 +112,12 @@ class ShopState extends ChangeNotifier {
     await loadForUser(uid, force: force);
   }
 
-    Future<void> loadDrinkCountsForCurrentUser({bool force = false}) async {
+  Future<void> loadDrinkCountsForCurrentUser({bool force = false}) async {
     final uid = _currentUserId;
     if (uid == null) return;
     try {
       final res = await Supabase.instance.client.rpc('drink_counts_by_shop');
-      final List data =
-        res is List ? res : (res == null ? const [] : [res]);
+      final List data = res is List ? res : (res == null ? const [] : [res]);
       _drinkCounts
         ..clear()
         ..addEntries(
@@ -134,17 +150,17 @@ class ShopState extends ChangeNotifier {
 
     try {
       final response = await Supabase.instance.client
-        .from('shops')
-        .insert({
-          'user_id': userId,
-          'name': shop.name,
-          'rating': shop.rating,
-          'notes': shop.notes,
-          'is_favorite': shop.isFavorite,
-          'brand_slug': shop.brandSlug,
-        })
-        .select()
-        .single();
+          .from('shops')
+          .insert({
+            'user_id': userId,
+            'name': shop.name,
+            'rating': shop.rating,
+            'notes': shop.notes,
+            'is_favorite': shop.isFavorite,
+            'brand_slug': shop.brandSlug,
+          })
+          .select()
+          .single();
 
       final insertedShop = Shop.fromJson(response);
       final index = _byUser[userId]!.indexWhere((s) => s.id == tempId);
@@ -176,7 +192,7 @@ class ShopState extends ChangeNotifier {
   }
 
   Future<Shop> update(Shop updated, {bool touchPinned = false}) async {
-    final id  = updated.id!;
+    final id = updated.id!;
     final uid = _shopToUser[id] ?? _currentUserId!;
     final current = _byUser[uid] ?? const <Shop>[];
 
@@ -194,11 +210,11 @@ class ShopState extends ChangeNotifier {
 
     try {
       final data = <String, dynamic>{
-        'name':        updated.name,
-        'rating':      updated.rating,
+        'name': updated.name,
+        'rating': updated.rating,
         'is_favorite': updated.isFavorite,
-        'brand_slug':  updated.brandSlug,
-        'notes':       updated.notes,
+        'brand_slug': updated.brandSlug,
+        'notes': updated.notes,
       };
 
       // send pinned only if changed
@@ -206,12 +222,16 @@ class ShopState extends ChangeNotifier {
       if (pinnedChanged) {
         data['pinned_drink_id'] =
             (updated.pinnedDrinkId == null || updated.pinnedDrinkId!.isEmpty)
-                ? null
-                : updated.pinnedDrinkId;
+            ? null
+            : updated.pinnedDrinkId;
       }
 
       final res = await Supabase.instance.client
-          .from('shops').update(data).eq('id', id).select().single();
+          .from('shops')
+          .update(data)
+          .eq('id', id)
+          .select()
+          .single();
 
       final persisted = Shop.fromJson(res);
 
@@ -241,7 +261,6 @@ class ShopState extends ChangeNotifier {
     }
   }
 
-
   Future<void> remove(String id) async {
     final uid = _shopToUser[id] ?? _currentUserId;
     if (uid == null) throw StateError('No user context for shop');
@@ -268,7 +287,8 @@ class ShopState extends ChangeNotifier {
     } catch (e) {
       // rollback
       if (removed != null) {
-        final copy = List<Shop>.from(_byUser[uid] ?? const [])..insert(0, removed);
+        final copy = List<Shop>.from(_byUser[uid] ?? const [])
+          ..insert(0, removed);
         _byUser[uid] = copy;
         _byId[id] = removed;
         _shopToUser[id] = uid;
@@ -300,7 +320,7 @@ class ShopState extends ChangeNotifier {
     }
     notifyListeners();
   }
-  
+
   // --------------HELPERS--------------
 
   Future<List<Shop>> fetchUserShops(String userId, {bool force = false}) async {
@@ -315,10 +335,16 @@ class ShopState extends ChangeNotifier {
   }
 
   void nullifyPinnedForDrink(String drinkId) {
-    _byId.updateAll((_, s) => s.pinnedDrinkId == drinkId ? s.copyWith(pinnedDrinkId: null) : s);
-    _byUser.updateAll((_, list) => [
-      for (final s in list) s.pinnedDrinkId == drinkId ? s.copyWith(pinnedDrinkId: null) : s
-    ]);
+    _byId.updateAll(
+      (_, s) =>
+          s.pinnedDrinkId == drinkId ? s.copyWith(pinnedDrinkId: null) : s,
+    );
+    _byUser.updateAll(
+      (_, list) => [
+        for (final s in list)
+          s.pinnedDrinkId == drinkId ? s.copyWith(pinnedDrinkId: null) : s,
+      ],
+    );
     notifyListeners();
   }
 

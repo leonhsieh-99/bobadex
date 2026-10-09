@@ -32,7 +32,6 @@ class _RankingsPageState extends State<RankingsPage>
 
   static const _userMetrics = [
     ('brands', 'Brands'),
-    ('drinks', 'Drinks'),
     ('badges', 'Badges'),
   ];
 

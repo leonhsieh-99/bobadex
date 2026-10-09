@@ -70,9 +70,9 @@ class EntryTile extends StatelessWidget {
             shop: shop,
             brandLabel: brandLabel,
             brandIconPath: brandIconPath,
-            seed: seed,
             count: count,
             scale: scale,
+            columns: columns,
             onTap: onTap,
           )
         : _PhotoEntry(
@@ -92,26 +92,27 @@ class _IconEntry extends StatelessWidget {
     required this.shop,
     required this.brandLabel,
     required this.brandIconPath,
-    required this.seed,
     required this.count,
     required this.scale,
+    required this.columns,
     required this.onTap,
   });
 
   final Shop shop;
   final String brandLabel;
   final String? brandIconPath;
-  final String seed;
   final int count;
   final double scale;
+  final int columns;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.boba;
     return BobaCard(
       onTap: onTap,
       padding: const EdgeInsets.all(BobaSpace.x3),
-      accentSpine: BrandMark.accentFor(seed),
+      accentSpine: tokens.isDark ? tokens.accent : tokens.accentInk,
       child: Stack(
         children: [
           Column(
@@ -152,7 +153,7 @@ class _IconEntry extends StatelessWidget {
               name: brandLabel,
               slug: shop.brandSlug,
               iconPath: brandIconPath,
-              size: 46 * scale,
+              size: (columns == 2 ? 78 : 46) * scale,
               fit: BoxFit.contain,
             ),
           ),

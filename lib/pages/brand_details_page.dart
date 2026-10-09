@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:bobadex/analytics_service.dart';
 import 'package:bobadex/config/constants.dart';
+import 'package:bobadex/helpers/save_shop_visit.dart';
 import 'package:bobadex/models/brand.dart';
 import 'package:bobadex/models/shop.dart';
 import 'package:bobadex/models/brand_profile.dart';
@@ -21,8 +22,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:bobadex/widgets/add_edit_shop_dialog.dart';
+import 'package:bobadex/ui/components/boba_button.dart';
+import 'package:bobadex/ui/components/boba_card.dart';
 import 'package:bobadex/ui/components/boba_chip.dart';
+import 'package:bobadex/ui/components/rating_text.dart';
 import 'package:bobadex/ui/theme/boba_context.dart';
+import 'package:bobadex/ui/theme/boba_tokens.dart';
 
 class BrandDetailsPage extends StatefulWidget {
   final Brand brand;
@@ -189,16 +194,45 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Future<void> _openVisit() async {
     final shopState = context.read<ShopState>();
     final achievementState = context.read<AchievementsState>();
+    final analytics = context.read<AnalyticsService>();
+    final currentId = context.read<UserState>().current.id;
+    final userShop = shopState.getShopByBrand(currentId, widget.brand.slug);
+    final hasVisit = userShop != null;
+
+    await AddOrEditShopDialog.show(
+      context,
+      shop: hasVisit ? userShop : null,
+      brand: widget.brand,
+      onSubmit: (submittedShop) async {
+        try {
+          final persistedShop = await saveShopVisit(
+            shop: submittedShop,
+            isNew: !hasVisit,
+            shopState: shopState,
+            achievements: achievementState,
+            analytics: analytics,
+          );
+          return persistedShop;
+        } catch (e, st) {
+          debugPrint('error in onSubmit: $e');
+          debugPrintStack(stackTrace: st);
+          notify('Failed to update shop.', SnackType.error);
+          return Future.error(e);
+        }
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final currentId = context.select<UserState, String>((s) => s.current.id);
     final userShop = context.select<ShopState, Shop?>(
       (s) => s.getShopByBrand(currentId, widget.brand.slug),
     );
     final hasVisit = userShop != null;
-    final analytics = context.read<AnalyticsService>();
 
     Widget buildGlobalGallery(
       Brand brand,
@@ -302,7 +336,6 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                       ),
                     ),
                   ),
-                  // add visit button
                   Positioned(
                     bottom: 20,
                     right: 20,
@@ -315,58 +348,16 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                           vertical: 6,
                         ),
                         elevation: 3,
-                        minimumSize: Size(0, 0),
+                        minimumSize: Size.zero,
                       ),
+                      onPressed: _openVisit,
                       child: Text(
-                        hasVisit ? "Edit Visit" : "Add Visit",
+                        hasVisit ? 'Edit Visit' : 'Add Visit',
                         style: TextStyle(
                           color: context.boba.onAccent,
                           fontSize: 12,
                         ),
                       ),
-                      onPressed: () async {
-                        await showDialog(
-                          context: context,
-                          builder: (context) => AddOrEditShopDialog(
-                            shop: hasVisit ? userShop : null,
-                            onSubmit: (submittedShop) async {
-                              try {
-                                if (hasVisit) {
-                                  final persistedShop = await shopState.update(
-                                    submittedShop,
-                                  );
-                                  notify('Shop updated', SnackType.success);
-                                  return persistedShop;
-                                } else {
-                                  final persistedShop = await shopState.add(
-                                    submittedShop,
-                                  );
-                                  analytics.shopAdded(
-                                    rating: persistedShop.rating,
-                                    brandSlug: persistedShop.brandSlug,
-                                  );
-                                  await achievementState
-                                      .checkAndUnlockShopAchievement(shopState);
-                                  await achievementState
-                                      .checkAndUnlockBrandAchievement(
-                                        shopState,
-                                      );
-                                  return persistedShop;
-                                }
-                              } catch (e, st) {
-                                debugPrint('error in onSubmit: $e');
-                                debugPrintStack(stackTrace: st);
-                                notify(
-                                  'Failed to update shop.',
-                                  SnackType.error,
-                                );
-                                return Future.error(e);
-                              }
-                            },
-                            brand: widget.brand,
-                          ),
-                        );
-                      },
                     ),
                   ),
                   Positioned(
@@ -411,6 +402,10 @@ class _BrandDetailsPageState extends State<BrandDetailsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (userShop != null) ...[
+                      _YourVisitCard(shop: userShop, onEdit: _openVisit),
+                      const SizedBox(height: BobaSpace.x3),
+                    ],
                     FutureBuilder<BrandProfile>(
                       future: _profileFuture,
                       builder: (context, snapshot) {
@@ -564,37 +559,19 @@ Widget buildBannerContent(
   Future<BrandStats> statsFuture,
   Shop? userShop,
 ) {
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  String collectedLabel = 'Not collected';
-  if (userShop != null) {
-    final created = userShop.createdAt;
-    final hasDate = created.millisecondsSinceEpoch > 0;
-    collectedLabel = hasDate
-        ? 'In your dex ✓ since ${months[created.month - 1]} ${created.year}'
-        : 'In your dex ✓';
-  }
+  final collectedLabel = userShop == null ? 'Not collected' : 'In dex ✓';
   return IntrinsicHeight(
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.end, // bottom align children
       children: [
-        BrandMark(
-          name: brand.display,
-          slug: brand.slug,
-          iconPath: brand.iconPath,
-          fit: BoxFit.contain,
+        Hero(
+          tag: BrandMark.heroTag(brand.slug),
+          child: BrandMark(
+            name: brand.display,
+            slug: brand.slug,
+            iconPath: brand.iconPath,
+            fit: BoxFit.contain,
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -637,4 +614,87 @@ Widget buildBannerContent(
       ],
     ),
   );
+}
+
+const _visitMonths = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+String? _visitSince(Shop shop) {
+  final created = shop.createdAt;
+  if (created.millisecondsSinceEpoch <= 0) return null;
+  return 'Since ${_visitMonths[created.month - 1]} ${created.year}';
+}
+
+class _YourVisitCard extends StatelessWidget {
+  const _YourVisitCard({required this.shop, required this.onEdit});
+
+  final Shop shop;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final notes = shop.notes?.trim() ?? '';
+    final since = _visitSince(shop);
+    return BobaCard(
+      onTap: onEdit,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Your visit',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    if (since != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        since,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: context.boba.inkMuted,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              BobaButton(
+                label: 'Edit',
+                variant: BobaButtonVariant.tertiary,
+                size: BobaButtonSize.small,
+                onPressed: onEdit,
+              ),
+            ],
+          ),
+          const SizedBox(height: BobaSpace.x3),
+          RatingText(value: shop.rating, size: RatingTextSize.large),
+          if (notes.isNotEmpty) ...[
+            const SizedBox(height: BobaSpace.x2),
+            Text(
+              notes,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }

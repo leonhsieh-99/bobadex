@@ -20,8 +20,10 @@ Future<void> _bootstrap() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
-  if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
+  const supabasePublishableKey = String.fromEnvironment(
+    'SUPABASE_PUBLISHABLE_KEY',
+  );
+  if (supabaseUrl.isEmpty || supabasePublishableKey.isEmpty) {
     throw Exception(
       'Missing Supabase configuration. Run with --dart-define-from-file=.env.dev or .env.prod',
     );
@@ -36,7 +38,7 @@ Future<void> _bootstrap() async {
 
   await Supabase.initialize(
     url: supabaseUrl,
-    publishableKey: supabaseAnonKey,
+    publishableKey: supabasePublishableKey,
     authOptions: const FlutterAuthClientOptions(
       authFlowType: AuthFlowType.pkce,
       autoRefreshToken: true,

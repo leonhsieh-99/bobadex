@@ -1,5 +1,4 @@
 import 'package:bobadex/config/ai_disclosure.dart';
-import 'package:bobadex/pages/setting_pages/settings_layout_page.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -44,17 +43,6 @@ class SettingsAiDataPage extends StatelessWidget {
           Text(
             'Mascots are the default. Minimal uses lettering from each brand name.',
             style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
-          ),
-          const SizedBox(height: 16),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Layout'),
-            subtitle: const Text('Grid density and banner photos'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsLayoutPage()),
-            ),
           ),
         ],
       ),

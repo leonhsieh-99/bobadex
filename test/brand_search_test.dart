@@ -119,4 +119,31 @@ void main() {
     ], 'bobalicious san diego');
     expect(typed.map((result) => result.brand.slug).toList(), ['sd']);
   });
+
+  test('nearby brands stay inside the radius and sort by distance', () {
+    const laJolla = BrandPlace(
+      city: 'La Jolla',
+      state: 'CA',
+      latitude: 32.84,
+      longitude: -117.27,
+    );
+    final results = nearbyBrands(
+      [
+        _brand(slug: 'rw', display: 'Far Away', places: const [_redwood]),
+        _brand(slug: 'lj', display: 'Closer', places: const [laJolla]),
+        _brand(slug: 'sd', display: 'Local', places: const [_sanDiego]),
+        _brand(
+          slug: 'plain',
+          display: 'No Coordinates',
+          places: const [_enterprise],
+        ),
+      ],
+      latitude: 32.72,
+      longitude: -117.16,
+      radiusKm: 40,
+    );
+
+    expect(results.map((result) => result.brand.slug).toList(), ['sd', 'lj']);
+    expect(results.first.placeLine, 'San Diego, CA');
+  });
 }

@@ -301,23 +301,56 @@ class AboutPage extends StatelessWidget {
                   ),
                 ),
               ),
-              Center(
-                child: InkWell(
-                  onTap: () =>
-                      _openUrl('https://www.openstreetmap.org/copyright'),
-                  child: Text(
-                    '© OpenStreetMap contributors (ODbL)',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: context.boba.inkMuted,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
+              _CreditLink(
+                label: '© OpenStreetMap contributors (ODbL)',
+                url: 'https://www.openstreetmap.org/copyright',
+                onOpen: _openUrl,
+              ),
+              const SizedBox(height: 8),
+              _CreditLink(
+                label: 'City data © SimpleMaps',
+                url: 'https://simplemaps.com/data/us-cities',
+                onOpen: _openUrl,
+              ),
+              const SizedBox(height: 8),
+              _CreditLink(
+                label: 'Place data includes Foursquare OS Places (Apache 2.0)',
+                url: 'https://opensource.foursquare.com/places-notice-txt/',
+                onOpen: _openUrl,
               ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class _CreditLink extends StatelessWidget {
+  const _CreditLink({
+    required this.label,
+    required this.url,
+    required this.onOpen,
+  });
+
+  final String label;
+  final String url;
+  final Future<void> Function(String url) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: InkWell(
+        onTap: () => onOpen(url),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: context.boba.inkMuted,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      ),
     );
   }
 }

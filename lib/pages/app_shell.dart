@@ -97,6 +97,7 @@ class _AppShellState extends State<AppShell> {
                         onAddPressed: () {
                           Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute(
+                              fullscreenDialog: true,
                               builder: (_) => const AddShopSearchPage(),
                             ),
                           );

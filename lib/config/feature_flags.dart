@@ -1,7 +1,4 @@
 abstract final class FeatureFlags {
-  /// County collection RPCs live on the dev project. Prod builds stay off
-  /// until those functions are merged.
-  static const collection =
-      String.fromEnvironment('SUPABASE_URL') ==
-      'https://xnkpatktudnycpkbmvsf.supabase.co';
+  /// County collections are on dev and prod.
+  static const collection = true;
 }

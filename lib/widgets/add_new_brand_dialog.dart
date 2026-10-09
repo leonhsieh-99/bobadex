@@ -9,7 +9,13 @@ import 'package:provider/provider.dart';
 class AddNewBrandDialog extends StatefulWidget {
   final Future<String?> Function(BrandRequestDraft draft) onSubmit;
   final List<City>? cities;
-  const AddNewBrandDialog({super.key, required this.onSubmit, this.cities});
+  final String? initialName;
+  const AddNewBrandDialog({
+    super.key,
+    required this.onSubmit,
+    this.cities,
+    this.initialName,
+  });
 
   @override
   State<AddNewBrandDialog> createState() => _AddNewBrandDialogState();
@@ -17,7 +23,7 @@ class AddNewBrandDialog extends StatefulWidget {
 
 class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  late final TextEditingController _nameController;
   final _addressController = TextEditingController();
   final _urlController = TextEditingController();
   City? _selectedCity;
@@ -27,6 +33,7 @@ class _AddNewBrandDialogState extends State<AddNewBrandDialog> {
   @override
   void initState() {
     super.initState();
+    _nameController = TextEditingController(text: widget.initialName ?? '');
     _loadCities();
   }
 

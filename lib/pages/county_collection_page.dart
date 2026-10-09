@@ -477,7 +477,7 @@ class _CountyCollectionPageState extends State<CountyCollectionPage> {
                         crossAxisCount: 2,
                         mainAxisSpacing: 12,
                         crossAxisSpacing: 12,
-                        childAspectRatio: 0.78,
+                        childAspectRatio: 0.70,
                       ),
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final item = _items[index];
@@ -590,7 +590,7 @@ class _CountyBrandTile extends StatelessWidget {
     final stores = item.localStorefronts == 1
         ? '1 storefront'
         : '${item.localStorefronts} known storefronts';
-    const mascotSize = 52.0;
+    const mascotSize = 78.0;
     return BobaCard(
       onTap: onTap,
       padding: EdgeInsets.zero,

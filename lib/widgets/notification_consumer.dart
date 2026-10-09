@@ -9,30 +9,17 @@ class NotificationConsumer extends StatefulWidget {
 }
 
 class _NotificationConsumerState extends State<NotificationConsumer> {
-  bool _draining = false;
-
   void _onChange() {
-    if (!mounted || _draining || !NotificationBus.instance.hasNotifications) return;
-    _drain();
-  }
-
-  Future<void> _drain() async {
-    _draining = true;
-    try {
-      await NotificationBus.instance.drain();
-    } finally {
-      _draining = false;
-      if (mounted && NotificationBus.instance.hasNotifications) _drain();
-    }
+    if (!mounted || !NotificationBus.instance.hasNotifications) return;
+    NotificationBus.instance.flush();
   }
 
   @override
-    void initState() {
-      super.initState();
-      NotificationBus.instance.addListener(_onChange);
-      // drain anything queued early
-      WidgetsBinding.instance.addPostFrameCallback((_) => _onChange());
-    }
+  void initState() {
+    super.initState();
+    NotificationBus.instance.addListener(_onChange);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onChange());
+  }
 
   @override
   void dispose() {
@@ -43,4 +30,3 @@ class _NotificationConsumerState extends State<NotificationConsumer> {
   @override
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
-

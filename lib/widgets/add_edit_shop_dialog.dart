@@ -8,10 +8,17 @@ import 'package:bobadex/state/drink_state.dart';
 import 'package:bobadex/state/feed_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/shop_media_state.dart';
+import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/widgets/image_widgets/fullscreen_image_viewer.dart';
 import 'package:bobadex/widgets/image_widgets/multiselect_image_picker.dart';
-import 'package:flutter/material.dart';
+import 'package:bobadex/ui/components/boba_button.dart';
+import 'package:bobadex/ui/components/boba_chip.dart';
+import 'package:bobadex/ui/components/boba_sheet.dart';
+import 'package:bobadex/ui/components/rating_text.dart';
 import 'package:bobadex/ui/theme/boba_context.dart';
+import 'package:bobadex/ui/theme/boba_tokens.dart';
+import 'package:bobadex/widgets/brand_mark.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/shop.dart';
@@ -24,13 +31,54 @@ class AddOrEditShopDialog extends StatefulWidget {
   final Shop? shop;
   final Future<Shop> Function(Shop) onSubmit;
   final Brand? brand;
+  final ScrollController? scrollController;
 
   const AddOrEditShopDialog({
     super.key,
     this.shop,
     required this.onSubmit,
     this.brand,
+    this.scrollController,
   });
+
+  static Future<void> show(
+    BuildContext context, {
+    Shop? shop,
+    required Future<Shop> Function(Shop) onSubmit,
+    Brand? brand,
+  }) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: context.boba.surface,
+      builder: (context) {
+        final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+        return Padding(
+          padding: EdgeInsets.only(bottom: keyboard),
+          child: DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.8,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            builder: (context, scrollController) {
+              return BobaSheet(
+                showGrabber: true,
+                expand: true,
+                padding: const EdgeInsets.only(top: BobaSpace.x3),
+                child: AddOrEditShopDialog(
+                  shop: shop,
+                  onSubmit: onSubmit,
+                  brand: brand,
+                  scrollController: scrollController,
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
 
   @override
   State<AddOrEditShopDialog> createState() => _AddOrEditShopDialogState();
@@ -43,6 +91,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
   String? _brandSlug;
   late double _rating;
   bool _isSubmitting = false;
+  bool _stamped = false;
   final List<GalleryImage> _selectedImages = [];
 
   // DRINK FORM WIDGETS
@@ -64,7 +113,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
       _nameController = TextEditingController(text: widget.shop?.name ?? '');
     }
     _notesController = TextEditingController(text: widget.shop?.notes ?? '');
-    _rating = widget.shop?.rating ?? 3;
+    _rating = widget.shop?.rating ?? 0;
   }
 
   @override
@@ -101,6 +150,7 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
   ) async {
     final isValid = _formkey.currentState?.validate() ?? false;
     if (!isValid) return;
+    if (widget.shop == null && _rating <= 0) return;
 
     setState(() => _isSubmitting = true);
 
@@ -219,7 +269,13 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
         if (!isNewShop) {
           Navigator.of(context).pop();
         } else {
-          notify('Shop added', SnackType.success);
+          final addedId = submittedShop.id;
+          if (addedId != null) {
+            context.read<ShopState>().spotlightShop(addedId);
+          }
+          setState(() => _stamped = true);
+          await Future.delayed(const Duration(milliseconds: 900));
+          if (!mounted) return;
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
       }
@@ -234,6 +290,38 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
     }
   }
 
+  void _openDrinkForm() {
+    setState(() => _showMiniDrinkForm = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final controller = widget.scrollController;
+      if (controller == null || !controller.hasClients) return;
+      controller.animateTo(
+        controller.position.maxScrollExtent,
+        duration: BobaMotion.normal,
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  void _addPendingDrink() {
+    if (!(_miniDrinkFormKey.currentState?.validate() ?? false)) return;
+    setState(() {
+      _pendingDrinks.add(
+        DrinkFormData(
+          name: _miniDrinkNameCtrl.text.trim(),
+          rating: _miniDrinkRating,
+          notes: _miniDrinkNotesCtrl.text.trim(),
+          isFavorite: false,
+        ),
+      );
+      _showMiniDrinkForm = false;
+      _miniDrinkNameCtrl.clear();
+      _miniDrinkNotesCtrl.clear();
+      _miniDrinkRating = 3.0;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final shopMediaState = context.read<ShopMediaState>();
@@ -243,340 +331,376 @@ class _AddOrEditShopDialogState extends State<AddOrEditShopDialog> {
     final analytics = context.read<AnalyticsService>();
     final user = context.read<UserState>().current;
     final isNewShop = widget.shop == null;
+    final needsRating = isNewShop && _rating <= 0;
 
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      behavior: HitTestBehavior.opaque,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final viewInsets = MediaQuery.of(context).viewInsets;
-          final maxHeight = constraints.maxHeight - viewInsets.bottom - 24;
-
-          const double _footerHeight = 48; // Row height
-          const double _footerVPad = 8; // vertical padding around the Row
-          const double _footerTotal = _footerHeight + (_footerVPad * 2);
-
-          return Dialog(
-            insetPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 24,
-            ),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: maxHeight > 300 ? maxHeight : 300, // minimum height
-              ),
-              child: Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.only(bottom: _footerTotal + 8),
-                      child: Form(
-                        key: _formkey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (_isSubmitting)
-                              const LinearProgressIndicator(minHeight: 2),
-                            // --- TITLE & NAME FIELD ---
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      isNewShop ? 'Add Shop' : 'Edit Shop',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.headlineSmall,
-                                      textAlign: TextAlign.center,
-                                    ),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                controller: widget.scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(
+                  BobaSpace.x4,
+                  0,
+                  BobaSpace.x4,
+                  BobaSpace.x4,
+                ),
+                child: Form(
+                  key: _formkey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _ShopFormHeader(
+                        brand: widget.brand,
+                        isNewShop: isNewShop,
+                      ),
+                      if (_brandSlug == null) ...[
+                        const SizedBox(height: BobaSpace.x4),
+                        TextFormField(
+                          controller: _nameController,
+                          textCapitalization: TextCapitalization.words,
+                          decoration: const InputDecoration(
+                            labelText: 'Shop Name',
+                          ),
+                          style: Theme.of(context).textTheme.titleLarge,
+                          validator: (value) => value == null || value.isEmpty
+                              ? 'Enter a name'
+                              : null,
+                        ),
+                      ],
+                      const SizedBox(height: BobaSpace.x5),
+                      Row(
+                        children: [
+                          Text(
+                            'Your rating',
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          const Spacer(),
+                          RatingText(
+                            value: _rating,
+                            size: RatingTextSize.large,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: BobaSpace.x3),
+                      RatingPicker(
+                        rating: _rating,
+                        onChanged: (val) => setState(() => _rating = val),
+                      ),
+                      if (needsRating) ...[
+                        const SizedBox(height: BobaSpace.x2),
+                        Text(
+                          'Tap a star to rate it',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: context.boba.inkMuted),
+                        ),
+                      ],
+                      const SizedBox(height: BobaSpace.x6),
+                      TextFormField(
+                        controller: _notesController,
+                        decoration: const InputDecoration(
+                          labelText: 'Notes',
+                          alignLabelWithHint: true,
+                        ),
+                        keyboardType: TextInputType.multiline,
+                        minLines: 2,
+                        maxLines: null,
+                        maxLength: Constants.maxShopNotesLength,
+                      ),
+                      if (isNewShop) ...[
+                        const SizedBox(height: BobaSpace.x4),
+                        Text(
+                          'Photos',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: BobaSpace.x3),
+                        _buildPhotos(context),
+                        const SizedBox(height: BobaSpace.x5),
+                        Text(
+                          'Drinks',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: BobaSpace.x3),
+                        AnimatedSize(
+                          duration: BobaMotion.normal,
+                          curve: Curves.easeOutCubic,
+                          alignment: Alignment.topCenter,
+                          child: _showMiniDrinkForm
+                              ? _MiniDrinkForm(
+                                  formKey: _miniDrinkFormKey,
+                                  nameCtrl: _miniDrinkNameCtrl,
+                                  notesCtrl: _miniDrinkNotesCtrl,
+                                  rating: _miniDrinkRating,
+                                  onRatingChanged: (v) =>
+                                      setState(() => _miniDrinkRating = v),
+                                  onCancel: () => setState(
+                                    () => _showMiniDrinkForm = false,
                                   ),
-                                  // small "+ Drink" button
-                                  if (isNewShop)
-                                    IconButton.filledTonal(
-                                      tooltip: _showMiniDrinkForm
-                                          ? 'Hide drink form'
-                                          : 'Add a drink',
-                                      icon: Icon(
-                                        _showMiniDrinkForm
-                                            ? Icons.remove
-                                            : Icons.add,
-                                      ),
-                                      onPressed: () => setState(() {
-                                        _showMiniDrinkForm =
-                                            !_showMiniDrinkForm;
-                                      }),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            // --- NAME FIELD
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: _brandSlug != null
-                                  ? ListTile(
-                                      minTileHeight: 30,
-                                      minVerticalPadding: 4,
-                                      leading: Icon(Icons.storefront_rounded),
-                                      title: Text(
-                                        _nameController.text,
-                                        style: const TextStyle(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                        textAlign: TextAlign.left,
-                                      ),
-                                    )
-                                  : TextFormField(
-                                      controller: _nameController,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Shop Name',
-                                      ),
-                                      style: const TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      textAlign: TextAlign.left,
-                                      validator: (value) =>
-                                          value == null || value.isEmpty
-                                          ? 'Enter a name'
-                                          : null,
-                                    ),
-                            ),
-                            const SizedBox(height: 2),
-                            // --- RATING ---
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: Padding(
-                                padding: const EdgeInsets.only(
-                                  top: 12,
-                                  bottom: 12,
+                                  onAdd: _addPendingDrink,
+                                )
+                              : Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: BobaButton(
+                                    label: 'Add a drink',
+                                    variant: BobaButtonVariant.secondary,
+                                    size: BobaButtonSize.small,
+                                    icon: const Icon(Icons.add_rounded),
+                                    onPressed: _openDrinkForm,
+                                  ),
                                 ),
-                                child: Text(
-                                  'Rating',
-                                  style: Theme.of(context).textTheme.labelLarge,
+                        ),
+                        if (_pendingDrinks.isNotEmpty) ...[
+                          const SizedBox(height: BobaSpace.x3),
+                          Wrap(
+                            spacing: BobaSpace.x2,
+                            runSpacing: BobaSpace.x2,
+                            children: [
+                              for (final drink in _pendingDrinks)
+                                BobaChip(
+                                  label: _drinkChipLabel(drink),
+                                  trailing: const Icon(Icons.close_rounded),
+                                  onTap: () => setState(
+                                    () => _pendingDrinks.remove(drink),
+                                  ),
                                 ),
-                              ),
-                            ),
-                            StatefulBuilder(
-                              builder: (context, setState) {
-                                return RatingPicker(
-                                  rating: _rating,
-                                  onChanged: (val) =>
-                                      setState(() => _rating = val),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 24),
-                            // --- NOTES ---
-                            TextFormField(
-                              controller: _notesController,
-                              decoration: const InputDecoration(
-                                labelText: 'Notes',
-                                border: OutlineInputBorder(),
-                                alignLabelWithHint: true,
-                              ),
-                              keyboardType: TextInputType.multiline,
-                              minLines: 2,
-                              maxLines: null,
-                              maxLength: Constants.maxShopNotesLength,
-                            ),
-                            // --- ADD PHOTOS (ONLY for new shop) ---
-                            if (isNewShop) ...[
-                              const SizedBox(height: 24),
-                              ElevatedButton.icon(
-                                icon: const Icon(Icons.add_photo_alternate),
-                                label: const Text('Add Photos'),
-                                onPressed: _pickImages,
-                              ),
-                              const SizedBox(height: 8),
-                              SizedBox(
-                                height: _selectedImages.isNotEmpty ? 100 : 0,
-                                child: ListView.separated(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: _selectedImages.length,
-                                  separatorBuilder: (_, __) =>
-                                      const SizedBox(width: 8),
-                                  itemBuilder: (context, index) {
-                                    final image = _selectedImages[index];
-                                    return Stack(
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          child: Image.file(
-                                            image.file!,
-                                            width: 100,
-                                            height: 100,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                        Positioned(
-                                          top: 0,
-                                          right: 0,
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              setState(
-                                                () => _selectedImages.removeAt(
-                                                  index,
-                                                ),
-                                              );
-                                            },
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                color: context.boba.imageScrim
-                                                    .withValues(alpha: 0.45),
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                              ),
-                                              child: Icon(
-                                                Icons.close,
-                                                size: 20,
-                                                color: context.boba.onImage,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
-                              ),
                             ],
-                            const SizedBox(height: 16),
-
-                            AnimatedCrossFade(
-                              crossFadeState: _showMiniDrinkForm
-                                  ? CrossFadeState.showFirst
-                                  : CrossFadeState.showSecond,
-                              duration: const Duration(milliseconds: 180),
-                              firstChild: _MiniDrinkForm(
-                                formKey: _miniDrinkFormKey,
-                                nameCtrl: _miniDrinkNameCtrl,
-                                notesCtrl: _miniDrinkNotesCtrl,
-                                rating: _miniDrinkRating,
-                                onRatingChanged: (v) =>
-                                    setState(() => _miniDrinkRating = v),
-                                onCancel: () =>
-                                    setState(() => _showMiniDrinkForm = false),
-                                onAdd: () {
-                                  if (_miniDrinkFormKey.currentState!
-                                      .validate()) {
-                                    final drink = DrinkFormData(
-                                      name: _miniDrinkNameCtrl.text.trim(),
-                                      rating: _miniDrinkRating,
-                                      notes: _miniDrinkNotesCtrl.text.trim(),
-                                      isFavorite: false,
-                                    );
-                                    setState(() {
-                                      _pendingDrinks.add(drink);
-                                      _showMiniDrinkForm = false;
-                                      _miniDrinkNameCtrl.clear();
-                                      _miniDrinkNotesCtrl.clear();
-                                      _miniDrinkRating = 3.0;
-                                    });
-                                  }
-                                },
-                              ),
-                              secondChild: const SizedBox.shrink(),
-                            ),
-
-                            if (_pendingDrinks.isNotEmpty) ...[
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: _pendingDrinks.map((d) {
-                                  return Chip(
-                                    label: Text(
-                                      '${d.name} • ${d.rating.toStringAsFixed(1)}',
-                                    ),
-                                    onDeleted: () => setState(
-                                      () => _pendingDrinks.remove(d),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
+                          ),
+                        ],
+                      ],
+                    ],
                   ),
-
-                  // ACTIONS ROW
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: SafeArea(
-                      top: false,
-                      child: Material(
-                        elevation: 3,
-                        color: Theme.of(context).dialogTheme.backgroundColor,
-                        surfaceTintColor: Colors.transparent,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(
-                            bottom: Radius.circular(12),
-                          ),
-                        ),
-                        child: Padding(
-                          // keep your V padding var
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: _footerVPad,
-                          ),
-                          child: SizedBox(
-                            height: _footerHeight,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(),
-                                  child: const Text('Cancel'),
-                                ),
-                                const SizedBox(width: 8),
-                                ElevatedButton(
-                                  onPressed: _isSubmitting
-                                      ? null
-                                      : () => _handleSubmit(
-                                          shopMediaState,
-                                          drinkState,
-                                          achievementState,
-                                          feedState,
-                                          analytics,
-                                          user,
-                                        ),
-                                  child: _isSubmitting
-                                      ? SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: context.boba.onAccent,
-                                          ),
-                                        )
-                                      : (isNewShop
-                                            ? const Text('Add Shop')
-                                            : const Text('Save')),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: context.boba.outline,
+                    width: BobaStroke.hairline,
+                  ),
+                ),
+              ),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  BobaSpace.x4,
+                  BobaSpace.x3,
+                  BobaSpace.x4,
+                  BobaSpace.x4 + MediaQuery.paddingOf(context).bottom,
+                ),
+                child: Row(
+                  children: [
+                    BobaButton(
+                      label: 'Cancel',
+                      variant: BobaButtonVariant.tertiary,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    const SizedBox(width: BobaSpace.x2),
+                    Expanded(
+                      child: BobaButton(
+                        label: isNewShop ? 'Add Shop' : 'Save',
+                        expanded: true,
+                        loading: _isSubmitting,
+                        onPressed: needsRating
+                            ? null
+                            : () => _handleSubmit(
+                                shopMediaState,
+                                drinkState,
+                                achievementState,
+                                feedState,
+                                analytics,
+                                user,
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (_stamped) _AddedStamp(brand: widget.brand),
+      ],
+    );
+  }
+
+  Widget _buildPhotos(BuildContext context) {
+    final tokens = context.boba;
+    if (_selectedImages.isEmpty) {
+      return BobaButton(
+        label: 'Add photos',
+        variant: BobaButtonVariant.secondary,
+        icon: const Icon(Icons.add_photo_alternate_outlined),
+        expanded: true,
+        onPressed: _pickImages,
+      );
+    }
+
+    return SizedBox(
+      height: 88,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        primary: false,
+        itemCount: _selectedImages.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(width: BobaSpace.x2),
+        itemBuilder: (context, index) {
+          if (index == _selectedImages.length) {
+            return _PhotoActionTile(
+              tooltip: 'Change photos',
+              icon: Icons.edit_outlined,
+              onTap: _pickImages,
+            );
+          }
+          final image = _selectedImages[index];
+          return Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(BobaRadius.md),
+                child: Image.file(
+                  image.file!,
+                  width: 88,
+                  height: 88,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              if (index == 0)
+                Positioned(
+                  left: 6,
+                  bottom: 6,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: tokens.imageScrim.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(BobaRadius.pill),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      child: Text(
+                        'Cover',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.labelSmall?.copyWith(color: tokens.onImage),
+                      ),
+                    ),
+                  ),
+                ),
+              Positioned(
+                top: 4,
+                right: 4,
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedImages.removeAt(index)),
+                  child: Tooltip(
+                    message: 'Remove photo',
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: tokens.imageScrim.withValues(alpha: 0.55),
+                        borderRadius: BorderRadius.circular(BobaRadius.pill),
+                      ),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 18,
+                        color: tokens.onImage,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           );
         },
+      ),
+    );
+  }
+}
+
+String _drinkChipLabel(DrinkFormData drink) {
+  final name = drink.name.length > 28
+      ? '${drink.name.substring(0, 28)}…'
+      : drink.name;
+  return '$name · ${drink.rating.toStringAsFixed(1)}';
+}
+
+class _ShopFormHeader extends StatelessWidget {
+  const _ShopFormHeader({required this.brand, required this.isNewShop});
+
+  final Brand? brand;
+  final bool isNewShop;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = brand?.display ?? (isNewShop ? 'Add shop' : 'Edit shop');
+    final subtitle = isNewShop ? 'Add to your dex' : 'Edit your visit';
+    return Row(
+      children: [
+        if (brand != null) ...[
+          BrandMark(
+            name: brand!.display,
+            slug: brand!.slug,
+            iconPath: brand!.iconPath,
+            size: BobaSize.markLg,
+          ),
+          const SizedBox(width: BobaSpace.x3),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: context.boba.inkMuted),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PhotoActionTile extends StatelessWidget {
+  const _PhotoActionTile({
+    required this.tooltip,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.boba;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: tokens.surfaceAlt,
+        borderRadius: BorderRadius.circular(BobaRadius.md),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(BobaRadius.md),
+          child: SizedBox(
+            width: 88,
+            height: 88,
+            child: Icon(icon, color: tokens.inkMuted),
+          ),
+        ),
       ),
     );
   }
@@ -603,11 +727,14 @@ class _MiniDrinkForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(top: 8),
-      elevation: 1,
+    final tokens = context.boba;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.surfaceAlt,
+        borderRadius: BorderRadius.circular(BobaRadius.lg),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(BobaSpace.x3),
         child: Form(
           key: formKey,
           child: Column(
@@ -617,51 +744,137 @@ class _MiniDrinkForm extends StatelessWidget {
                 'Add a drink',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: BobaSpace.x2),
               TextFormField(
                 controller: nameCtrl,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Drink Name'),
+                decoration: InputDecoration(
+                  labelText: 'Drink Name',
+                  fillColor: tokens.surface,
+                ),
                 maxLength: Constants.maxDrinkNameLength,
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Enter a name' : null,
               ),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 4, bottom: 8),
-                  child: Text(
-                    'Rating',
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                ),
+              const SizedBox(height: BobaSpace.x2),
+              Row(
+                children: [
+                  Text('Rating', style: Theme.of(context).textTheme.titleSmall),
+                  const Spacer(),
+                  RatingText(value: rating, size: RatingTextSize.medium),
+                ],
               ),
-              RatingPicker(rating: rating, onChanged: onRatingChanged),
-              const SizedBox(height: 8),
+              const SizedBox(height: BobaSpace.x2),
+              RatingPicker(
+                rating: rating,
+                onChanged: onRatingChanged,
+                size: 36,
+              ),
+              const SizedBox(height: BobaSpace.x2),
               TextFormField(
                 controller: notesCtrl,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Notes',
-                  border: OutlineInputBorder(),
                   alignLabelWithHint: true,
+                  fillColor: tokens.surface,
                 ),
                 keyboardType: TextInputType.multiline,
                 maxLength: 120,
                 maxLines: null,
                 minLines: 2,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: BobaSpace.x2),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(onPressed: onCancel, child: const Text('Cancel')),
-                  const SizedBox(width: 8),
-                  TextButton(onPressed: onAdd, child: const Text('Add')),
+                  BobaButton(
+                    label: 'Cancel',
+                    variant: BobaButtonVariant.tertiary,
+                    size: BobaButtonSize.small,
+                    onPressed: onCancel,
+                  ),
+                  const SizedBox(width: BobaSpace.x2),
+                  BobaButton(
+                    label: 'Add',
+                    size: BobaButtonSize.small,
+                    onPressed: onAdd,
+                  ),
                 ],
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AddedStamp extends StatelessWidget {
+  const _AddedStamp({required this.brand});
+
+  final Brand? brand;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.boba;
+    final mark = brand == null
+        ? Icon(Icons.check_circle_rounded, size: 88, color: tokens.success)
+        : SizedBox(
+            width: BobaSize.markXl,
+            height: BobaSize.markXl,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                BrandMark(
+                  name: brand!.display,
+                  slug: brand!.slug,
+                  iconPath: brand!.iconPath,
+                  size: BobaSize.markXl,
+                ),
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: tokens.success,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: tokens.bg, width: 3),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.check_rounded,
+                        size: 22,
+                        color: tokens.onImage,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+
+    return ColoredBox(
+      color: tokens.bg.withValues(alpha: 0.94),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.7, end: 1),
+              duration: BobaMotion.stamp,
+              curve: Curves.easeOutBack,
+              builder: (context, scale, child) {
+                return Transform.scale(scale: scale, child: child);
+              },
+              child: mark,
+            ),
+            const SizedBox(height: BobaSpace.x4),
+            Text(
+              'Added to your dex',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ],
         ),
       ),
     );

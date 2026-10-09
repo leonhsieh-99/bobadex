@@ -9,6 +9,7 @@ import 'package:bobadex/ui/components/dex_header.dart';
 import 'package:bobadex/ui/components/empty_state.dart';
 import 'package:bobadex/ui/components/entry_tile.dart';
 import 'package:bobadex/ui/components/skeleton_box.dart';
+import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:bobadex/ui/theme/boba_tokens.dart';
 import 'package:bobadex/widgets/onboarding_wizard.dart';
 import 'package:flutter/material.dart';
@@ -36,6 +37,11 @@ class _HomePageState extends State<HomePage> {
   String _searchQuery = '';
   String _selectedSort = 'favorite-desc';
   final _searchController = TextEditingController();
+  final _spotlightKey = GlobalKey();
+  final _dexHeaderKey = GlobalKey();
+  final _dexScroll = ScrollController();
+  Timer? _spotlightTimer;
+  String? _scheduledSpotlight;
 
   @override
   void initState() {
@@ -85,8 +91,50 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    _spotlightTimer?.cancel();
+    _dexScroll.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _scheduleSpotlight(
+    String id, {
+    required int index,
+    required int columns,
+  }) {
+    if (_scheduledSpotlight == id) return;
+    _scheduledSpotlight = id;
+    _spotlightTimer?.cancel();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _scheduledSpotlight != id) return;
+      final target = _spotlightKey.currentContext;
+      if (target != null) {
+        Scrollable.ensureVisible(
+          target,
+          alignment: 0.35,
+          duration: BobaMotion.normal,
+          curve: Curves.easeOutCubic,
+        );
+      } else if (_dexScroll.hasClients) {
+        final width = MediaQuery.sizeOf(context).width - (BobaSpace.x2 * 2);
+        final item = (width - BobaSpace.x2 * (columns - 1)) / columns;
+        final row = index ~/ columns;
+        final header = _dexHeaderKey.currentContext?.size?.height ?? 0;
+        final offset =
+            header + 108 + BobaSpace.x2 + row * (item + BobaSpace.x2);
+        final max = _dexScroll.position.maxScrollExtent;
+        _dexScroll.animateTo(
+          offset.clamp(0, max),
+          duration: BobaMotion.normal,
+          curve: Curves.easeOutCubic,
+        );
+      }
+      _spotlightTimer = Timer(const Duration(milliseconds: 1800), () {
+        if (!mounted) return;
+        context.read<ShopState>().clearSpotlight();
+        _scheduledSpotlight = null;
+      });
+    });
   }
 
   @override
@@ -131,10 +179,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _openAddShop() {
-    Navigator.of(
-      context,
-      rootNavigator: true,
-    ).push(MaterialPageRoute(builder: (_) => const AddShopSearchPage()));
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => const AddShopSearchPage(),
+      ),
+    );
   }
 
   @override
@@ -144,6 +194,9 @@ class _HomePageState extends State<HomePage> {
       (s) => s.shopsFor(_uid),
     );
     final shopsFailed = context.select<ShopState, bool>((s) => s.hasError);
+    final spotlightId = context.select<ShopState, String?>(
+      (s) => s.spotlightShopId,
+    );
     final drinkCount = context.select<ShopState, int>((s) {
       return shops.fold<int>(0, (sum, shop) {
         final id = shop.id;
@@ -175,6 +228,16 @@ class _HomePageState extends State<HomePage> {
         }
 
         final visibleShops = getVisibleShops(shops);
+        final spotlightIndex = spotlightId == null
+            ? -1
+            : visibleShops.indexWhere((shop) => shop.id == spotlightId);
+        if (spotlightIndex >= 0) {
+          _scheduleSpotlight(
+            spotlightId!,
+            index: spotlightIndex,
+            columns: user.gridColumns,
+          );
+        }
         final bottomInset = _isCurrentUser
             ? BobaNavBar.clearance(context)
             : MediaQuery.paddingOf(context).bottom + BobaSpace.x4;
@@ -186,10 +249,12 @@ class _HomePageState extends State<HomePage> {
           body: SafeArea(
             bottom: false,
             child: CustomScrollView(
+              controller: _dexScroll,
               slivers: [
                 if (_isCurrentUser)
                   SliverToBoxAdapter(
                     child: DexHeader(
+                      key: _dexHeaderKey,
                       title: '${user.firstName}\'s Bobadex',
                       brandCount: shops.length,
                       drinkCount: drinkCount,
@@ -276,11 +341,20 @@ class _HomePageState extends State<HomePage> {
                       ),
                       delegate: SliverChildBuilderDelegate((context, index) {
                         final shop = visibleShops[index];
-                        return EntryTile(
-                          shop: shop,
-                          columns: user.gridColumns,
-                          useIcons: user.useIcons == true,
-                          onTap: () async => _navigateToShop(shop.id!, user.id),
+                        final spotlight =
+                            shop.id != null && shop.id == spotlightId;
+                        return KeyedSubtree(
+                          key: spotlight ? _spotlightKey : ValueKey(shop.id),
+                          child: _DexSpotlight(
+                            active: spotlight,
+                            child: EntryTile(
+                              shop: shop,
+                              columns: user.gridColumns,
+                              useIcons: user.useIcons == true,
+                              onTap: () async =>
+                                  _navigateToShop(shop.id!, user.id),
+                            ),
+                          ),
                         );
                       }, childCount: visibleShops.length),
                     ),
@@ -290,6 +364,29 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       },
+    );
+  }
+}
+
+class _DexSpotlight extends StatelessWidget {
+  const _DexSpotlight({required this.active, required this.child});
+
+  final bool active;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = context.boba.accent;
+    return AnimatedContainer(
+      duration: BobaMotion.stamp,
+      curve: Curves.easeOut,
+      foregroundDecoration: active
+          ? BoxDecoration(
+              borderRadius: BorderRadius.circular(BobaRadius.lg),
+              border: Border.all(color: accent, width: 2),
+            )
+          : null,
+      child: child,
     );
   }
 }

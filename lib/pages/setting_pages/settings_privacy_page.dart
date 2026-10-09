@@ -1,4 +1,5 @@
 import 'package:bobadex/helpers/app_prefs.dart';
+import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/config/ai_disclosure.dart';
 import 'package:bobadex/pages/setting_pages/settings_ai_data_page.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -37,9 +38,7 @@ class _SettingsPrivacyPageState extends State<SettingsPrivacyPage> {
   Future<void> _open(String url) async {
     final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open link')),
-      );
+      notify('Could not open link', SnackType.error);
     }
   }
 

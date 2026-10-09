@@ -70,7 +70,6 @@ class _FriendRequestsPageState extends State<FriendRequestsPage> {
                                         .checkAndUnlockFriendAchievement(
                                           friendState,
                                         );
-                                    notify('Friend added', SnackType.info);
                                   } catch (e) {
                                     notify(
                                       'Error adding friend',
