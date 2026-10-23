@@ -20,10 +20,16 @@ import 'package:flutter_svg/svg.dart';
 enum _AuthView { login, signup }
 
 class AuthPage extends StatefulWidget {
-  const AuthPage({super.key, this.otpClient, this.emailAuth});
+  const AuthPage({
+    super.key,
+    this.otpClient,
+    this.emailAuth,
+    this.resendCooldownSeconds = Constants.otpResendCooldownSeconds,
+  });
 
   final OtpAuthClient? otpClient;
   final EmailAccountAuth? emailAuth;
+  final int resendCooldownSeconds;
 
   @override
   State<AuthPage> createState() => _AuthPageState();
@@ -131,7 +137,9 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver {
       if (!(_formKey.currentState?.validate() ?? false)) return;
     }
 
-    final identifier = emailToOtpIdentifier(_emailController.text);
+    final identifier = resend
+        ? (_otpIdentifier ?? emailToOtpIdentifier(_emailController.text))
+        : emailToOtpIdentifier(_emailController.text);
     if (identifier == null) {
       setState(() => _inlineError = OtpAuthCode.invalidIdentifier);
       notify(messageForOtpCode(OtpAuthCode.invalidIdentifier), SnackType.error);
@@ -150,11 +158,13 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver {
     setState(() => _loading = true);
     try {
       final result = _view == _AuthView.signup
-          ? await _emailAuth.requestSignup(
-              email: identifier,
-              username: _usernameController.text.trim(),
-              displayName: _displayNameController.text.trim(),
-            )
+          ? resend
+                ? await _emailAuth.resendSignup(identifier)
+                : await _emailAuth.requestSignup(
+                    email: identifier,
+                    username: _usernameController.text.trim(),
+                    displayName: _displayNameController.text.trim(),
+                  )
           : await _otpClient.requestEmailLoginOtp(identifier);
       if (!mounted) return;
       if (result == OtpAuthCode.success) return;
@@ -163,7 +173,7 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver {
         _awaitingCode = true;
         _inlineError = null;
       });
-      _startResendCooldown(identifier);
+      _startResendCooldown(identifier, seconds: widget.resendCooldownSeconds);
       notify(
         '${messageForOtpCode(OtpAuthCode.otpSent)} ${otpWaitCopy(Constants.otpResendCooldownSeconds)}',
         SnackType.info,
@@ -175,13 +185,13 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver {
       if (!mounted) return;
       setState(() => _inlineError = e.code);
       if (e.code == OtpAuthCode.rateLimited) {
-        _startResendCooldown(identifier);
+        _startResendCooldown(identifier, seconds: widget.resendCooldownSeconds);
         notify(
           otpWaitCopy(_resendSecondsLeft, rateLimited: true),
           SnackType.error,
         );
       } else {
-        notify(messageForOtpCode(e.code), SnackType.error);
+        notify(_errorCopy(e.code), SnackType.error);
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -226,6 +236,13 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  String _errorCopy(OtpAuthCode code) {
+    if (code == OtpAuthCode.emailAlreadyInUse && _view == _AuthView.signup) {
+      return 'This email already started an account. Log in to get a code and finish verifying it.';
+    }
+    return messageForOtpCode(code);
   }
 
   String get _sheetTitle => switch (_view) {
@@ -374,8 +391,11 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver {
                               _view == _AuthView.signup)
                             BobaButton(
                               variant: BobaButtonVariant.tertiary,
-                              label: 'Log in instead',
-                              onPressed: () => _setView(_AuthView.login),
+                              label: 'Log in to finish',
+                              onPressed: () {
+                                _setView(_AuthView.login);
+                                _requestOtp();
+                              },
                             ),
                           const SizedBox(height: BobaSpace.x2),
                           BobaButton(
@@ -395,7 +415,7 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver {
                               child: Padding(
                                 padding: const EdgeInsets.only(top: 8),
                                 child: Text(
-                                  messageForOtpCode(_inlineError!),
+                                  _errorCopy(_inlineError!),
                                   style: TextStyle(color: tokens.danger),
                                 ),
                               ),
@@ -415,8 +435,9 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver {
 
   String get _primaryLabel {
     if (_awaitingCode) return 'Verify code';
-    if (_sendOnCooldown)
+    if (_sendOnCooldown) {
       return 'Send code in ${formatOtpWaitDuration(_resendSecondsLeft)}';
+    }
     return 'Send code';
   }
 
@@ -453,6 +474,7 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver {
           autofillHints: const [AutofillHints.name],
           enabled: !_loading,
         ),
+        const SizedBox(height: BobaSpace.x3),
         TextFormField(
           maxLength: 15,
           controller: _usernameController,
@@ -463,6 +485,7 @@ class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver {
           validator: Validators.validateUsername,
           enabled: !_loading,
         ),
+        const SizedBox(height: BobaSpace.x3),
       ],
       TextFormField(
         controller: _emailController,

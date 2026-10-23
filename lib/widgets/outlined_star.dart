@@ -84,7 +84,7 @@ class _StarPainter extends CustomPainter {
         Paint()
           ..color = borderColor
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1
+          ..strokeWidth = _strokeWidth(size)
           ..strokeJoin = StrokeJoin.round
           ..isAntiAlias = true,
       );
@@ -108,11 +108,14 @@ class _StarPainter extends CustomPainter {
       Paint()
         ..color = borderColor
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..strokeJoin = StrokeJoin
-            .round // smooth joins
+        ..strokeWidth = _strokeWidth(size)
+        ..strokeJoin = StrokeJoin.round
         ..isAntiAlias = true,
     );
+  }
+
+  double _strokeWidth(Size size) {
+    return math.max(1.5, size.shortestSide * 0.055);
   }
 
   Path _roundedStarPath(Size size, double r, double innerFactor) {

@@ -1,6 +1,6 @@
+import 'package:bobadex/auth/delete_account.dart';
 import 'package:bobadex/config/constants.dart';
 import 'package:bobadex/helpers/image_uploader_helper.dart';
-import 'package:bobadex/navigation.dart';
 import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/utils/validators.dart';
 import 'package:bobadex/pages/setting_pages/email_change_page.dart';
@@ -94,152 +94,6 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
       notify('Error updating profile picture', SnackType.error);
     } finally {
       if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<bool> deleteConfirmationDialog(BuildContext context) async {
-    final deleteKey = 'DELETE';
-
-    final controller = TextEditingController();
-    final focusNode = FocusNode();
-
-    Future<void> closeKeyboard() async {
-      FocusManager.instance.primaryFocus?.unfocus();
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-    }
-
-    FocusScope.of(context).unfocus();
-
-    final result = await showDialog<bool>(
-      context: context,
-      barrierDismissible: true,
-      useRootNavigator: true,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setState) => PopScope(
-          onPopInvokedWithResult: (didPop, result) async {
-            await closeKeyboard();
-          },
-          child: AlertDialog(
-            insetPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 24,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: Text(
-              'Delete Account',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: context.boba.danger,
-              ),
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                children: [
-                  const Text(
-                    'This action is irreversible. All your data will be permanently deleted.',
-                  ),
-                  const SizedBox(height: 12),
-                  Text("Type '$deleteKey' in ALL CAPS to confirm:"),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'Type here...',
-                    ),
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) async {
-                      if (controller.text.trim() == deleteKey) {
-                        await closeKeyboard();
-                      }
-                    },
-                  ),
-                  SizedBox(height: 32),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.primary,
-                              foregroundColor: context.boba.onAccent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            onPressed: () async {
-                              await closeKeyboard();
-                              if (context.mounted)
-                                Navigator.of(context).pop(false);
-                            },
-                            child: const Text('Cancel'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () async {
-                              if (controller.text.trim() == deleteKey) {
-                                await closeKeyboard();
-                                if (context.mounted)
-                                  Navigator.of(context).pop(true);
-                              } else {
-                                notify(
-                                  "Please enter 'DELETE' in all caps",
-                                  SnackType.error,
-                                );
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: context.boba.danger,
-                              foregroundColor: context.boba.onAccent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Text('Delete'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    controller.dispose();
-    focusNode.dispose();
-
-    return result ?? false;
-  }
-
-  Future<String> deleteAccount(BuildContext context) async {
-    final confirm = await deleteConfirmationDialog(context);
-    if (!confirm) return 'Canceled';
-    try {
-      final res = await Supabase.instance.client.functions.invoke(
-        'delete-user',
-      );
-      if (res.status == 200) {
-        await goRoot('/auth');
-        notify('Account successfully deleted', SnackType.info);
-        return '';
-      }
-      return 'Failed (${res.status})';
-    } on FunctionException catch (e) {
-      return e.reasonPhrase ?? 'Delete failed';
-    } catch (_) {
-      return 'Delete failed';
     }
   }
 
@@ -433,10 +287,23 @@ class _SettingsAccountPageState extends State<SettingsAccountPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () async {
-                      final res = await deleteAccount(context);
-                      if (res.isNotEmpty) notify(res, SnackType.error);
-                    },
+                    onPressed: _isLoading
+                        ? null
+                        : () async {
+                            final confirmed = await confirmAccountDeletion(
+                              context,
+                            );
+                            if (!confirmed || !context.mounted) return;
+                            setState(() => _isLoading = true);
+                            final failure = await deleteConfirmedAccount(
+                              context,
+                            );
+                            if (!mounted) return;
+                            setState(() => _isLoading = false);
+                            if (failure != null) {
+                              notify(failure, SnackType.error);
+                            }
+                          },
                   ),
                 ),
               ),

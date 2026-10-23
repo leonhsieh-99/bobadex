@@ -63,7 +63,32 @@ class EmailAccountAuth {
         data: {'username': username.trim(), 'display_name': displayName.trim()},
         emailRedirectTo: 'bobadex://login',
       );
+      // A confirmed account is returned with an empty identities list and
+      // no new code. Pending accounts are rejected above via email_exists.
+      final identities = response.user?.identities;
+      if (identities != null && identities.isEmpty) {
+        throw const OtpAuthException(OtpAuthCode.emailAlreadyInUse);
+      }
       if (response.session != null) return OtpAuthCode.success;
+      return OtpAuthCode.otpSent;
+    } on AuthException catch (e) {
+      throw OtpAuthException(_mapAuth(e));
+    }
+  }
+
+  /// Sends another signup code for the email already captured on this attempt.
+  /// Does not create a user, rotate the password, or edit the pending profile.
+  Future<OtpAuthCode> resendSignup(String email) async {
+    final normalized = emailToOtpIdentifier(email);
+    if (normalized == null) {
+      throw const OtpAuthException(OtpAuthCode.invalidIdentifier);
+    }
+    try {
+      await auth.resend(
+        type: OtpType.signup,
+        email: normalized,
+        emailRedirectTo: 'bobadex://login',
+      );
       return OtpAuthCode.otpSent;
     } on AuthException catch (e) {
       throw OtpAuthException(_mapAuth(e));

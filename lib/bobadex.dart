@@ -11,6 +11,7 @@ import 'package:bobadex/state/shop_media_state.dart';
 import 'package:bobadex/state/shop_state.dart';
 import 'package:bobadex/state/user_state.dart';
 import 'package:bobadex/state/user_stats_cache.dart';
+import 'package:bobadex/runtime/app_runtime_gate.dart';
 import 'package:bobadex/widgets/notification_consumer.dart';
 import 'package:bobadex/ui/theme/boba_theme_builder.dart';
 import 'package:bobadex/ui/theme/boba_themes.dart';
@@ -82,12 +83,14 @@ class _BobadexAppState extends State<BobadexApp> {
             builder: (context, child) => GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTap: () => FocusScope.of(context).unfocus(),
-              child: Stack(
-                children: [
-                  child ?? const SizedBox.shrink(),
-                  const AppInitializer(),
-                  const NotificationConsumer(),
-                ],
+              child: AppRuntimeGate(
+                child: Stack(
+                  children: [
+                    child ?? const SizedBox.shrink(),
+                    const AppInitializer(),
+                    const NotificationConsumer(),
+                  ],
+                ),
               ),
             ),
           );

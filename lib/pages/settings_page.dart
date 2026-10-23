@@ -1,6 +1,5 @@
 import 'package:bobadex/config/ai_disclosure.dart';
 import 'package:bobadex/helpers/export_data.dart';
-import 'package:bobadex/notification_bus.dart';
 import 'package:bobadex/pages/setting_pages/settings_account_page.dart';
 import 'package:bobadex/push/push_registration.dart';
 import 'package:bobadex/pages/setting_pages/settings_ai_data_page.dart';
@@ -95,11 +94,8 @@ class SettingsPage extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.file_download_outlined),
                 title: const Text('Export my data'),
-                subtitle: const Text('Copy a JSON export to clipboard'),
-                onTap: () async {
-                  final res = await exportMyData(context);
-                  if (res == true) notify('Export copied!', SnackType.success);
-                },
+                subtitle: const Text('Save a JSON file of your account'),
+                onTap: () => promptExportMyData(context),
               ),
             ],
           ),

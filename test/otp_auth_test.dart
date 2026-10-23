@@ -31,6 +31,16 @@ class FakeEmailAccountAuth extends EmailAccountAuth {
   }
 
   @override
+  Future<OtpAuthCode> resendSignup(String email) async {
+    calls.add('resend:$email');
+    if (requestResult != OtpAuthCode.otpSent &&
+        requestResult != OtpAuthCode.success) {
+      throw OtpAuthException(requestResult);
+    }
+    return requestResult;
+  }
+
+  @override
   Future<void> verifySignup({
     required String email,
     required String code,
@@ -664,7 +674,11 @@ void main() {
           theme: BobaThemeBuilder.build(
             BobaThemes.resolve(BobaThemes.defaultSlug),
           ),
-          home: AuthPage(otpClient: client, emailAuth: emailAuth),
+          home: AuthPage(
+            otpClient: client,
+            emailAuth: emailAuth,
+            resendCooldownSeconds: 0,
+          ),
         ),
       );
       expect(find.text('Send code'), findsOneWidget);
@@ -690,7 +704,59 @@ void main() {
       await tester.tap(find.text('Verify code'));
       await tester.pumpAndSettle();
       expect(emailAuth.calls.last, 'verify:ada@example.com:123456');
+
+      await tester.ensureVisible(find.text('Resend code'));
+      await tester.tap(find.text('Resend code'));
+      await tester.pumpAndSettle();
+      expect(emailAuth.calls, contains('resend:ada@example.com'));
+      expect(
+        emailAuth.calls.where((call) => call.startsWith('signup:')),
+        hasLength(1),
+      );
     });
+
+    testWidgets(
+      'an email already in use offers login without sending another code',
+      (tester) async {
+        final emailAuth = FakeEmailAccountAuth()
+          ..requestResult = OtpAuthCode.emailAlreadyInUse;
+        client = clientWith(const [
+          OtpFunctionResponse(status: 200, body: {'code': 'OTP_SENT'}),
+        ]);
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: BobaThemeBuilder.build(
+              BobaThemes.resolve(BobaThemes.defaultSlug),
+            ),
+            home: AuthPage(otpClient: client, emailAuth: emailAuth),
+          ),
+        );
+        await tester.tap(find.text("Don't have an account? Sign up"));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Name'),
+          'Ada',
+        );
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Username'),
+          'ada',
+        );
+        await tester.enterText(
+          find.widgetWithText(TextFormField, 'Email'),
+          'ada@example.com',
+        );
+        await tester.tap(find.text('Send code'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('finish verifying'), findsWidgets);
+        expect(find.text('Log in to finish'), findsOneWidget);
+        await tester.ensureVisible(find.text('Log in to finish'));
+        await tester.tap(find.text('Log in to finish'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('ada@example.com'), findsWidgets);
+        expect(emailAuth.calls, ['signup:ada@example.com:ada:Ada']);
+        expect(find.text('Verify code'), findsOneWidget);
+      },
+    );
   });
 
   test('wait copy includes remaining seconds', () {
