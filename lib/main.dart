@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:bobadex/auth/auth_redaction.dart';
 import 'package:bobadex/bobadex.dart';
+import 'package:bobadex/runtime/resume_network.dart';
 import 'firebase_options.dart';
 import 'helpers/app_prefs.dart';
 
@@ -36,9 +37,14 @@ Future<void> _bootstrap() async {
   }
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
+  // Registered before Supabase so a resume drops dead sockets before auth
+  // refresh and realtime try to use them.
+  WidgetsBinding.instance.addObserver(ResumeNetworkObserver());
+
   await Supabase.initialize(
     url: supabaseUrl,
     publishableKey: supabasePublishableKey,
+    httpClient: supabaseHttpClient,
     authOptions: const FlutterAuthClientOptions(
       authFlowType: AuthFlowType.pkce,
       autoRefreshToken: true,

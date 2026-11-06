@@ -39,6 +39,8 @@
 		<true/>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Location is used to suggest the county collection you are in.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>Location is used to suggest the county collection you are in.</string>
 		<key>NSCameraUsageDescription</key>
 		<string>Camera access is needed to take photos.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
