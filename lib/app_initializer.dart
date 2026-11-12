@@ -52,13 +52,20 @@ class _AppInitializerState extends State<AppInitializer> {
   }
 
   Future<void> _postSignInLoadAndRoute(Session session) async {
+    final load = _handleSignedIn(session);
+    var openDex = false;
     try {
-      final ok = await _handleSignedIn(session);
-      await goRoot(ok ? '/dex' : '/auth');
+      // The profile load updates the theme while this is still on the splash
+      // screen. The catalog and feed must not keep that screen up if a
+      // download stalls after the phone has been asleep.
+      openDex = await load.timeout(const Duration(seconds: 8));
+    } on TimeoutException {
+      debugPrint('Opening the dex before startup finishes');
+      openDex = Supabase.instance.client.auth.currentSession != null;
     } catch (e, st) {
       debugPrint('Post sign-in load failed: $e\n$st');
-      await goRoot('/auth');
     }
+    await goRoot(openDex ? '/dex' : '/auth');
   }
 
   void _resetAllStates() {
@@ -102,10 +109,9 @@ class _AppInitializerState extends State<AppInitializer> {
         switch (event) {
           case AuthChangeEvent.initialSession:
             if (session != null) {
-              await goRoot('/splash');
               unawaited(_postSignInLoadAndRoute(session));
             } else {
-              await goRoot('/auth');
+              unawaited(goRoot('/auth'));
             }
             break;
 
@@ -114,10 +120,10 @@ class _AppInitializerState extends State<AppInitializer> {
               if (_lastUserId != null && _lastUserId == session.user.id) {
                 break;
               }
-              await goRoot('/splash');
+              unawaited(goRoot('/splash'));
               unawaited(_postSignInLoadAndRoute(session));
             } else {
-              await goRoot('/auth');
+              unawaited(goRoot('/auth'));
             }
             break;
 

@@ -6,8 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// How long the app can sit in the background before its sockets are dropped.
 ///
-/// iOS freezes the process and leaves those connections open. The next request
-/// then waits forever, which is the hang that goes away after a force-quit.
+/// iOS also leaves Flutter's renderer off after a scene resume. AppDelegate
+/// turns that back on; [scheduleResumeFrames] asks for frames once it is.
 const staleNetworkResetAfter = Duration(minutes: 1);
 
 /// Bounds a single Supabase request so a dead socket cannot stall the app.
@@ -36,8 +36,18 @@ class ResilientHttpClient extends http.BaseClient {
   }
 
   @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    return _inner.send(request).timeout(timeout);
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final response = await _inner.send(request).timeout(timeout);
+    return http.StreamedResponse(
+      response.stream.timeout(timeout),
+      response.statusCode,
+      contentLength: response.contentLength,
+      request: response.request,
+      headers: response.headers,
+      isRedirect: response.isRedirect,
+      persistentConnection: response.persistentConnection,
+      reasonPhrase: response.reasonPhrase,
+    );
   }
 
   @override
@@ -46,16 +56,43 @@ class ResilientHttpClient extends http.BaseClient {
   }
 }
 
+/// Asks for a few frames after resume. A single frame requested before the
+/// Metal surface is ready is dropped, and nothing schedules another one.
+void scheduleResumeFrames() {
+  for (final timer in _resumeFrameTimers) {
+    timer.cancel();
+  }
+  _resumeFrameTimers.clear();
+  void frame() {
+    WidgetsBinding.instance.scheduleFrame();
+  }
+
+  frame();
+  for (final delay in const [
+    Duration(milliseconds: 100),
+    Duration(milliseconds: 300),
+    Duration(milliseconds: 800),
+    Duration(seconds: 2),
+  ]) {
+    _resumeFrameTimers.add(Timer(delay, frame));
+  }
+}
+
+final _resumeFrameTimers = <Timer>[];
+
 /// Drops frozen Supabase connections after a long background.
 class ResumeNetworkObserver with WidgetsBindingObserver {
   ResumeNetworkObserver({
     DateTime Function()? now,
     void Function()? onStaleResume,
+    void Function()? onResume,
   }) : _now = now ?? DateTime.now,
-       _onStaleResume = onStaleResume ?? recoverStaleSupabaseConnections;
+       _onStaleResume = onStaleResume ?? recoverStaleSupabaseConnections,
+       _onResume = onResume ?? scheduleResumeFrames;
 
   final DateTime Function() _now;
   final void Function() _onStaleResume;
+  final void Function() _onResume;
   DateTime? _backgroundedAt;
 
   @override
@@ -66,6 +103,7 @@ class ResumeNetworkObserver with WidgetsBindingObserver {
       return;
     }
     if (state != AppLifecycleState.resumed) return;
+    _onResume();
     final backgroundedAt = _backgroundedAt;
     _backgroundedAt = null;
     if (backgroundedAt == null) return;

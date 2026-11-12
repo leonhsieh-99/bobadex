@@ -50,6 +50,9 @@ const defaultMaintenanceMessage =
     'Bobadex is temporarily unavailable. Please try again shortly.';
 const defaultUpdateMessage = 'Please update Bobadex to continue.';
 
+/// Public listing. Used when the server has not stored its own https URL.
+const iosAppStoreListing = 'https://apps.apple.com/app/id6752920262';
+
 const runtimeControlsTimeout = Duration(seconds: 3);
 
 AppRuntimeControls? parseAppRuntimeControls(Object? raw) {
@@ -98,7 +101,8 @@ RuntimeDecision decideRuntimeAccess({
   }
 
   final url = switch (platform) {
-    AppPlatformKind.ios => controls.iosUpdateUrl,
+    AppPlatformKind.ios =>
+      controls.iosUpdateUrl ?? Uri.parse(iosAppStoreListing),
     AppPlatformKind.android => controls.androidUpdateUrl,
     AppPlatformKind.other => null,
   };

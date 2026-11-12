@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:bobadex/ui/components/boba_card.dart';
 import 'package:bobadex/ui/theme/boba_context.dart';
 import 'package:bobadex/ui/theme/boba_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 const List<String> funFacts = [
   "All tea comes from one plant, Camellia sinensis. Green, black, oolong, and white are just different ways of processing the leaf.",
@@ -37,23 +40,57 @@ class SplashPage extends StatefulWidget {
 
 class _SplashPageState extends State<SplashPage> {
   late final String randomFact;
+  Timer? _tick;
+  var _seconds = 0;
 
   @override
   void initState() {
     super.initState();
     randomFact = funFacts[Random().nextInt(funFacts.length)];
+    // Leave on our own clock. Startup used to wait here until every download
+    // finished, and that wait never ended after the phone had been asleep.
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _seconds++);
+      if (_seconds >= 3) _leave();
+    });
+  }
+
+  void _leave() {
+    if (!mounted) return;
+    var loggedIn = false;
+    try {
+      loggedIn = Supabase.instance.client.auth.currentSession != null;
+    } catch (_) {}
+    final path = loggedIn ? '/dex' : '/auth';
+    debugPrint('splash leaving for $path after ${_seconds}s');
+    try {
+      context.go(path);
+    } catch (e) {
+      debugPrint('splash leave failed: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: SafeArea(child: Center(child: _SplashContent())),
+    return Scaffold(
+      body: SafeArea(
+        child: Center(child: _SplashContent(seconds: _seconds)),
+      ),
     );
   }
 }
 
 class _SplashContent extends StatelessWidget {
-  const _SplashContent();
+  const _SplashContent({required this.seconds});
+
+  final int seconds;
 
   @override
   Widget build(BuildContext context) {
@@ -90,6 +127,15 @@ class _SplashContent extends StatelessWidget {
               ],
             ),
           ),
+          if (seconds >= 3) ...[
+            const SizedBox(height: BobaSpace.x5),
+            Text(
+              'Still opening · ${seconds}s',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: context.boba.accent),
+            ),
+          ],
         ],
       ),
     );

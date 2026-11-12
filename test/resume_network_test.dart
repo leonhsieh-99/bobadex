@@ -18,6 +18,21 @@ void main() {
     );
   });
 
+  test('a response body that stalls does not wait forever', () async {
+    final client = ResilientHttpClient(
+      createClient: _SilentBodyClient.new,
+      timeout: const Duration(milliseconds: 30),
+    );
+
+    final response = await client.send(
+      http.Request('GET', Uri.parse('https://example.com')),
+    );
+    await expectLater(
+      response.stream.toList(),
+      throwsA(isA<TimeoutException>()),
+    );
+  });
+
   test('dropping stale connections closes the client that was in use', () {
     final clients = <_CloseTrackingClient>[];
     final client = ResilientHttpClient(
@@ -38,9 +53,11 @@ void main() {
   test('a short background does not reset the network', () {
     var recoveries = 0;
     var now = DateTime(2026, 11, 5, 12);
+    var resumes = 0;
     final observer = ResumeNetworkObserver(
       now: () => now,
       onStaleResume: () => recoveries++,
+      onResume: () => resumes++,
     );
 
     observer.didChangeAppLifecycleState(AppLifecycleState.paused);
@@ -48,6 +65,7 @@ void main() {
     observer.didChangeAppLifecycleState(AppLifecycleState.resumed);
 
     expect(recoveries, 0);
+    expect(resumes, 1);
   });
 
   test('a long background resets the network on resume', () {
@@ -56,6 +74,7 @@ void main() {
     final observer = ResumeNetworkObserver(
       now: () => now,
       onStaleResume: () => recoveries++,
+      onResume: () {},
     );
 
     observer.didChangeAppLifecycleState(AppLifecycleState.hidden);
@@ -70,6 +89,14 @@ class _HangingClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
     return Completer<http.StreamedResponse>().future;
+  }
+}
+
+class _SilentBodyClient extends http.BaseClient {
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final pending = Completer<List<int>>();
+    return http.StreamedResponse(pending.future.asStream(), 200);
   }
 }
 

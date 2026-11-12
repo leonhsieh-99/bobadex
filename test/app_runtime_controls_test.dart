@@ -114,6 +114,22 @@ void main() {
     );
     expect(android.storeUrl, isNull);
     expect(android.storeInstructions, contains('Google Play'));
+
+    final missingLink = parseAppRuntimeControls({
+      'schema_version': 1,
+      'maintenance_enabled': false,
+      'minimum_ios_build': 5,
+      'minimum_android_build': 0,
+      'update_message': 'Please update.',
+    });
+    expect(
+      decideRuntimeAccess(
+        controls: missingLink,
+        platform: AppPlatformKind.ios,
+        buildNumber: 1,
+      ).storeUrl.toString(),
+      iosAppStoreListing,
+    );
   });
 
   test('delete failures use retry copy instead of a status phrase', () {
@@ -181,6 +197,34 @@ void main() {
     expect(find.text('app body'), findsNothing);
     expect(find.text('Back soon'), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
+  });
+
+  testWidgets('an outdated build offers the App Store', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: BobaThemeBuilder.build(
+          BobaThemes.resolve(BobaThemes.defaultSlug),
+        ),
+        home: AppRuntimeGate(
+          pollInterval: const Duration(days: 1),
+          platform: AppPlatformKind.ios,
+          buildNumber: 1,
+          load: () async => parseAppRuntimeControls({
+            'schema_version': 1,
+            'maintenance_enabled': false,
+            'minimum_ios_build': 6,
+            'minimum_android_build': 0,
+            'update_message': 'Please update.',
+          }),
+          child: const Text('app body'),
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('app body'), findsNothing);
+    expect(find.text('Update required'), findsOneWidget);
+    expect(find.text('Please update.'), findsOneWidget);
+    expect(find.text('Update in the App Store'), findsOneWidget);
   });
 
   testWidgets('a failed runtime check leaves the app usable', (tester) async {
